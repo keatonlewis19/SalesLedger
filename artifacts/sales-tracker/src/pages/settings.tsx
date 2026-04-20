@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Trash2, Save, Download, Upload, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Save, Download, Upload, CheckCircle2, Info } from "lucide-react";
 import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 
 const DAY_OPTIONS = [
   { value: "0", label: "Sunday" },
@@ -37,8 +36,6 @@ const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => ({
   label: new Date(2000, 0, 1, i).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
 }));
 
-const FMV_TYPES = ["Initial", "Renewal", "Prorated Renewal", "Monthly Renewal"] as const;
-
 type CommissionTableRow = {
   salesSource: string;
   salesType: string;
@@ -52,9 +49,6 @@ const settingsSchema = z.object({
   reportHour: z.string(),
   reportMinute: z.string(),
   fmvInitial: z.string().optional(),
-  fmvRenewal: z.string().optional(),
-  fmvProratedRenewal: z.string().optional(),
-  fmvMonthlyRenewal: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -64,18 +58,21 @@ function parseCsv(text: string): CommissionTableRow[] | null {
   if (lines.length < 2) return null;
   const rows: CommissionTableRow[] = [];
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    const cols = line.split(",").map((c) => c.replace(/^"|"$/g, "").trim());
+    const cols = lines[i].split(",").map((c) => c.replace(/^"|"$/g, "").trim());
     if (cols.length < 4) continue;
-    const estimatedCommission = cols[3] === "" || cols[3] == null ? null : parseFloat(cols[3]);
+    const val = cols[3] === "" ? null : parseFloat(cols[3]);
     rows.push({
       salesSource: cols[0],
       salesType: cols[1],
       commissionType: cols[2],
-      estimatedCommission: isNaN(estimatedCommission as number) ? null : estimatedCommission,
+      estimatedCommission: val != null && !isNaN(val) ? val : null,
     });
   }
   return rows.length > 0 ? rows : null;
+}
+
+function formatCurrency(val: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
 }
 
 export default function Settings() {
@@ -96,29 +93,20 @@ export default function Settings() {
       reportHour: "17",
       reportMinute: "0",
       fmvInitial: "",
-      fmvRenewal: "",
-      fmvProratedRenewal: "",
-      fmvMonthlyRenewal: "",
     },
   });
 
   const { register, formState: { errors }, watch, setValue } = form;
 
-  const [recipientFields, setRecipientFields] = useState<{ id: string; email: string }[]>([{ id: "0", email: "" }]);
-
   useEffect(() => {
     if (settings && !initialized) {
       const rates = settings.commissionRates as Record<string, number>;
-      setRecipientFields(settings.recipients.map((e, i) => ({ id: String(i), email: e })));
       form.reset({
         recipients: settings.recipients.map((e) => ({ email: e })),
         reportDayOfWeek: String(settings.reportDayOfWeek),
         reportHour: String(settings.reportHour),
         reportMinute: String(settings.reportMinute),
         fmvInitial: rates["Initial"] != null ? String(rates["Initial"]) : "",
-        fmvRenewal: rates["Renewal"] != null ? String(rates["Renewal"]) : "",
-        fmvProratedRenewal: rates["Prorated Renewal"] != null ? String(rates["Prorated Renewal"]) : "",
-        fmvMonthlyRenewal: rates["Monthly Renewal"] != null ? String(rates["Monthly Renewal"]) : "",
       });
       if (settings.commissionTable && (settings.commissionTable as CommissionTableRow[]).length > 0) {
         setCommissionTable(settings.commissionTable as CommissionTableRow[]);
@@ -127,27 +115,22 @@ export default function Settings() {
     }
   }, [settings, initialized, form]);
 
-  const addRecipient = () => setRecipientFields((f) => [...f, { id: String(Date.now()), email: "" }]);
-  const removeRecipient = (id: string) => setRecipientFields((f) => f.filter((r) => r.id !== id));
+  const fmvInitialVal = parseFloat(watch("fmvInitial") || "0") || 0;
+  const derivedRenewal = fmvInitialVal / 2;
+  const derivedMonthly = derivedRenewal / 12;
 
   const onSubmit = (data: SettingsFormValues) => {
-    const commissionRates: Record<string, number> = {};
-    if (data.fmvInitial) commissionRates["Initial"] = parseFloat(data.fmvInitial);
-    if (data.fmvRenewal) commissionRates["Renewal"] = parseFloat(data.fmvRenewal);
-    if (data.fmvProratedRenewal) commissionRates["Prorated Renewal"] = parseFloat(data.fmvProratedRenewal);
-    if (data.fmvMonthlyRenewal) commissionRates["Monthly Renewal"] = parseFloat(data.fmvMonthlyRenewal);
-
-    const recipients = recipientFields.map((r) => {
-      const watched = data.recipients.find((_, i) => String(i) === r.id || recipientFields[recipientFields.findIndex(f => f.id === r.id)]?.email);
-      return r.email || watched?.email || "";
-    }).filter(Boolean);
-
-    const formRecipients = data.recipients.map((r) => r.email.trim()).filter(Boolean);
+    const initial = parseFloat(data.fmvInitial || "0") || 0;
+    const commissionRates: Record<string, number> = {
+      "Initial": initial,
+      "Renewal": initial / 2,
+      "Monthly Renewal": initial / 2 / 12,
+    };
 
     updateSettings.mutate(
       {
         data: {
-          recipients: formRecipients,
+          recipients: data.recipients.map((r) => r.email.trim()).filter(Boolean),
           reportDayOfWeek: parseInt(data.reportDayOfWeek),
           reportHour: parseInt(data.reportHour),
           reportMinute: parseInt(data.reportMinute),
@@ -193,13 +176,6 @@ export default function Settings() {
     reader.readAsText(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
-
-  const fmvRows: { key: keyof SettingsFormValues; label: string }[] = [
-    { key: "fmvInitial", label: "Initial" },
-    { key: "fmvRenewal", label: "Renewal" },
-    { key: "fmvProratedRenewal", label: "Prorated Renewal" },
-    { key: "fmvMonthlyRenewal", label: "Monthly Renewal" },
-  ];
 
   if (isLoading) {
     return (
@@ -250,9 +226,7 @@ export default function Settings() {
                     className="text-muted-foreground hover:text-destructive shrink-0"
                     onClick={() => {
                       const curr = watch("recipients");
-                      if (curr.length > 1) {
-                        setValue("recipients", curr.filter((_, i) => i !== idx));
-                      }
+                      if (curr.length > 1) setValue("recipients", curr.filter((_, i) => i !== idx));
                     }}
                     disabled={watch("recipients").length === 1}
                   >
@@ -287,9 +261,7 @@ export default function Settings() {
                     value={watch("reportDayOfWeek")}
                     onValueChange={(v) => setValue("reportDayOfWeek", v)}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {DAY_OPTIONS.map((d) => (
                         <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
@@ -303,9 +275,7 @@ export default function Settings() {
                     value={watch("reportHour")}
                     onValueChange={(v) => setValue("reportHour", v)}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {HOUR_OPTIONS.map((h) => (
                         <SelectItem key={h.value} value={h.value}>{h.label}</SelectItem>
@@ -322,30 +292,62 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="text-lg">Fair Market Value Rates</CardTitle>
               <CardDescription>
-                Set the FMV dollar amount for each commission type. These are the baseline values used when calculating estimated commissions.
+                Set the Initial FMV rate. All other commission type rates are automatically derived from it.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {fmvRows.map(({ key, label }) => (
-                <div key={key} className="flex items-center gap-3">
-                  <div className="w-44">
-                    <div className="flex h-10 items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground font-medium">
-                      {label}
-                    </div>
+            <CardContent className="flex flex-col gap-4">
+
+              {/* Initial — editable */}
+              <div className="flex items-center gap-3">
+                <div className="w-48 flex h-10 items-center rounded-md border border-input bg-muted px-3 text-sm font-medium text-foreground">
+                  Initial
+                </div>
+                <div className="w-44 relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">$</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    className="pl-7"
+                    {...register("fmvInitial")}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Derived rates — read-only */}
+              {[
+                { label: "Renewal", value: derivedRenewal, formula: "Initial ÷ 2" },
+                { label: "Monthly Renewal", value: derivedMonthly, formula: "Renewal ÷ 12" },
+              ].map(({ label, value, formula }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <div className="w-48 flex h-10 items-center rounded-md border border-input bg-muted px-3 text-sm font-medium text-foreground">
+                    {label}
                   </div>
-                  <div className="w-40 relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">$</span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      className="pl-7"
-                      {...register(key)}
-                    />
+                  <div className="w-44 flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
+                    {fmvInitialVal > 0 ? formatCurrency(value) : "—"}
                   </div>
+                  <span className="text-xs text-muted-foreground">{formula}</span>
                 </div>
               ))}
+
+              {/* Prorated Renewal — per-sale note */}
+              <div className="flex items-start gap-3">
+                <div className="w-48 flex h-10 items-center rounded-md border border-input bg-muted px-3 text-sm font-medium text-foreground shrink-0">
+                  Prorated Renewal
+                </div>
+                <div className="flex items-start gap-2 pt-2">
+                  <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Calculated per sale: <span className="font-medium">Monthly Rate × months remaining in year</span> based on the effective date.
+                    <br />
+                    <span className="italic">e.g. Effective Jun 1 → 7 months → Monthly × 7</span>
+                  </p>
+                </div>
+              </div>
+
             </CardContent>
           </Card>
 
@@ -362,38 +364,22 @@ export default function Settings() {
         {/* Commission Table — outside the main form */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Commission Table</CardTitle>
+            <CardTitle className="text-lg">Commission Table Override</CardTitle>
             <CardDescription>
-              Download the CSV template, fill in the Estimated Commission for each sales combination, then upload it. The app will use this table to auto-calculate commissions on new sales.
+              Optionally upload a CSV to override estimated commissions for specific Sales Source + Sales Type + Commission Type combinations. When a match is found, it takes priority over the formula-based calculation.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex gap-3 flex-wrap">
-              <Button
-                type="button"
-                variant="outline"
-                className="gap-2"
-                onClick={handleDownloadTemplate}
-              >
+              <Button type="button" variant="outline" className="gap-2" onClick={handleDownloadTemplate}>
                 <Download className="w-4 h-4" />
                 Download Template
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="gap-2"
-                onClick={() => fileInputRef.current?.click()}
-              >
+              <Button type="button" variant="outline" className="gap-2" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="w-4 h-4" />
                 Upload Filled CSV
               </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                className="hidden"
-                onChange={handleFileChange}
-              />
+              <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
             </div>
 
             {commissionTable && commissionTable.length > 0 ? (
@@ -420,7 +406,7 @@ export default function Settings() {
                           <td className="px-3 py-1.5">{row.commissionType}</td>
                           <td className="px-3 py-1.5 text-right">
                             {row.estimatedCommission != null
-                              ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(row.estimatedCommission)
+                              ? formatCurrency(row.estimatedCommission)
                               : <span className="text-muted-foreground">—</span>}
                           </td>
                         </tr>
@@ -453,7 +439,7 @@ export default function Settings() {
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                No commission table uploaded yet. Download the template, fill in your values, and upload it here.
+                No override table uploaded. Commissions are calculated automatically from the FMV Initial rate.
               </p>
             )}
           </CardContent>

@@ -120,29 +120,56 @@ export function SaleForm({
   const watchedCommissionType = form.watch("commissionType");
   const watchedSalesSource = form.watch("salesSource");
   const watchedSalesType = form.watch("salesType");
+  const watchedEffectiveDate = form.watch("effectiveDate");
 
   useEffect(() => {
-    if (!settings) return;
+    if (!settings || !watchedCommissionType) return;
+
+    // 1. Commission table override (exact match on all 3 dims)
     const table = settings.commissionTable as Array<{ salesSource: string; salesType: string; commissionType: string; estimatedCommission: number | null }> | null | undefined;
-    if (table && watchedSalesSource && watchedSalesType && watchedCommissionType) {
+    if (table && watchedSalesSource && watchedSalesType) {
       const match = table.find(
         (r) =>
           r.salesSource === watchedSalesSource &&
           r.salesType === watchedSalesType &&
           r.commissionType === watchedCommissionType
       );
-      if (match && match.estimatedCommission != null) {
+      if (match?.estimatedCommission != null) {
         form.setValue("estimatedCommission", match.estimatedCommission.toFixed(2));
         return;
       }
     }
-    if (settings.commissionRates && watchedCommissionType) {
-      const flatRate = (settings.commissionRates as Record<string, number>)[watchedCommissionType];
-      if (flatRate != null) {
-        form.setValue("estimatedCommission", flatRate.toFixed(2));
+
+    // 2. Formula-based calculation from FMV Initial rate
+    const rates = (settings.commissionRates ?? {}) as Record<string, number>;
+    const initialRate = rates["Initial"] ?? 0;
+    if (initialRate === 0) return;
+
+    const renewalRate = initialRate / 2;
+    const monthlyRate = renewalRate / 12;
+
+    let commission: number | null = null;
+
+    if (watchedCommissionType === "Initial") {
+      commission = initialRate;
+    } else if (watchedCommissionType === "Renewal") {
+      commission = renewalRate;
+    } else if (watchedCommissionType === "Monthly Renewal") {
+      commission = monthlyRate;
+    } else if (watchedCommissionType === "Prorated Renewal") {
+      if (watchedEffectiveDate) {
+        // Parse the date in local time to avoid UTC offset shifting the month
+        const [, monthStr] = watchedEffectiveDate.split("-");
+        const month = parseInt(monthStr, 10); // 1–12
+        const monthsRemaining = 13 - month;   // Jun=7, Jul=6, etc.
+        commission = monthlyRate * monthsRemaining;
       }
     }
-  }, [watchedCommissionType, watchedSalesSource, watchedSalesType, settings, form]);
+
+    if (commission != null) {
+      form.setValue("estimatedCommission", commission.toFixed(2));
+    }
+  }, [watchedCommissionType, watchedSalesSource, watchedSalesType, watchedEffectiveDate, settings, form]);
 
   const onSubmit = (data: FormValues) => {
     const formattedData = {
