@@ -34,7 +34,7 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
     let email: string | null = null;
 
     try {
-      const clerkUser = await clerkClient().users.getUser(userId);
+      const clerkUser = await clerkClient.users.getUser(userId);
       fullName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || null;
       email = clerkUser.emailAddresses?.[0]?.emailAddress ?? null;
     } catch (_) {}

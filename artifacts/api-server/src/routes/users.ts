@@ -36,7 +36,7 @@ router.post("/users/invite", requireAuth, requireAdmin, async (req: AuthRequest,
   }
 
   try {
-    const invitation = await clerkClient().invitations.createInvitation({
+    const invitation = await clerkClient.invitations.createInvitation({
       emailAddress: email,
       publicMetadata: { role },
       redirectUrl: undefined,
