@@ -38,6 +38,21 @@ export interface AppSettings {
   commissionRates: AppSettingsCommissionRates;
   /** Uploaded commission lookup table */
   commissionTable: CommissionTableRow[] | null;
+  /**
+   * Object path for uploaded agency logo
+   * @nullable
+   */
+  logoPath: string | null;
+  /**
+   * Hex color string for agency brand color
+   * @nullable
+   */
+  brandColor: string | null;
+  /**
+   * Agency name shown in the app
+   * @nullable
+   */
+  brandName: string | null;
 }
 
 export type UpdateSettingsBodyCommissionRates = { [key: string]: number };
@@ -49,6 +64,26 @@ export interface UpdateSettingsBody {
   recipients?: string[];
   commissionRates?: UpdateSettingsBodyCommissionRates;
   commissionTable?: CommissionTableRow[] | null;
+  /** @nullable */
+  logoPath?: string | null;
+  /** @nullable */
+  brandColor?: string | null;
+  /** @nullable */
+  brandName?: string | null;
+}
+
+export interface UploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /** @minLength 1 */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
 }
 
 export interface AgencyUser {

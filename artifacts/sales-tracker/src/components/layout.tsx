@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useBranding } from "@/contexts/branding";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { isAdmin } = useAgencyUser();
   const { signOut } = useClerk();
   const { user } = useUser();
+  const { brandName, brandColor, logoUrl } = useBranding();
 
   const navigation = [
     { name: "Current Week", href: "/dashboard", icon: LayoutDashboard, adminOnly: false },
@@ -33,16 +35,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
     : user?.emailAddresses?.[0]?.emailAddress?.charAt(0).toUpperCase() ?? "?";
 
   const displayName = user?.fullName || user?.emailAddresses?.[0]?.emailAddress || "Agent";
+  const agencyShortName = brandName.split(" ").slice(0, 2).join(" ");
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col md:flex-row">
       {/* Mobile Nav */}
       <div className="md:hidden border-b bg-card px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <div className="font-semibold text-base text-foreground tracking-tight">CRM Group</div>
+          {logoUrl ? (
+            <img src={logoUrl} alt={brandName} className="h-7 w-auto object-contain" />
+          ) : (
+            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-primary-foreground" />
+            </div>
+          )}
+          <div className="font-semibold text-base text-foreground tracking-tight">{agencyShortName}</div>
         </div>
         <div className="flex gap-1.5">
           {navigation.map((item) => (
@@ -63,15 +70,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Desktop Sidebar */}
       <div className="hidden md:flex w-64 flex-col bg-slate-900 text-slate-100">
         <div className="h-16 flex items-center px-5 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center shrink-0">
-              <TrendingUp className="w-5 h-5 text-white" />
+          {logoUrl ? (
+            <img src={logoUrl} alt={brandName} className="h-9 w-auto object-contain max-w-[192px]" />
+          ) : (
+            <div className="flex items-center gap-3">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                style={{ backgroundColor: brandColor }}
+              >
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="font-bold text-white text-sm leading-none">{agencyShortName}</div>
+                <div className="text-xs text-slate-400 mt-0.5">Insurance Agency</div>
+              </div>
             </div>
-            <div>
-              <div className="font-bold text-white text-sm leading-none">CRM Group</div>
-              <div className="text-xs text-slate-400 mt-0.5">Insurance Agency</div>
-            </div>
-          </div>
+          )}
         </div>
 
         <nav className="flex-1 px-3 py-5 space-y-1">
@@ -82,9 +96,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <div
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm ${
                     active
-                      ? "bg-teal-600 text-white font-medium"
+                      ? "text-white font-medium"
                       : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
                   }`}
+                  style={active ? { backgroundColor: brandColor } : undefined}
                 >
                   <item.icon className="w-4 h-4 shrink-0" />
                   {item.name}
@@ -100,7 +115,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <DropdownMenuTrigger asChild>
               <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left">
                 <Avatar className="w-8 h-8 shrink-0">
-                  <AvatarFallback className="bg-teal-600 text-white text-xs font-semibold">
+                  <AvatarFallback className="text-white text-xs font-semibold" style={{ backgroundColor: brandColor }}>
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -108,11 +123,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <div className="text-sm font-medium text-slate-100 truncate">{displayName}</div>
                   <Badge
                     variant="outline"
-                    className={`text-[10px] px-1.5 py-0 h-4 border-0 font-normal mt-0.5 ${
-                      isAdmin
-                        ? "bg-teal-900/50 text-teal-400"
-                        : "bg-slate-800 text-slate-400"
-                    }`}
+                    className="text-[10px] px-1.5 py-0 h-4 border-0 font-normal mt-0.5 bg-slate-800 text-slate-400"
                   >
                     {isAdmin ? "Admin" : "Agent"}
                   </Badge>

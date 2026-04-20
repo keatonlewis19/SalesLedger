@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Trash2, Save, Download, Upload, CheckCircle2, Lock } from "lucide-react";
+import { Plus, Trash2, Save, Download, Upload, CheckCircle2, Lock, ImageIcon, Palette, X } from "lucide-react";
 import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,13 @@ export default function Settings() {
   const [uploadName, setUploadName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [brandColor, setBrandColor] = useState("#0d9488");
+  const [brandName, setBrandName] = useState("CRM Group Insurance");
+  const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
@@ -113,6 +120,12 @@ export default function Settings() {
       if (settings.commissionTable && (settings.commissionTable as CommissionTableRow[]).length > 0) {
         setCommissionTable(settings.commissionTable as CommissionTableRow[]);
       }
+      if (settings.brandColor) setBrandColor(settings.brandColor);
+      if (settings.brandName) setBrandName(settings.brandName);
+      if (settings.logoPath) {
+        setLogoPath(settings.logoPath);
+        setLogoPreviewUrl(`/api/storage${settings.logoPath}`);
+      }
       setInitialized(true);
     }
   }, [settings, initialized, form]);
@@ -120,6 +133,71 @@ export default function Settings() {
   const fmvInitialVal = parseFloat(watch("fmvInitial") || "0") || 0;
   const derivedRenewal = fmvInitialVal / 2;
   const derivedMonthly = derivedRenewal / 12;
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please select an image file", variant: "destructive" });
+      return;
+    }
+
+    setLogoUploading(true);
+    try {
+      const urlRes = await fetch("/api/storage/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!urlRes.ok) throw new Error("Failed to get upload URL");
+      const { uploadURL, objectPath } = await urlRes.json();
+
+      const uploadRes = await fetch(uploadURL, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+
+      await new Promise<void>((resolve, reject) => {
+        updateSettings.mutate(
+          { data: { logoPath: objectPath } },
+          {
+            onSuccess: () => {
+              setLogoPath(objectPath);
+              setLogoPreviewUrl(`/api/storage${objectPath}`);
+              queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+              toast({ title: "Logo uploaded" });
+              resolve();
+            },
+            onError: () => {
+              reject(new Error("Failed to save logo path"));
+            },
+          }
+        );
+      });
+    } catch {
+      toast({ title: "Logo upload failed", variant: "destructive" });
+    } finally {
+      setLogoUploading(false);
+      if (logoFileInputRef.current) logoFileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    updateSettings.mutate(
+      { data: { logoPath: null } },
+      {
+        onSuccess: () => {
+          setLogoPath(null);
+          setLogoPreviewUrl(null);
+          queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+          toast({ title: "Logo removed" });
+        },
+      }
+    );
+  };
 
   const onSubmit = (data: SettingsFormValues) => {
     const initial = parseFloat(data.fmvInitial || "0") || 0;
@@ -138,6 +216,9 @@ export default function Settings() {
           reportMinute: parseInt(data.reportMinute),
           commissionRates,
           commissionTable: commissionTable ?? null,
+          brandColor,
+          brandName,
+          logoPath,
         },
       },
       {
@@ -217,6 +298,108 @@ export default function Settings() {
         )}
 
         <form onSubmit={form.handleSubmit(isAdmin ? onSubmit : (e) => e.preventDefault())} className="flex flex-col gap-6">
+
+          {/* Agency Branding — admin only */}
+          {isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Palette className="w-4 h-4" />
+                  Agency Branding
+                </CardTitle>
+                <CardDescription>
+                  Your logo, name, and color appear in the sidebar, on all dashboards, and in email reports.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-5">
+
+                {/* Logo */}
+                <div className="flex flex-col gap-2">
+                  <Label className="flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    Agency Logo
+                  </Label>
+                  {logoPreviewUrl ? (
+                    <div className="flex items-center gap-4">
+                      <div className="relative w-32 h-16 rounded-lg border border-border bg-muted flex items-center justify-center overflow-hidden">
+                        <img src={logoPreviewUrl} alt="Agency logo" className="max-h-14 max-w-28 object-contain" />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 text-muted-foreground hover:text-destructive"
+                        onClick={handleRemoveLogo}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="w-48 h-20 rounded-lg border-2 border-dashed border-border hover:border-primary/50 bg-muted/40 hover:bg-muted/70 transition-colors flex flex-col items-center justify-center gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
+                      onClick={() => logoFileInputRef.current?.click()}
+                      disabled={logoUploading}
+                    >
+                      {logoUploading ? (
+                        <span className="text-xs">Uploading…</span>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          <span className="text-xs font-medium">Upload logo</span>
+                          <span className="text-[11px]">PNG, JPG, or SVG</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <input
+                    ref={logoFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                  />
+                </div>
+
+                {/* Agency Name */}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="brandName">Agency Name</Label>
+                  <Input
+                    id="brandName"
+                    value={brandName}
+                    onChange={(e) => setBrandName(e.target.value)}
+                    placeholder="e.g. CRM Group Insurance"
+                    className="max-w-xs"
+                  />
+                  <p className="text-xs text-muted-foreground">Shown in the sidebar and email reports.</p>
+                </div>
+
+                {/* Brand Color */}
+                <div className="flex flex-col gap-2">
+                  <Label>Brand Color</Label>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <input
+                        type="color"
+                        value={brandColor}
+                        onChange={(e) => setBrandColor(e.target.value)}
+                        className="w-10 h-10 rounded-lg border border-border cursor-pointer bg-transparent p-0.5"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/40">
+                      <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: brandColor }} />
+                      <span className="text-sm font-mono text-foreground">{brandColor.toUpperCase()}</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Updates the sidebar, buttons, and accents in real-time.
+                    </div>
+                  </div>
+                </div>
+
+              </CardContent>
+            </Card>
+          )}
 
           {/* Email Recipients */}
           <Card>
@@ -359,7 +542,7 @@ export default function Settings() {
 
           {isAdmin && (
             <div className="flex justify-end">
-              <Button type="submit" className="gap-2 bg-teal-600 hover:bg-teal-700 text-white" disabled={updateSettings.isPending}>
+              <Button type="submit" className="gap-2" disabled={updateSettings.isPending}>
                 <Save className="w-4 h-4" />
                 {updateSettings.isPending ? "Saving..." : "Save Settings"}
               </Button>

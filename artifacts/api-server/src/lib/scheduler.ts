@@ -118,7 +118,17 @@ export async function runWeeklyReport(): Promise<{ reportId: number; totalSales:
     0
   );
 
-  await sendWeeklyReport(saleRows, weekStart, weekEnd, recipients);
+  const logoUrl = settings.logoPath && process.env.REPLIT_DEV_DOMAIN
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}/api/storage${settings.logoPath}`
+    : null;
+
+  const branding = {
+    brandName: settings.brandName ?? "CRM Group Insurance",
+    brandColor: settings.brandColor ?? "#0d9488",
+    logoUrl,
+  };
+
+  await sendWeeklyReport(saleRows, weekStart, weekEnd, recipients, branding);
 
   const [report] = await db
     .insert(weeklyReportsTable)
@@ -156,7 +166,11 @@ export async function runMonthlyReport(forDate: Date = new Date()): Promise<void
     .from(salesTable)
     .where(and(gte(salesTable.soldDate, periodStart), lte(salesTable.soldDate, periodEnd)));
 
-  await sendMonthlyReport(toSaleRows(sales), monthLabel, periodStart, periodEnd, settings.recipients);
+  const logoUrl = settings.logoPath && process.env.REPLIT_DEV_DOMAIN
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}/api/storage${settings.logoPath}`
+    : null;
+  const branding = { brandName: settings.brandName ?? "CRM Group Insurance", brandColor: settings.brandColor ?? "#0d9488", logoUrl };
+  await sendMonthlyReport(toSaleRows(sales), monthLabel, periodStart, periodEnd, settings.recipients, branding);
 
   logger.info({ monthLabel, totalSales: sales.length }, "Monthly report sent");
 }
@@ -178,7 +192,11 @@ export async function runAnnualReport(forDate: Date = new Date()): Promise<void>
     .from(salesTable)
     .where(and(gte(salesTable.soldDate, periodStart), lte(salesTable.soldDate, periodEnd)));
 
-  await sendAnnualReport(toSaleRows(sales), yearLabel, periodStart, periodEnd, settings.recipients);
+  const logoUrl = settings.logoPath && process.env.REPLIT_DEV_DOMAIN
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}/api/storage${settings.logoPath}`
+    : null;
+  const branding = { brandName: settings.brandName ?? "CRM Group Insurance", brandColor: settings.brandColor ?? "#0d9488", logoUrl };
+  await sendAnnualReport(toSaleRows(sales), yearLabel, periodStart, periodEnd, settings.recipients, branding);
 
   logger.info({ yearLabel, totalSales: sales.length }, "Annual report sent");
 }

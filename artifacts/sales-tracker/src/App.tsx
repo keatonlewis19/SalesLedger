@@ -10,6 +10,7 @@ import History from "@/pages/history";
 import SettingsPage from "@/pages/settings";
 import TeamPage from "@/pages/team";
 import LandingPage from "@/pages/landing";
+import { BrandingProvider } from "@/contexts/branding";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
@@ -190,19 +191,21 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
-        <TooltipProvider>
-          <Switch>
-            <Route path="/" component={HomeRedirect} />
-            <Route path="/sign-in/*?" component={SignInPage} />
-            <Route path="/sign-up/*?" component={SignUpPage} />
-            <Route path="/dashboard" component={() => <ProtectedRoute component={Home} />} />
-            <Route path="/history" component={() => <ProtectedRoute component={History} />} />
-            <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
-            <Route path="/team" component={() => <ProtectedRoute component={TeamPage} />} />
-            <Route component={NotFound} />
-          </Switch>
-          <Toaster />
-        </TooltipProvider>
+        <BrandingProvider>
+          <TooltipProvider>
+            <Switch>
+              <Route path="/" component={HomeRedirect} />
+              <Route path="/sign-in/*?" component={SignInPage} />
+              <Route path="/sign-up/*?" component={SignUpPage} />
+              <Route path="/dashboard" component={() => <ProtectedRoute component={Home} />} />
+              <Route path="/history" component={() => <ProtectedRoute component={History} />} />
+              <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
+              <Route path="/team" component={() => <ProtectedRoute component={TeamPage} />} />
+              <Route component={NotFound} />
+            </Switch>
+            <Toaster />
+          </TooltipProvider>
+        </BrandingProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );

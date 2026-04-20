@@ -92,25 +92,42 @@ function buildSalesTable(sales: SaleRow[]): string {
   `;
 }
 
+export interface BrandingOptions {
+  brandName?: string;
+  brandColor?: string;
+  logoUrl?: string | null;
+}
+
 function buildEmailHtml(
   sales: SaleRow[],
   reportTitle: string,
   periodLabel: string,
-  footerNote: string
+  footerNote: string,
+  branding: BrandingOptions = {}
 ): string {
   const totalCommission = sales.reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0);
+  const color = branding.brandColor ?? "#1a3c5e";
+  const name = branding.brandName ?? "Sales Tracker";
+  const logoHtml = branding.logoUrl
+    ? `<img src="${branding.logoUrl}" alt="${name}" style="height:40px;max-width:200px;object-fit:contain;display:block;margin-bottom:8px;" />`
+    : `<div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;">${name}</div>`;
 
   return `
     <!DOCTYPE html>
     <html>
     <head><meta charset="UTF-8"/></head>
     <body style="font-family:Arial,sans-serif;color:#333;margin:0;padding:0;">
-      <div style="max-width:960px;margin:32px auto;padding:24px;border:1px solid #ddd;border-radius:8px;">
-        <h2 style="color:#1a3c5e;margin-top:0;">${reportTitle}</h2>
-        <p style="color:#555;">${periodLabel}</p>
-        <p><strong>Total Sales:</strong> ${sales.length} &nbsp;&nbsp; <strong>Est. Total Commission:</strong> ${formatCurrency(totalCommission)}</p>
-        ${buildSalesTable(sales)}
-        <p style="color:#999;font-size:12px;margin-top:24px;">${footerNote}</p>
+      <div style="max-width:960px;margin:32px auto;padding:0;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+        <div style="background:${color};padding:24px 28px;">
+          ${logoHtml}
+          <h2 style="color:#fff;margin:0;font-size:20px;">${reportTitle}</h2>
+          <p style="color:rgba(255,255,255,0.75);margin:4px 0 0 0;font-size:14px;">${periodLabel}</p>
+        </div>
+        <div style="padding:24px 28px;">
+          <p><strong>Total Sales:</strong> ${sales.length} &nbsp;&nbsp; <strong>Est. Total Commission:</strong> ${formatCurrency(totalCommission)}</p>
+          ${buildSalesTable(sales)}
+          <p style="color:#999;font-size:12px;margin-top:24px;">${footerNote}</p>
+        </div>
       </div>
     </body>
     </html>
@@ -144,14 +161,17 @@ export async function sendWeeklyReport(
   sales: SaleRow[],
   weekStart: string,
   weekEnd: string,
-  recipients: string[] = DEFAULT_RECIPIENTS
+  recipients: string[] = DEFAULT_RECIPIENTS,
+  branding: BrandingOptions = {}
 ): Promise<void> {
-  const subject = `Weekly Sales Report — Week of ${weekStart}`;
+  const name = branding.brandName ?? "Sales Tracker";
+  const subject = `${name} — Weekly Sales Report — Week of ${weekStart}`;
   const html = buildEmailHtml(
     sales,
     "Weekly Sales Report",
     `Week of <strong>${weekStart}</strong> through <strong>${weekEnd}</strong>`,
-    "This report was automatically generated and sent by the Sales Tracker."
+    `This report was automatically generated and sent by ${name}.`,
+    branding
   );
   const text = `Weekly Sales Report for ${weekStart} – ${weekEnd}\n\nTotal Sales: ${sales.length}`;
   await sendEmail(subject, html, text, recipients, { weekStart, weekEnd, totalSales: sales.length });
@@ -161,7 +181,8 @@ function buildDashboardHtml(
   sales: SaleRow[],
   reportTitle: string,
   periodLabel: string,
-  footerNote: string
+  footerNote: string,
+  branding: BrandingOptions = {}
 ): string {
   const totalCommission = sales.reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0);
   const totalHra = sales.reduce((acc, s) => acc + (s.hra ?? 0), 0);
@@ -221,6 +242,12 @@ function buildDashboardHtml(
       </table>
     </div>`;
 
+  const headerColor = branding.brandColor ?? "#1a3c5e";
+  const agencyName = branding.brandName ?? "Sales Tracker";
+  const logoHtml = branding.logoUrl
+    ? `<img src="${branding.logoUrl}" alt="${agencyName}" style="height:36px;max-width:180px;object-fit:contain;display:block;margin-bottom:10px;" />`
+    : `<div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);margin-bottom:6px;letter-spacing:0.04em;">${agencyName}</div>`;
+
   return `
     <!DOCTYPE html>
     <html>
@@ -229,9 +256,10 @@ function buildDashboardHtml(
       <div style="max-width:680px;margin:32px auto;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;">
 
         <!-- Header -->
-        <div style="background:#1a3c5e;padding:28px 32px;">
+        <div style="background:${headerColor};padding:28px 32px;">
+          ${logoHtml}
           <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">${reportTitle}</h1>
-          <p style="color:#93c5fd;margin:6px 0 0 0;font-size:14px;">${periodLabel}</p>
+          <p style="color:rgba(255,255,255,0.65);margin:6px 0 0 0;font-size:14px;">${periodLabel}</p>
         </div>
 
         <!-- Body -->
@@ -269,14 +297,17 @@ export async function sendMonthlyReport(
   monthLabel: string,
   periodStart: string,
   periodEnd: string,
-  recipients: string[] = DEFAULT_RECIPIENTS
+  recipients: string[] = DEFAULT_RECIPIENTS,
+  branding: BrandingOptions = {}
 ): Promise<void> {
-  const subject = `Monthly Sales Report — ${monthLabel}`;
+  const name = branding.brandName ?? "Sales Tracker";
+  const subject = `${name} — Monthly Sales Report — ${monthLabel}`;
   const html = buildDashboardHtml(
     sales,
     `Monthly Sales Report — ${monthLabel}`,
     `${periodStart} &nbsp;through&nbsp; ${periodEnd}`,
-    "This monthly summary was automatically generated and sent by the Sales Tracker."
+    `This monthly summary was automatically generated and sent by ${name}.`,
+    branding
   );
   const text = `Monthly Sales Report for ${monthLabel}\n\nTotal Sales: ${sales.length}\nEst. Commission: ${sales.reduce((a, s) => a + (s.estimatedCommission ?? 0), 0).toFixed(2)}`;
   await sendEmail(subject, html, text, recipients, { monthLabel, periodStart, periodEnd, totalSales: sales.length });
@@ -287,14 +318,17 @@ export async function sendAnnualReport(
   yearLabel: string,
   periodStart: string,
   periodEnd: string,
-  recipients: string[] = DEFAULT_RECIPIENTS
+  recipients: string[] = DEFAULT_RECIPIENTS,
+  branding: BrandingOptions = {}
 ): Promise<void> {
-  const subject = `Annual Sales Report — ${yearLabel}`;
+  const name = branding.brandName ?? "Sales Tracker";
+  const subject = `${name} — Annual Sales Report — ${yearLabel}`;
   const html = buildDashboardHtml(
     sales,
     `Annual Sales Report — ${yearLabel}`,
     `Full year &nbsp;${periodStart}&nbsp; through&nbsp;${periodEnd}`,
-    "This annual summary was automatically generated and sent by the Sales Tracker."
+    `This annual summary was automatically generated and sent by ${name}.`,
+    branding
   );
   const text = `Annual Sales Report for ${yearLabel}\n\nTotal Sales: ${sales.length}\nEst. Commission: ${sales.reduce((a, s) => a + (s.estimatedCommission ?? 0), 0).toFixed(2)}`;
   await sendEmail(subject, html, text, recipients, { yearLabel, periodStart, periodEnd, totalSales: sales.length });

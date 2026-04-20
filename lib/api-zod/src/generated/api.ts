@@ -293,6 +293,15 @@ export const GetSettingsResponse = zod.object({
     )
     .nullable()
     .describe("Uploaded commission lookup table"),
+  logoPath: zod
+    .string()
+    .nullable()
+    .describe("Object path for uploaded agency logo"),
+  brandColor: zod
+    .string()
+    .nullable()
+    .describe("Hex color string for agency brand color"),
+  brandName: zod.string().nullable().describe("Agency name shown in the app"),
 });
 
 /**
@@ -314,6 +323,9 @@ export const UpdateSettingsBody = zod.object({
       }),
     )
     .nullish(),
+  logoPath: zod.string().nullish(),
+  brandColor: zod.string().nullish(),
+  brandName: zod.string().nullish(),
 });
 
 export const UpdateSettingsResponse = zod.object({
@@ -337,6 +349,15 @@ export const UpdateSettingsResponse = zod.object({
     )
     .nullable()
     .describe("Uploaded commission lookup table"),
+  logoPath: zod
+    .string()
+    .nullable()
+    .describe("Object path for uploaded agency logo"),
+  brandColor: zod
+    .string()
+    .nullable()
+    .describe("Hex color string for agency brand color"),
+  brandName: zod.string().nullable().describe("Agency name shown in the app"),
 });
 
 /**
@@ -345,4 +366,19 @@ export const UpdateSettingsResponse = zod.object({
 export const SendReportResponse = zod.object({
   message: zod.string(),
   reportId: zod.number(),
+});
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+
+export const RequestUploadUrlBody = zod.object({
+  name: zod.string().min(1),
+  size: zod.number().min(1),
+  contentType: zod.string().min(1),
+});
+
+export const RequestUploadUrlResponse = zod.object({
+  uploadURL: zod.string().url(),
+  objectPath: zod.string(),
 });

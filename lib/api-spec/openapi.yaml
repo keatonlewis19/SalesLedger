@@ -18,6 +18,8 @@ tags:
     description: App configuration settings
   - name: users
     description: Agency user management
+  - name: storage
+    description: Object storage upload and serving endpoints
 paths:
   /healthz:
     get:
@@ -359,6 +361,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /storage/uploads/request-url:
+    post:
+      tags: [storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          description: Missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -421,6 +448,15 @@ components:
             $ref: "#/components/schemas/CommissionTableRow"
           nullable: true
           description: "Uploaded commission lookup table"
+        logoPath:
+          type: ["string", "null"]
+          description: "Object path for uploaded agency logo"
+        brandColor:
+          type: ["string", "null"]
+          description: "Hex color string for agency brand color"
+        brandName:
+          type: ["string", "null"]
+          description: "Agency name shown in the app"
       required:
         - reportDayOfWeek
         - reportHour
@@ -428,6 +464,9 @@ components:
         - recipients
         - commissionRates
         - commissionTable
+        - logoPath
+        - brandColor
+        - brandName
 
     UpdateSettingsBody:
       type: object
@@ -451,6 +490,36 @@ components:
           items:
             $ref: "#/components/schemas/CommissionTableRow"
           nullable: true
+        logoPath:
+          type: ["string", "null"]
+        brandColor:
+          type: ["string", "null"]
+        brandName:
+          type: ["string", "null"]
+
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
 
     AgencyUser:
       type: object

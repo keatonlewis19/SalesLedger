@@ -68,6 +68,9 @@ export const appSettingsTable = pgTable("app_settings", {
   recipients: text("recipients").notNull().default("rauni@crmgrp.com,chad@crmgrp.com"),
   commissionRates: jsonb("commission_rates").$type<Record<string, number>>().notNull(),
   commissionTable: jsonb("commission_table").$type<CommissionTableRow[]>(),
+  logoPath: text("logo_path"),
+  brandColor: text("brand_color").default("#0d9488"),
+  brandName: text("brand_name").default("CRM Group Insurance"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 

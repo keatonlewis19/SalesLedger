@@ -14,6 +14,9 @@ const DEFAULT_SETTINGS = {
   recipients: ["rauni@crmgrp.com", "chad@crmgrp.com"],
   commissionRates: {} as Record<string, number>,
   commissionTable: null as CommissionTableRow[] | null,
+  logoPath: null as string | null,
+  brandColor: "#0d9488",
+  brandName: "CRM Group Insurance",
 };
 
 const COMMISSION_TABLE_TEMPLATE: CommissionTableRow[] = [
@@ -45,6 +48,9 @@ async function getOrCreateSettings() {
       recipients: r.recipients.split(",").map((s) => s.trim()).filter(Boolean),
       commissionRates: (r.commissionRates as Record<string, number>) ?? {},
       commissionTable: (r.commissionTable as CommissionTableRow[] | null) ?? null,
+      logoPath: r.logoPath ?? null,
+      brandColor: r.brandColor ?? "#0d9488",
+      brandName: r.brandName ?? "CRM Group Insurance",
     };
   }
 
@@ -80,6 +86,9 @@ router.patch("/settings", requireAuth, requireAdmin, async (req, res): Promise<v
     recipients: (updated.recipients as string[]).join(","),
     commissionRates: updated.commissionRates as Record<string, number>,
     commissionTable: (updated.commissionTable ?? null) as CommissionTableRow[] | null,
+    logoPath: (updated.logoPath ?? null) as string | null,
+    brandColor: (updated.brandColor ?? "#0d9488") as string,
+    brandName: (updated.brandName ?? "CRM Group Insurance") as string,
   };
 
   const rows = await db.select().from(appSettingsTable).limit(1);
