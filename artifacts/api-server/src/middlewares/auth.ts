@@ -56,11 +56,32 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
       await db.delete(pendingInvitesTable).where(eq(pendingInvitesTable.email, invitedEmail));
     }
 
-    const role = isFirstUser ? "admin" : "agent";
+    // Check if this email is in the hard-coded admin list (env var)
+    const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    const isAdminEmail = email ? adminEmails.includes(email.toLowerCase()) : false;
+    const role = isFirstUser || isAdminEmail ? "admin" : "agent";
     [agencyUser] = await db
       .insert(agencyUsersTable)
       .values({ clerkUserId: userId, role, fullName, email })
       .returning();
+  }
+
+  // If the user already exists but is listed in ADMIN_EMAILS, promote them
+  if (agencyUser && agencyUser.role !== "admin") {
+    const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (agencyUser.email && adminEmails.includes(agencyUser.email.toLowerCase())) {
+      [agencyUser] = await db
+        .update(agencyUsersTable)
+        .set({ role: "admin" })
+        .where(eq(agencyUsersTable.clerkUserId, userId))
+        .returning();
+    }
   }
 
   req.agencyUser = agencyUser;
