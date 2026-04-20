@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, agencyUsersTable } from "@workspace/db";
+import { db, agencyUsersTable, pendingInvitesTable } from "@workspace/db";
 import { requireAuth, requireAdmin, AuthRequest } from "../middlewares/auth";
 import { clerkClient } from "@clerk/express";
 
@@ -41,6 +41,11 @@ router.post("/users/invite", requireAuth, requireAdmin, async (req: AuthRequest,
       publicMetadata: { role },
       redirectUrl: undefined,
     });
+
+    await db
+      .insert(pendingInvitesTable)
+      .values({ email: email.toLowerCase(), clerkInvitationId: (invitation as any).id })
+      .onConflictDoNothing();
 
     res.json({ message: `Invitation sent to ${email}`, invitationId: (invitation as any).id });
   } catch (err: any) {

@@ -28,6 +28,7 @@ export const ListSalesQueryParams = zod.object({
 export const ListSalesResponseItem = zod.object({
   id: zod.number(),
   userId: zod.string().nullable(),
+  agentName: zod.string().nullish(),
   clientName: zod.string(),
   owningAgent: zod.string().nullable(),
   salesSource: zod.string().nullable(),
@@ -78,6 +79,7 @@ export const MarkSalePaidBody = zod.object({
 export const MarkSalePaidResponse = zod.object({
   id: zod.number(),
   userId: zod.string().nullable(),
+  agentName: zod.string().nullish(),
   clientName: zod.string(),
   owningAgent: zod.string().nullable(),
   salesSource: zod.string().nullable(),
@@ -166,6 +168,7 @@ export const GetSaleParams = zod.object({
 export const GetSaleResponse = zod.object({
   id: zod.number(),
   userId: zod.string().nullable(),
+  agentName: zod.string().nullish(),
   clientName: zod.string(),
   owningAgent: zod.string().nullable(),
   salesSource: zod.string().nullable(),
@@ -208,6 +211,7 @@ export const UpdateSaleBody = zod.object({
 export const UpdateSaleResponse = zod.object({
   id: zod.number(),
   userId: zod.string().nullable(),
+  agentName: zod.string().nullish(),
   clientName: zod.string(),
   owningAgent: zod.string().nullable(),
   salesSource: zod.string().nullable(),

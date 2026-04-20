@@ -28,9 +28,11 @@ pnpm workspace monorepo using TypeScript. Multi-tenant agency management platfor
 
 Clerk is provisioned (appId: `app_3CdToFskCzNkEvnfnkkSvgcU6Nn`). Keys in env: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`.
 
-- **First user to sign up** is automatically made **Admin**
-- Subsequent users default to **Agent** (admin can change roles)
-- Admin can invite agents via email (Clerk invitation API)
+- **Closed platform**: Only invited users can create accounts (invite-only sign-up)
+- **First user to sign up** is automatically made **Admin** (bypasses invite check)
+- Subsequent users must have their email in `pending_invites` table to register
+- Invitations stored in `pending_invites` table (auto-deleted on first sign-in)
+- Admin can invite agents via email (Clerk invitation API + `pending_invites` row)
 - Roles are stored in `agency_users.role` column
 
 ## Role Permissions
@@ -51,7 +53,10 @@ Clerk is provisioned (appId: `app_3CdToFskCzNkEvnfnkkSvgcU6Nn`). Keys in env: `C
 - Weekly summary stats (total sales, total est. commission)
 - Auto-send email report on configured day/time (default: Thursday 5pm)
 - Monthly and annual email reports (dashboard-style)
-- "Paid" checkbox on sales — admin marks, agents see
+- **Weekly email**: per-agent sections (paid ✓ green / unpaid ✗ amber), unpaid commission alert banner
+- "Paid" checkbox on sales — admin marks, agents see read-only status
+- **Admin dashboard**: agent tab system — "All Agents" + one tab per agent; unpaid banner showing total owed; amber row highlighting for unpaid records
+- Each sale linked to its agent via LEFT JOIN on `agency_users` — `agentName` returned on all sale responses
 - Team management page: invite agents, change roles
 - Settings: read-only for agents, editable by admin
 - FMV rate structure: Initial (editable), Renewal (Initial÷2), Monthly Renewal (Renewal÷12)

@@ -102,6 +102,8 @@ export interface SaleEntry {
   id: number;
   /** @nullable */
   userId: string | null;
+  /** @nullable */
+  agentName?: string | null;
   clientName: string;
   /** @nullable */
   owningAgent: string | null;

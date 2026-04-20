@@ -1,6 +1,6 @@
 import cron from "node-cron";
-import { db, salesTable, weeklyReportsTable } from "@workspace/db";
-import { gte, lte, and } from "drizzle-orm";
+import { db, salesTable, weeklyReportsTable, agencyUsersTable } from "@workspace/db";
+import { gte, lte, and, eq, getTableColumns } from "drizzle-orm";
 import { sendWeeklyReport, sendMonthlyReport, sendAnnualReport, type SaleRow } from "./email";
 import { logger } from "./logger";
 
@@ -77,7 +77,9 @@ function isFirstBusinessDayOfYear(date: Date): boolean {
   return fmtDate(date) === fmtDate(target);
 }
 
-function toSaleRows(sales: typeof salesTable.$inferSelect[]): SaleRow[] {
+function toSaleRows(
+  sales: (typeof salesTable.$inferSelect & { agentName?: string | null })[]
+): SaleRow[] {
   return sales.map((s) => ({
     clientName: s.clientName,
     salesSource: s.salesSource ?? null,
@@ -89,6 +91,8 @@ function toSaleRows(sales: typeof salesTable.$inferSelect[]): SaleRow[] {
     hra: s.hra ?? null,
     estimatedCommission: s.estimatedCommission ?? null,
     comments: s.notes ?? null,
+    agentName: s.agentName ?? null,
+    paid: s.paid ?? false,
   }));
 }
 
@@ -102,8 +106,12 @@ export async function runWeeklyReport(): Promise<{ reportId: number; totalSales:
   const recipients = settings.recipients;
 
   const sales = await db
-    .select()
+    .select({
+      ...getTableColumns(salesTable),
+      agentName: agencyUsersTable.fullName,
+    })
     .from(salesTable)
+    .leftJoin(agencyUsersTable, eq(salesTable.userId, agencyUsersTable.clerkUserId))
     .where(
       and(
         gte(salesTable.soldDate, weekStart),

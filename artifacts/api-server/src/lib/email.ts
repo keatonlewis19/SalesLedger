@@ -33,6 +33,8 @@ export interface SaleRow {
   hra: number | null;
   estimatedCommission: number | null;
   comments: string | null;
+  agentName?: string | null;
+  paid?: boolean;
 }
 
 function formatCurrency(val: number | null): string {
@@ -157,6 +159,128 @@ async function sendEmail(
   logger.info({ ...logContext, recipients }, "Report email sent successfully");
 }
 
+function buildAgentSection(agentLabel: string, sales: SaleRow[], headerColor: string): string {
+  const paid = sales.filter((s) => s.paid);
+  const unpaid = sales.filter((s) => !s.paid);
+  const totalComm = sales.reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0);
+  const paidComm = paid.reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0);
+  const owedComm = unpaid.reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0);
+
+  const rows = sales
+    .map(
+      (s) => `
+      <tr style="background:${s.paid ? "#f0fdf4" : "#fffbeb"};">
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;">${s.clientName}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;">${s.salesSource ?? ""}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;">${s.salesType}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;">${s.soldDate}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;">${s.commissionType}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:right;">${s.hra != null ? formatCurrency(s.hra) : "None"}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:right;">${formatCurrency(s.estimatedCommission)}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:center;">
+          <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:${s.paid ? "#dcfce7" : "#fef3c7"};color:${s.paid ? "#166534" : "#92400e"};">
+            ${s.paid ? "Paid" : "Unpaid"}
+          </span>
+        </td>
+      </tr>
+    `
+    )
+    .join("");
+
+  return `
+    <div style="margin-bottom:28px;">
+      <div style="background:${headerColor}18;border-left:4px solid ${headerColor};padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:10px;">
+        <span style="font-weight:700;font-size:15px;color:#1a3c5e;">${agentLabel}</span>
+        <span style="margin-left:12px;font-size:13px;color:#6b7280;">${sales.length} sale${sales.length !== 1 ? "s" : ""}</span>
+        <span style="float:right;font-size:13px;">
+          <span style="color:#166534;font-weight:600;">Paid: ${formatCurrency(paidComm)}</span>
+          &nbsp;&nbsp;
+          <span style="color:#92400e;font-weight:600;">Owed: ${formatCurrency(owedComm)}</span>
+          &nbsp;&nbsp;
+          <span style="color:#374151;">Total: ${formatCurrency(totalComm)}</span>
+        </span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:#f3f4f6;">
+            <th style="padding:7px 10px;text-align:left;font-weight:600;color:#374151;">Client</th>
+            <th style="padding:7px 10px;text-align:left;font-weight:600;color:#374151;">Source</th>
+            <th style="padding:7px 10px;text-align:left;font-weight:600;color:#374151;">Type</th>
+            <th style="padding:7px 10px;text-align:left;font-weight:600;color:#374151;">Sold Date</th>
+            <th style="padding:7px 10px;text-align:left;font-weight:600;color:#374151;">Commission Type</th>
+            <th style="padding:7px 10px;text-align:right;font-weight:600;color:#374151;">HRA</th>
+            <th style="padding:7px 10px;text-align:right;font-weight:600;color:#374151;">Est. Commission</th>
+            <th style="padding:7px 10px;text-align:center;font-weight:600;color:#374151;">Status</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function buildWeeklyReportHtml(
+  sales: SaleRow[],
+  weekStart: string,
+  weekEnd: string,
+  branding: BrandingOptions = {}
+): string {
+  const color = branding.brandColor ?? "#1a3c5e";
+  const name = branding.brandName ?? "Sales Tracker";
+  const logoHtml = branding.logoUrl
+    ? `<img src="${branding.logoUrl}" alt="${name}" style="height:40px;max-width:200px;object-fit:contain;display:block;margin-bottom:8px;" />`
+    : `<div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;">${name}</div>`;
+
+  const totalComm = sales.reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0);
+  const totalOwed = sales.filter((s) => !s.paid).reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0);
+
+  const agentGroups = new Map<string, SaleRow[]>();
+  for (const s of sales) {
+    const key = s.agentName ?? "Unassigned";
+    if (!agentGroups.has(key)) agentGroups.set(key, []);
+    agentGroups.get(key)!.push(s);
+  }
+
+  const agentSections = [...agentGroups.entries()]
+    .map(([agent, agentSales]) => buildAgentSection(agent, agentSales, color))
+    .join("");
+
+  const unpaidAlert = totalOwed > 0
+    ? `<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:12px 16px;margin-bottom:20px;">
+        <strong style="color:#92400e;">⚠ Unpaid Commissions: ${formatCurrency(totalOwed)}</strong>
+        <span style="color:#92400e;font-size:13px;"> — ${sales.filter(s => !s.paid).length} record${sales.filter(s => !s.paid).length !== 1 ? "s" : ""} still pending payment</span>
+      </div>`
+    : `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:12px 16px;margin-bottom:20px;">
+        <strong style="color:#166534;">✓ All commissions paid</strong>
+      </div>`;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"/></head>
+    <body style="font-family:Arial,sans-serif;color:#333;margin:0;padding:0;">
+      <div style="max-width:960px;margin:32px auto;padding:0;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+        <div style="background:${color};padding:24px 28px;">
+          ${logoHtml}
+          <h2 style="color:#fff;margin:0;font-size:20px;">Weekly Sales Report</h2>
+          <p style="color:rgba(255,255,255,0.75);margin:4px 0 0 0;font-size:14px;">Week of <strong>${weekStart}</strong> through <strong>${weekEnd}</strong></p>
+        </div>
+        <div style="padding:24px 28px;">
+          <p style="margin-bottom:16px;">
+            <strong>Total Sales:</strong> ${sales.length} &nbsp;&nbsp;
+            <strong>Est. Total Commission:</strong> ${formatCurrency(totalComm)} &nbsp;&nbsp;
+            <strong>Total Owed:</strong> <span style="color:#92400e;">${formatCurrency(totalOwed)}</span>
+          </p>
+          ${unpaidAlert}
+          ${agentGroups.size > 0 ? agentSections : "<p style=\"color:#999;\">No sales recorded this week.</p>"}
+          <p style="color:#999;font-size:12px;margin-top:24px;">This report was automatically generated and sent by ${name}.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
 export async function sendWeeklyReport(
   sales: SaleRow[],
   weekStart: string,
@@ -166,14 +290,9 @@ export async function sendWeeklyReport(
 ): Promise<void> {
   const name = branding.brandName ?? "Sales Tracker";
   const subject = `${name} — Weekly Sales Report — Week of ${weekStart}`;
-  const html = buildEmailHtml(
-    sales,
-    "Weekly Sales Report",
-    `Week of <strong>${weekStart}</strong> through <strong>${weekEnd}</strong>`,
-    `This report was automatically generated and sent by ${name}.`,
-    branding
-  );
-  const text = `Weekly Sales Report for ${weekStart} – ${weekEnd}\n\nTotal Sales: ${sales.length}`;
+  const html = buildWeeklyReportHtml(sales, weekStart, weekEnd, branding);
+  const totalOwed = sales.filter(s => !s.paid).reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0);
+  const text = `Weekly Sales Report for ${weekStart} – ${weekEnd}\n\nTotal Sales: ${sales.length}\nTotal Owed: $${totalOwed.toFixed(2)}`;
   await sendEmail(subject, html, text, recipients, { weekStart, weekEnd, totalSales: sales.length });
 }
 

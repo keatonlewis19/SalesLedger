@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Plus, Edit2, Trash2, TrendingUp, Users, CheckCircle2 } from "lucide-react";
+import { Plus, Edit2, Trash2, TrendingUp, Users, CheckCircle2, AlertTriangle, DollarSign } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListSales,
   useGetCurrentWeekSummary,
   useDeleteSale,
   useMarkSalePaid,
+  useListAgencyUsers,
   getListSalesQueryKey,
   getGetCurrentWeekSummaryQueryKey,
 } from "@workspace/api-client-react";
@@ -14,6 +15,8 @@ import { Layout } from "@/components/layout";
 import { SaleForm } from "@/components/sale-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -37,9 +40,189 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAgencyUser } from "@/hooks/useAgencyUser";
 
+function formatCurrency(val: number | null | undefined) {
+  if (val == null) return "—";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+}
+
+type Sale = {
+  id: number;
+  userId: string | null;
+  agentName?: string | null;
+  clientName: string;
+  salesSource: string | null;
+  leadSource: string | null;
+  salesType: string;
+  soldDate: string;
+  effectiveDate: string | null;
+  commissionType: string;
+  hra: number | null;
+  estimatedCommission: number | null;
+  paid: boolean;
+};
+
+interface SalesTableProps {
+  sales: Sale[];
+  isLoading: boolean;
+  isAdmin: boolean;
+  showAgentColumn?: boolean;
+  onEdit?: (sale: Sale) => void;
+  onDelete: (id: number) => void;
+  onTogglePaid: (id: number, current: boolean) => void;
+  isPaidPending: boolean;
+}
+
+function SalesTable({
+  sales,
+  isLoading,
+  isAdmin,
+  showAgentColumn = false,
+  onDelete,
+  onTogglePaid,
+  isPaidPending,
+}: SalesTableProps) {
+  const colCount = showAgentColumn ? 12 : 11;
+
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/10">
+            <TableHead>Client</TableHead>
+            {showAgentColumn && <TableHead>Agent</TableHead>}
+            <TableHead>Sales Source</TableHead>
+            <TableHead>Lead Source</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Sold Date</TableHead>
+            <TableHead>Eff. Date</TableHead>
+            <TableHead>Comm. Type</TableHead>
+            <TableHead className="text-right">HRA</TableHead>
+            <TableHead className="text-right">Commission</TableHead>
+            <TableHead className="text-center">Paid</TableHead>
+            <TableHead className="w-[100px] text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <TableRow key={i}>
+                {Array.from({ length: colCount }).map((_, j) => (
+                  <TableCell key={j}>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : sales.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={colCount} className="h-48 text-center text-muted-foreground">
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <TrendingUp className="w-8 h-8 text-muted" />
+                  <p>No sales logged this week.</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : (
+            sales.map((sale) => (
+              <TableRow
+                key={sale.id}
+                className={`group ${
+                  sale.paid
+                    ? "bg-emerald-50/40 dark:bg-emerald-950/20"
+                    : "bg-amber-50/60 dark:bg-amber-950/20"
+                }`}
+              >
+                <TableCell className="font-medium">{sale.clientName}</TableCell>
+                {showAgentColumn && (
+                  <TableCell className="text-sm">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+                        {(sale.agentName ?? "?").charAt(0).toUpperCase()}
+                      </span>
+                      <span className="text-foreground font-medium">{sale.agentName ?? "—"}</span>
+                    </span>
+                  </TableCell>
+                )}
+                <TableCell className="text-muted-foreground text-sm">
+                  {sale.salesSource || "—"}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {sale.leadSource || "—"}
+                </TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                    {sale.salesType}
+                  </span>
+                </TableCell>
+                <TableCell>{format(new Date(sale.soldDate), "MMM d")}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {sale.effectiveDate
+                    ? format(new Date(sale.effectiveDate), "MMM d")
+                    : "—"}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {sale.commissionType || "—"}
+                </TableCell>
+                <TableCell className="text-right font-mono font-medium">
+                  {sale.hra != null ? formatCurrency(sale.hra) : "None"}
+                </TableCell>
+                <TableCell className="text-right font-mono font-medium">
+                  {formatCurrency(sale.estimatedCommission)}
+                </TableCell>
+                <TableCell className="text-center">
+                  {isAdmin ? (
+                    <Checkbox
+                      checked={sale.paid}
+                      onCheckedChange={() => onTogglePaid(sale.id, sale.paid)}
+                      disabled={isPaidPending}
+                      className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 mx-auto"
+                    />
+                  ) : (
+                    <span
+                      className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${
+                        sale.paid
+                          ? "bg-emerald-100 text-emerald-600"
+                          : "bg-amber-100 text-amber-600"
+                      }`}
+                    >
+                      {sale.paid ? "✓" : "—"}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <SaleForm sale={sale as any}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    </SaleForm>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => onDelete(sale.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 export default function Home() {
   const { data: sales, isLoading: isSalesLoading } = useListSales();
   const { data: summary, isLoading: isSummaryLoading } = useGetCurrentWeekSummary();
+  const { data: agencyUsers } = useListAgencyUsers();
   const deleteSale = useDeleteSale();
   const markSalePaid = useMarkSalePaid();
   const queryClient = useQueryClient();
@@ -47,6 +230,7 @@ export default function Home() {
   const { isAdmin } = useAgencyUser();
 
   const [saleToDelete, setSaleToDelete] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState("all");
 
   const handleDelete = () => {
     if (!saleToDelete) return;
@@ -74,6 +258,7 @@ export default function Home() {
         onSuccess: () => {
           toast({ title: !current ? "Marked as paid" : "Marked as unpaid" });
           queryClient.invalidateQueries({ queryKey: getListSalesQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetCurrentWeekSummaryQueryKey() });
         },
         onError: () => {
           toast({ title: "Failed to update paid status", variant: "destructive" });
@@ -82,23 +267,45 @@ export default function Home() {
     );
   };
 
-  const formatCurrency = (val: number | null | undefined) => {
-    if (val === null || val === undefined) return "-";
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+  const typedSales = (sales ?? []) as Sale[];
+
+  const unpaidSales = useMemo(() => typedSales.filter((s) => !s.paid), [typedSales]);
+  const unpaidCount = unpaidSales.length;
+  const unpaidCommission = unpaidSales.reduce(
+    (acc, s) => acc + (s.estimatedCommission ?? 0),
+    0
+  );
+
+  const agentGroups = useMemo(() => {
+    const map = new Map<string, { name: string; sales: Sale[]; unpaid: number }>();
+    for (const sale of typedSales) {
+      const key = sale.userId ?? "unassigned";
+      const name = sale.agentName ?? "Unassigned";
+      if (!map.has(key)) map.set(key, { name, sales: [], unpaid: 0 });
+      const group = map.get(key)!;
+      group.sales.push(sale);
+      if (!sale.paid) group.unpaid++;
+    }
+    return [...map.entries()].map(([key, val]) => ({ key, ...val }));
+  }, [typedSales]);
+
+  const tableProps = {
+    isLoading: isSalesLoading,
+    isAdmin,
+    onDelete: setSaleToDelete,
+    onTogglePaid: handleTogglePaid,
+    isPaidPending: markSalePaid.isPending,
   };
 
   return (
     <Layout>
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Current Week</h1>
-            {summary && (
-              <p className="text-muted-foreground mt-1">
-                {format(new Date(summary.weekStart), "MMM d")} -{" "}
-                {format(new Date(summary.weekEnd), "MMM d, yyyy")}
-              </p>
-            )}
+            <h1 className="text-2xl font-bold tracking-tight">
+              {isAdmin ? "Agency Dashboard" : "My Sales"}
+            </h1>
+            <p className="text-muted-foreground text-sm mt-0.5">Current week</p>
           </div>
           <SaleForm>
             <Button className="gap-2 shrink-0 bg-teal-600 hover:bg-teal-700 text-white">
@@ -144,134 +351,117 @@ export default function Home() {
           </div>
         ) : null}
 
-        <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b bg-muted/20 flex items-center justify-between">
-            <h2 className="font-semibold text-lg">Sales Log</h2>
-            {isAdmin && (
-              <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
-                Check "Paid" to mark commission as received
-              </span>
-            )}
+        {isAdmin && unpaidCount > 0 && !isSalesLoading && (
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-amber-900 text-sm">
+                {unpaidCount} unpaid commission{unpaidCount !== 1 ? "s" : ""} this week
+              </p>
+              <p className="text-amber-700 text-sm">
+                {formatCurrency(unpaidCommission)} in commissions not yet marked as paid. Check the "Paid" box on each record once payment has been issued.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <DollarSign className="w-4 h-4 text-amber-600" />
+              <span className="font-bold text-amber-900 font-mono">{formatCurrency(unpaidCommission)}</span>
+            </div>
           </div>
+        )}
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/10">
-                  <TableHead>Client</TableHead>
-                  <TableHead>Sales Source</TableHead>
-                  <TableHead>Lead Source</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Sold Date</TableHead>
-                  <TableHead>Eff. Date</TableHead>
-                  <TableHead>Comm. Type</TableHead>
-                  <TableHead className="text-right">HRA</TableHead>
-                  <TableHead className="text-right">Commission</TableHead>
-                  <TableHead className="text-center">Paid</TableHead>
-                  <TableHead className="w-[100px] text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isSalesLoading ? (
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {Array.from({ length: 11 }).map((_, j) => (
-                        <TableCell key={j}>
-                          <Skeleton className="h-4 w-20" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : sales?.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={11} className="h-48 text-center text-muted-foreground">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <TrendingUp className="w-8 h-8 text-muted" />
-                        <p>No sales logged this week.</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  sales?.map((sale) => (
-                    <TableRow
-                      key={sale.id}
-                      className={`group ${sale.paid ? "bg-teal-50/30" : ""}`}
-                    >
-                      <TableCell className="font-medium">{sale.clientName}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {sale.salesSource || "—"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {sale.leadSource || "—"}
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-                          {sale.salesType}
-                        </span>
-                      </TableCell>
-                      <TableCell>{format(new Date(sale.soldDate), "MMM d")}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {sale.effectiveDate
-                          ? format(new Date(sale.effectiveDate), "MMM d")
-                          : "—"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {sale.commissionType || "—"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-medium">
-                        {sale.hra != null ? formatCurrency(sale.hra) : "None"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-medium">
-                        {formatCurrency(sale.estimatedCommission)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {isAdmin ? (
-                          <Checkbox
-                            checked={sale.paid}
-                            onCheckedChange={() => handleTogglePaid(sale.id, sale.paid)}
-                            disabled={markSalePaid.isPending}
-                            className="data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600 mx-auto"
-                          />
-                        ) : (
-                          <span
-                            className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${
-                              sale.paid
-                                ? "bg-teal-100 text-teal-600"
-                                : "bg-slate-100 text-slate-400"
-                            }`}
-                          >
-                            {sale.paid ? "✓" : "—"}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <SaleForm sale={sale}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </Button>
-                          </SaleForm>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => setSaleToDelete(sale.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+        {isAdmin && (
+          <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            Rows highlighted in <span className="text-emerald-700 font-medium">green</span> are paid · rows in{" "}
+            <span className="text-amber-700 font-medium">amber</span> are unpaid · check the box to mark as paid
           </div>
+        )}
+
+        <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
+          {isAdmin ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <div className="px-4 pt-4 border-b">
+                <TabsList className="mb-0">
+                  <TabsTrigger value="all" className="relative gap-1.5">
+                    All Agents
+                    {unpaidCount > 0 && (
+                      <Badge variant="destructive" className="h-4 px-1.5 text-[10px] min-w-4">
+                        {unpaidCount}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  {agentGroups.map((group) => (
+                    <TabsTrigger key={group.key} value={group.key} className="gap-1.5">
+                      {group.name}
+                      <span className="text-muted-foreground text-xs">({group.sales.length})</span>
+                      {group.unpaid > 0 && (
+                        <Badge variant="outline" className="h-4 px-1.5 text-[10px] min-w-4 border-amber-400 text-amber-700 bg-amber-50">
+                          {group.unpaid}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+
+              <TabsContent value="all" className="m-0">
+                <SalesTable
+                  {...tableProps}
+                  sales={typedSales}
+                  showAgentColumn={true}
+                />
+              </TabsContent>
+
+              {agentGroups.map((group) => (
+                <TabsContent key={group.key} value={group.key} className="m-0">
+                  <div className="px-4 py-3 border-b bg-muted/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                        {group.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{group.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {group.sales.length} sale{group.sales.length !== 1 ? "s" : ""} ·{" "}
+                          {formatCurrency(
+                            group.sales.reduce((a, s) => a + (s.estimatedCommission ?? 0), 0)
+                          )}{" "}
+                          total commission
+                        </p>
+                      </div>
+                    </div>
+                    {group.unpaid > 0 && (
+                      <span className="flex items-center gap-1.5 text-amber-700 text-sm font-medium bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        {formatCurrency(
+                          group.sales
+                            .filter((s) => !s.paid)
+                            .reduce((a, s) => a + (s.estimatedCommission ?? 0), 0)
+                        )}{" "}
+                        unpaid
+                      </span>
+                    )}
+                  </div>
+                  <SalesTable
+                    {...tableProps}
+                    sales={group.sales}
+                    showAgentColumn={false}
+                  />
+                </TabsContent>
+              ))}
+            </Tabs>
+          ) : (
+            <>
+              <div className="px-6 py-4 border-b bg-muted/20">
+                <h2 className="font-semibold text-lg">Sales Log</h2>
+              </div>
+              <SalesTable
+                {...tableProps}
+                sales={typedSales}
+                showAgentColumn={false}
+              />
+            </>
+          )}
         </div>
       </div>
 

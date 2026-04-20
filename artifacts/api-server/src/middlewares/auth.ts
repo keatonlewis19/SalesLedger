@@ -1,6 +1,6 @@
 import { getAuth } from "@clerk/express";
 import { Request, Response, NextFunction } from "express";
-import { db, agencyUsersTable } from "@workspace/db";
+import { db, agencyUsersTable, pendingInvitesTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 
@@ -29,7 +29,6 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
       .from(agencyUsersTable);
 
     const isFirstUser = Number(total) === 0;
-    const role = isFirstUser ? "admin" : "agent";
 
     let fullName: string | null = null;
     let email: string | null = null;
@@ -40,6 +39,24 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
       email = clerkUser.emailAddresses?.[0]?.emailAddress ?? null;
     } catch (_) {}
 
+    if (!isFirstUser) {
+      const invitedEmail = email?.toLowerCase();
+      if (!invitedEmail) {
+        res.status(403).json({ error: "Access is by invitation only. Contact your agency admin." });
+        return;
+      }
+      const [invite] = await db
+        .select()
+        .from(pendingInvitesTable)
+        .where(eq(pendingInvitesTable.email, invitedEmail));
+      if (!invite) {
+        res.status(403).json({ error: "Access is by invitation only. Contact your agency admin." });
+        return;
+      }
+      await db.delete(pendingInvitesTable).where(eq(pendingInvitesTable.email, invitedEmail));
+    }
+
+    const role = isFirstUser ? "admin" : "agent";
     [agencyUser] = await db
       .insert(agencyUsersTable)
       .values({ clerkUserId: userId, role, fullName, email })

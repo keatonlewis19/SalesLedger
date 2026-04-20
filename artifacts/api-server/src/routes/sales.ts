@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, gte, lte, and } from "drizzle-orm";
-import { db, salesTable, weeklyReportsTable } from "@workspace/db";
+import { eq, gte, lte, and, getTableColumns } from "drizzle-orm";
+import { db, salesTable, weeklyReportsTable, agencyUsersTable } from "@workspace/db";
 import {
   CreateSaleBody,
   UpdateSaleBody,
@@ -75,8 +75,12 @@ router.get("/sales", requireAuth, async (req: AuthRequest, res): Promise<void> =
   }
 
   const sales = await db
-    .select()
+    .select({
+      ...getTableColumns(salesTable),
+      agentName: agencyUsersTable.fullName,
+    })
     .from(salesTable)
+    .leftJoin(agencyUsersTable, eq(salesTable.userId, agencyUsersTable.clerkUserId))
     .where(and(...conditions))
     .orderBy(salesTable.soldDate);
 

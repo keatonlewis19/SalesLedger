@@ -75,3 +75,12 @@ export const appSettingsTable = pgTable("app_settings", {
 });
 
 export type AppSettings = typeof appSettingsTable.$inferSelect;
+
+export const pendingInvitesTable = pgTable("pending_invites", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  clerkInvitationId: text("clerk_invitation_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type PendingInvite = typeof pendingInvitesTable.$inferSelect;
