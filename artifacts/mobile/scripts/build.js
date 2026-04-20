@@ -136,10 +136,28 @@ async function startMetro(expoPublicDomain, expoPublicReplId) {
 
   console.log("Starting Metro...");
   console.log(`Setting EXPO_PUBLIC_DOMAIN=${expoPublicDomain}`);
+
+  // Reuse the Clerk publishable key from the web app's secret if the
+  // Expo-prefixed version hasn't been set explicitly.
+  const clerkKey =
+    process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+    process.env.VITE_CLERK_PUBLISHABLE_KEY ||
+    process.env.CLERK_PUBLISHABLE_KEY ||
+    "";
+
+  if (clerkKey) {
+    console.log("EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY resolved from existing secrets");
+  } else {
+    console.warn("WARNING: No Clerk publishable key found — auth will not work");
+  }
+
   const env = {
     ...process.env,
     EXPO_PUBLIC_DOMAIN: expoPublicDomain,
     EXPO_PUBLIC_REPL_ID: expoPublicReplId,
+    EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: clerkKey,
+    // Increase Node memory limit to prevent Metro OOM crashes on large bundles
+    NODE_OPTIONS: "--max-old-space-size=4096",
   };
 
   if (expoPublicReplId) {
