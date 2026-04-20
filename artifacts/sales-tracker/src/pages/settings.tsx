@@ -534,43 +534,55 @@ export default function Settings() {
               <CardDescription>Who receives the weekly email report.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {watch("recipients").map((_, idx) => (
-                <div key={idx} className="flex gap-2 items-start">
-                  <div className="flex-1">
-                    <Input
-                      type="email"
-                      placeholder="name@example.com"
-                      {...register(`recipients.${idx}.email`)}
-                    />
-                    {errors.recipients?.[idx]?.email && (
-                      <p className="text-destructive text-xs mt-1">{errors.recipients[idx]?.email?.message}</p>
-                    )}
-                  </div>
+              {isAdmin ? (
+                <>
+                  {watch("recipients").map((_, idx) => (
+                    <div key={idx} className="flex gap-2 items-start">
+                      <div className="flex-1">
+                        <Input
+                          type="email"
+                          placeholder="name@example.com"
+                          {...register(`recipients.${idx}.email`)}
+                        />
+                        {errors.recipients?.[idx]?.email && (
+                          <p className="text-destructive text-xs mt-1">{errors.recipients[idx]?.email?.message}</p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive shrink-0"
+                        onClick={() => {
+                          const curr = watch("recipients");
+                          if (curr.length > 1) setValue("recipients", curr.filter((_, i) => i !== idx));
+                        }}
+                        disabled={watch("recipients").length === 1}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-destructive shrink-0"
-                    onClick={() => {
-                      const curr = watch("recipients");
-                      if (curr.length > 1) setValue("recipients", curr.filter((_, i) => i !== idx));
-                    }}
-                    disabled={watch("recipients").length === 1}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 self-start"
+                    onClick={() => setValue("recipients", [...watch("recipients"), { email: "" }])}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Plus className="w-4 h-4" />
+                    Add Recipient
                   </Button>
+                </>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {watch("recipients").map((r, idx) => (
+                    <div key={idx} className="px-3 py-1.5 rounded-md bg-muted text-sm text-foreground font-medium">
+                      {r.email}
+                    </div>
+                  ))}
                 </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2 self-start"
-                onClick={() => setValue("recipients", [...watch("recipients"), { email: "" }])}
-              >
-                <Plus className="w-4 h-4" />
-                Add Recipient
-              </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -581,36 +593,48 @@ export default function Settings() {
               <CardDescription>When the weekly report is automatically emailed.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
-                  <Label>Day of Week</Label>
-                  <Select
-                    value={watch("reportDayOfWeek")}
-                    onValueChange={(v) => setValue("reportDayOfWeek", v)}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {DAY_OPTIONS.map((d) => (
-                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {isAdmin ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label>Day of Week</Label>
+                    <Select
+                      value={watch("reportDayOfWeek")}
+                      onValueChange={(v) => setValue("reportDayOfWeek", v)}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {DAY_OPTIONS.map((d) => (
+                          <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label>Time</Label>
+                    <Select
+                      value={watch("reportHour")}
+                      onValueChange={(v) => setValue("reportHour", v)}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {HOUR_OPTIONS.map((h) => (
+                          <SelectItem key={h.value} value={h.value}>{h.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <Label>Time</Label>
-                  <Select
-                    value={watch("reportHour")}
-                    onValueChange={(v) => setValue("reportHour", v)}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {HOUR_OPTIONS.map((h) => (
-                        <SelectItem key={h.value} value={h.value}>{h.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              ) : (
+                <div className="text-sm text-foreground">
+                  <span className="font-medium">
+                    {DAY_OPTIONS.find((d) => d.value === watch("reportDayOfWeek"))?.label ?? "—"}
+                  </span>
+                  {" at "}
+                  <span className="font-medium">
+                    {HOUR_OPTIONS.find((h) => h.value === watch("reportHour"))?.label ?? "—"}
+                  </span>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -619,33 +643,39 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="text-lg">Fair Market Value Rates</CardTitle>
               <CardDescription>
-                Enter the Initial FMV rate. Renewal and Monthly Renewal are calculated from it automatically.
-                Prorated Renewal is calculated per sale as <strong>Monthly Rate × months remaining in the year</strong> based on the effective date (e.g. effective Jun 1 = 7 months of coverage).
+                The Initial FMV rate drives all commission calculations. Renewal and Monthly Renewal are derived automatically.
+                Prorated Renewal is calculated per sale as <strong>Monthly Rate × months remaining in the year</strong> based on the effective date.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
 
-              {/* Initial — editable */}
+              {/* Initial */}
               <div className="flex items-center gap-3">
                 <div className="w-48 flex h-10 items-center rounded-md border border-input bg-muted px-3 text-sm font-medium text-foreground">
                   Initial
                 </div>
-                <div className="w-44 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">$</span>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    className="pl-7"
-                    {...register("fmvInitial")}
-                  />
-                </div>
+                {isAdmin ? (
+                  <div className="w-44 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">$</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      className="pl-7"
+                      {...register("fmvInitial")}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-44 flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-foreground font-medium">
+                    {fmvInitialVal > 0 ? formatCurrency(fmvInitialVal) : "—"}
+                  </div>
+                )}
               </div>
 
               <Separator />
 
-              {/* Derived rates — read-only */}
+              {/* Derived rates — always read-only */}
               {[
                 { label: "Renewal", value: derivedRenewal, formula: "Initial ÷ 2" },
                 { label: "Monthly Renewal", value: derivedMonthly, formula: "Renewal ÷ 12" },
@@ -681,21 +711,25 @@ export default function Settings() {
           <CardHeader>
             <CardTitle className="text-lg">Commission Table Override</CardTitle>
             <CardDescription>
-              Optionally upload a CSV to override estimated commissions for specific Sales Source + Sales Type + Commission Type combinations. When a match is found, it takes priority over the formula-based calculation.
+              {isAdmin
+                ? "Optionally upload a CSV to override estimated commissions for specific Sales Source + Sales Type + Commission Type combinations. When a match is found, it takes priority over the formula-based calculation."
+                : "Commission overrides set by your agency admin. When a match is found, it takes priority over the formula-based calculation."}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="flex gap-3 flex-wrap">
-              <Button type="button" variant="outline" className="gap-2" onClick={handleDownloadTemplate}>
-                <Download className="w-4 h-4" />
-                Download Template
-              </Button>
-              <Button type="button" variant="outline" className="gap-2" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="w-4 h-4" />
-                Upload Filled CSV
-              </Button>
-              <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
-            </div>
+            {isAdmin && (
+              <div className="flex gap-3 flex-wrap">
+                <Button type="button" variant="outline" className="gap-2" onClick={handleDownloadTemplate}>
+                  <Download className="w-4 h-4" />
+                  Download Template
+                </Button>
+                <Button type="button" variant="outline" className="gap-2" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="w-4 h-4" />
+                  Upload Filled CSV
+                </Button>
+                <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
+              </div>
+            )}
 
             {commissionTable && commissionTable.length > 0 ? (
               <div className="flex flex-col gap-2">
@@ -729,28 +763,30 @@ export default function Settings() {
                     </tbody>
                   </table>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="self-start gap-2 text-muted-foreground hover:text-destructive"
-                  onClick={() => {
-                    updateSettings.mutate(
-                      { data: { commissionTable: null } },
-                      {
-                        onSuccess: () => {
-                          setCommissionTable(null);
-                          setUploadName(null);
-                          toast({ title: "Commission table cleared" });
-                          queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
-                        },
-                      }
-                    );
-                  }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Clear Table
-                </Button>
+                {isAdmin && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="self-start gap-2 text-muted-foreground hover:text-destructive"
+                    onClick={() => {
+                      updateSettings.mutate(
+                        { data: { commissionTable: null } },
+                        {
+                          onSuccess: () => {
+                            setCommissionTable(null);
+                            setUploadName(null);
+                            toast({ title: "Commission table cleared" });
+                            queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+                          },
+                        }
+                      );
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Clear Table
+                  </Button>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
