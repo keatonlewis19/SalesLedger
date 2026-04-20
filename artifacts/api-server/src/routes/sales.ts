@@ -16,7 +16,6 @@ import {
   SendReportResponse,
 } from "@workspace/api-zod";
 import { getCurrentWeekBounds, getWeekStartForDate, runWeeklyReport } from "../lib/scheduler";
-import type { SaleEntry } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
