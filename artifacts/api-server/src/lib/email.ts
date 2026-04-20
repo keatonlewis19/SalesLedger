@@ -157,6 +157,113 @@ export async function sendWeeklyReport(
   await sendEmail(subject, html, text, recipients, { weekStart, weekEnd, totalSales: sales.length });
 }
 
+function buildDashboardHtml(
+  sales: SaleRow[],
+  reportTitle: string,
+  periodLabel: string,
+  footerNote: string
+): string {
+  const totalCommission = sales.reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0);
+  const totalHra = sales.reduce((acc, s) => acc + (s.hra ?? 0), 0);
+
+  // Breakdowns
+  const byType: Record<string, { count: number; commission: number }> = {};
+  const byCommType: Record<string, { count: number; commission: number }> = {};
+  const bySource: Record<string, { count: number; commission: number }> = {};
+
+  for (const s of sales) {
+    const comm = s.estimatedCommission ?? 0;
+
+    byType[s.salesType] = byType[s.salesType] ?? { count: 0, commission: 0 };
+    byType[s.salesType].count++;
+    byType[s.salesType].commission += comm;
+
+    byCommType[s.commissionType] = byCommType[s.commissionType] ?? { count: 0, commission: 0 };
+    byCommType[s.commissionType].count++;
+    byCommType[s.commissionType].commission += comm;
+
+    const src = s.salesSource ?? "Not Specified";
+    bySource[src] = bySource[src] ?? { count: 0, commission: 0 };
+    bySource[src].count++;
+    bySource[src].commission += comm;
+  }
+
+  const statCard = (label: string, value: string) => `
+    <td style="width:33%;padding:0 8px;">
+      <div style="background:#f0f4f8;border-radius:8px;padding:20px 16px;text-align:center;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#6b7280;margin-bottom:6px;">${label}</div>
+        <div style="font-size:26px;font-weight:700;color:#1a3c5e;">${value}</div>
+      </div>
+    </td>`;
+
+  const breakdownRows = (data: Record<string, { count: number; commission: number }>) =>
+    Object.entries(data)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([label, { count, commission }]) => `
+        <tr>
+          <td style="padding:9px 12px;border-bottom:1px solid #f0f0f0;color:#374151;">${label}</td>
+          <td style="padding:9px 12px;border-bottom:1px solid #f0f0f0;text-align:center;font-weight:600;color:#1a3c5e;">${count}</td>
+          <td style="padding:9px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:#059669;">${formatCurrency(commission)}</td>
+        </tr>`).join("");
+
+  const breakdownTable = (title: string, data: Record<string, { count: number; commission: number }>) => `
+    <div style="margin-bottom:24px;">
+      <h3 style="font-size:14px;font-weight:700;color:#1a3c5e;margin:0 0 10px 0;text-transform:uppercase;letter-spacing:0.06em;">${title}</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">
+        <thead>
+          <tr style="background:#1a3c5e;color:#fff;">
+            <th style="padding:9px 12px;text-align:left;font-weight:600;">Category</th>
+            <th style="padding:9px 12px;text-align:center;font-weight:600;"># Sales</th>
+            <th style="padding:9px 12px;text-align:right;font-weight:600;">Est. Commission</th>
+          </tr>
+        </thead>
+        <tbody>${breakdownRows(data)}</tbody>
+      </table>
+    </div>`;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"/></head>
+    <body style="font-family:Arial,sans-serif;color:#333;margin:0;padding:0;background:#f9fafb;">
+      <div style="max-width:680px;margin:32px auto;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;">
+
+        <!-- Header -->
+        <div style="background:#1a3c5e;padding:28px 32px;">
+          <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">${reportTitle}</h1>
+          <p style="color:#93c5fd;margin:6px 0 0 0;font-size:14px;">${periodLabel}</p>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:28px 32px;">
+
+          <!-- Key stats -->
+          <table style="width:100%;border-collapse:collapse;margin-bottom:28px;">
+            <tr>
+              ${statCard("Total Sales", String(sales.length))}
+              ${statCard("Est. Commission", formatCurrency(totalCommission))}
+              ${statCard("Total HRA", totalHra > 0 ? formatCurrency(totalHra) : "None")}
+            </tr>
+          </table>
+
+          <!-- Breakdowns -->
+          ${breakdownTable("By Sales Type", byType)}
+          ${breakdownTable("By Commission Type", byCommType)}
+          ${breakdownTable("By Sales Source", bySource)}
+
+        </div>
+
+        <!-- Footer -->
+        <div style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;">
+          <p style="color:#9ca3af;font-size:12px;margin:0;">${footerNote}</p>
+        </div>
+
+      </div>
+    </body>
+    </html>
+  `;
+}
+
 export async function sendMonthlyReport(
   sales: SaleRow[],
   monthLabel: string,
@@ -165,13 +272,13 @@ export async function sendMonthlyReport(
   recipients: string[] = DEFAULT_RECIPIENTS
 ): Promise<void> {
   const subject = `Monthly Sales Report — ${monthLabel}`;
-  const html = buildEmailHtml(
+  const html = buildDashboardHtml(
     sales,
     `Monthly Sales Report — ${monthLabel}`,
-    `Period: <strong>${periodStart}</strong> through <strong>${periodEnd}</strong>`,
-    "This monthly report was automatically generated and sent by the Sales Tracker."
+    `${periodStart} &nbsp;through&nbsp; ${periodEnd}`,
+    "This monthly summary was automatically generated and sent by the Sales Tracker."
   );
-  const text = `Monthly Sales Report for ${monthLabel}\n\nTotal Sales: ${sales.length}`;
+  const text = `Monthly Sales Report for ${monthLabel}\n\nTotal Sales: ${sales.length}\nEst. Commission: ${sales.reduce((a, s) => a + (s.estimatedCommission ?? 0), 0).toFixed(2)}`;
   await sendEmail(subject, html, text, recipients, { monthLabel, periodStart, periodEnd, totalSales: sales.length });
 }
 
@@ -183,12 +290,12 @@ export async function sendAnnualReport(
   recipients: string[] = DEFAULT_RECIPIENTS
 ): Promise<void> {
   const subject = `Annual Sales Report — ${yearLabel}`;
-  const html = buildEmailHtml(
+  const html = buildDashboardHtml(
     sales,
     `Annual Sales Report — ${yearLabel}`,
-    `Period: <strong>${periodStart}</strong> through <strong>${periodEnd}</strong>`,
-    "This annual report was automatically generated and sent by the Sales Tracker."
+    `Full year &nbsp;${periodStart}&nbsp; through&nbsp;${periodEnd}`,
+    "This annual summary was automatically generated and sent by the Sales Tracker."
   );
-  const text = `Annual Sales Report for ${yearLabel}\n\nTotal Sales: ${sales.length}`;
+  const text = `Annual Sales Report for ${yearLabel}\n\nTotal Sales: ${sales.length}\nEst. Commission: ${sales.reduce((a, s) => a + (s.estimatedCommission ?? 0), 0).toFixed(2)}`;
   await sendEmail(subject, html, text, recipients, { yearLabel, periodStart, periodEnd, totalSales: sales.length });
 }
