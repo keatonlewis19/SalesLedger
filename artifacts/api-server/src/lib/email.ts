@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
 
-const RECIPIENTS = ["rauni@crmgrp.com", "chad@crmgrp.com"];
+const DEFAULT_RECIPIENTS = ["rauni@crmgrp.com", "chad@crmgrp.com"];
 
 export function getTransporter() {
   const host = process.env.SMTP_HOST;
@@ -96,13 +96,14 @@ function buildEmailHtml(sales: SaleRow[], weekStart: string, weekEnd: string): s
 export async function sendWeeklyReport(
   sales: SaleRow[],
   weekStart: string,
-  weekEnd: string
+  weekEnd: string,
+  recipients: string[] = DEFAULT_RECIPIENTS
 ): Promise<void> {
   const subject = `Weekly Sales Report — Week of ${weekStart}`;
   const html = buildEmailHtml(sales, weekStart, weekEnd);
   const text = `Weekly Sales Report for ${weekStart} – ${weekEnd}\n\nTotal Sales: ${sales.length}\nSee attached HTML for full details.`;
 
-  logger.info({ recipients: RECIPIENTS, weekStart, weekEnd, totalSales: sales.length }, "Sending weekly report email");
+  logger.info({ recipients, weekStart, weekEnd, totalSales: sales.length }, "Sending weekly report email");
 
   const transporter = getTransporter();
   if (!transporter) {
@@ -112,13 +113,11 @@ export async function sendWeeklyReport(
 
   await transporter.sendMail({
     from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
-    to: RECIPIENTS.join(", "),
+    to: recipients.join(", "),
     subject,
     text,
     html,
   });
 
-  logger.info({ recipients: RECIPIENTS }, "Weekly report email sent successfully");
+  logger.info({ recipients }, "Weekly report email sent successfully");
 }
-
-export { RECIPIENTS };

@@ -13,6 +13,33 @@ export interface ErrorResponse {
   error: string;
 }
 
+/**
+ * Map of commission type to rate percentage (e.g. FYC: 15 means 15%)
+ */
+export type AppSettingsCommissionRates = { [key: string]: number };
+
+export interface AppSettings {
+  /** 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat */
+  reportDayOfWeek: number;
+  /** Hour 0-23 */
+  reportHour: number;
+  /** Minute 0-59 */
+  reportMinute: number;
+  recipients: string[];
+  /** Map of commission type to rate percentage (e.g. FYC: 15 means 15%) */
+  commissionRates: AppSettingsCommissionRates;
+}
+
+export type UpdateSettingsBodyCommissionRates = { [key: string]: number };
+
+export interface UpdateSettingsBody {
+  reportDayOfWeek?: number;
+  reportHour?: number;
+  reportMinute?: number;
+  recipients?: string[];
+  commissionRates?: UpdateSettingsBodyCommissionRates;
+}
+
 export interface SaleEntry {
   id: number;
   clientName: string;
@@ -20,6 +47,8 @@ export interface SaleEntry {
   salesType: string;
   soldDate: string;
   commissionType: string;
+  /** @nullable */
+  annualPremium: number | null;
   /** @nullable */
   estimatedCommission: number | null;
   /** @nullable */
@@ -36,6 +65,8 @@ export interface CreateSaleBody {
   soldDate: string;
   commissionType: string;
   /** @nullable */
+  annualPremium?: number | null;
+  /** @nullable */
   estimatedCommission?: number | null;
   /** @nullable */
   notes?: string | null;
@@ -47,6 +78,8 @@ export interface UpdateSaleBody {
   salesType?: string;
   soldDate?: string;
   commissionType?: string;
+  /** @nullable */
+  annualPremium?: number | null;
   /** @nullable */
   estimatedCommission?: number | null;
   /** @nullable */

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, History, Plus } from "lucide-react";
+import { LayoutDashboard, History, Settings } from "lucide-react";
 import { Button } from "./ui/button";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -8,6 +8,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navigation = [
     { name: "Current Week", href: "/", icon: LayoutDashboard },
     { name: "Past Reports", href: "/history", icon: History },
+    { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   return (

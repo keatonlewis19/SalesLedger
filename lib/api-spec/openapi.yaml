@@ -14,6 +14,8 @@ tags:
     description: Sales entry operations
   - name: reports
     description: Weekly report operations
+  - name: settings
+    description: App configuration settings
 paths:
   /healthz:
     get:
@@ -175,6 +177,42 @@ paths:
                 items:
                   $ref: "#/components/schemas/WeeklyReport"
 
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get current app settings
+      responses:
+        "200":
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppSettings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update app settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsBody"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppSettings"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /reports/send:
     post:
       operationId: sendReport
@@ -212,6 +250,52 @@ components:
       required:
         - error
 
+    AppSettings:
+      type: object
+      properties:
+        reportDayOfWeek:
+          type: integer
+          description: "0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat"
+        reportHour:
+          type: integer
+          description: "Hour 0-23"
+        reportMinute:
+          type: integer
+          description: "Minute 0-59"
+        recipients:
+          type: array
+          items:
+            type: string
+        commissionRates:
+          type: object
+          additionalProperties:
+            type: number
+          description: "Map of commission type to rate percentage (e.g. FYC: 15 means 15%)"
+      required:
+        - reportDayOfWeek
+        - reportHour
+        - reportMinute
+        - recipients
+        - commissionRates
+
+    UpdateSettingsBody:
+      type: object
+      properties:
+        reportDayOfWeek:
+          type: integer
+        reportHour:
+          type: integer
+        reportMinute:
+          type: integer
+        recipients:
+          type: array
+          items:
+            type: string
+        commissionRates:
+          type: object
+          additionalProperties:
+            type: number
+
     SaleEntry:
       type: object
       properties:
@@ -227,6 +311,8 @@ components:
           type: string
         commissionType:
           type: string
+        annualPremium:
+          type: ["number", "null"]
         estimatedCommission:
           type: ["number", "null"]
         notes:
@@ -244,6 +330,7 @@ components:
         - salesType
         - soldDate
         - commissionType
+        - annualPremium
         - estimatedCommission
         - notes
         - weekStart
@@ -263,6 +350,8 @@ components:
           type: string
         commissionType:
           type: string
+        annualPremium:
+          type: ["number", "null"]
         estimatedCommission:
           type: ["number", "null"]
         notes:
@@ -287,6 +376,8 @@ components:
           type: string
         commissionType:
           type: string
+        annualPremium:
+          type: ["number", "null"]
         estimatedCommission:
           type: ["number", "null"]
         notes:

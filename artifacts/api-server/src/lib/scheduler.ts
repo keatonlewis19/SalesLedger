@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import { db, salesTable, weeklyReportsTable } from "@workspace/db";
 import { gte, lte, and } from "drizzle-orm";
-import { sendWeeklyReport, RECIPIENTS, type SaleRow } from "./email";
+import { sendWeeklyReport, type SaleRow } from "./email";
 import { logger } from "./logger";
 
 /**
@@ -42,6 +42,10 @@ export async function runWeeklyReport(): Promise<{ reportId: number; totalSales:
 
   logger.info({ weekStart, weekEnd }, "Running weekly sales report");
 
+  const { getOrCreateSettings } = await import("../routes/settings");
+  const settings = await getOrCreateSettings();
+  const recipients = settings.recipients;
+
   const sales = await db
     .select()
     .from(salesTable)
@@ -67,7 +71,7 @@ export async function runWeeklyReport(): Promise<{ reportId: number; totalSales:
     0
   );
 
-  await sendWeeklyReport(saleRows, weekStart, weekEnd);
+  await sendWeeklyReport(saleRows, weekStart, weekEnd, recipients);
 
   const [report] = await db
     .insert(weeklyReportsTable)
@@ -76,7 +80,7 @@ export async function runWeeklyReport(): Promise<{ reportId: number; totalSales:
       weekEnd,
       totalSales: sales.length,
       totalEstimatedCommission,
-      recipients: RECIPIENTS.join(", "),
+      recipients: recipients.join(", "),
     })
     .returning();
 
@@ -85,10 +89,21 @@ export async function runWeeklyReport(): Promise<{ reportId: number; totalSales:
   return { reportId: report.id, totalSales: sales.length };
 }
 
-export function startScheduler(): void {
-  // Thursday at 5:00 PM (17:00) — cron: "0 17 * * 4"
-  cron.schedule("0 17 * * 4", async () => {
-    logger.info("Scheduled Thursday 5pm report triggered");
+let currentTask: cron.ScheduledTask | null = null;
+
+function buildCronExpression(dayOfWeek: number, hour: number, minute: number): string {
+  return `${minute} ${hour} * * ${dayOfWeek}`;
+}
+
+export function restartScheduler(dayOfWeek: number, hour: number, minute: number): void {
+  if (currentTask) {
+    currentTask.stop();
+    currentTask = null;
+  }
+
+  const expr = buildCronExpression(dayOfWeek, hour, minute);
+  currentTask = cron.schedule(expr, async () => {
+    logger.info({ expr }, "Scheduled report triggered");
     try {
       await runWeeklyReport();
     } catch (err) {
@@ -96,5 +111,11 @@ export function startScheduler(): void {
     }
   });
 
-  logger.info("Weekly report scheduler started (Thursdays at 5:00 PM)");
+  logger.info({ expr }, "Weekly report scheduler started");
+}
+
+export async function startScheduler(): Promise<void> {
+  const { getOrCreateSettings } = await import("../routes/settings");
+  const settings = await getOrCreateSettings();
+  restartScheduler(settings.reportDayOfWeek, settings.reportHour, settings.reportMinute);
 }

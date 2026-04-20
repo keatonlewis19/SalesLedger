@@ -32,6 +32,7 @@ export const ListSalesResponseItem = zod.object({
   salesType: zod.string(),
   soldDate: zod.string(),
   commissionType: zod.string(),
+  annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
   notes: zod.string().nullable(),
   weekStart: zod.string(),
@@ -49,6 +50,7 @@ export const CreateSaleBody = zod.object({
   salesType: zod.string(),
   soldDate: zod.string(),
   commissionType: zod.string(),
+  annualPremium: zod.number().nullish(),
   estimatedCommission: zod.number().nullish(),
   notes: zod.string().nullish(),
 });
@@ -67,6 +69,7 @@ export const GetSaleResponse = zod.object({
   salesType: zod.string(),
   soldDate: zod.string(),
   commissionType: zod.string(),
+  annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
   notes: zod.string().nullable(),
   weekStart: zod.string(),
@@ -87,6 +90,7 @@ export const UpdateSaleBody = zod.object({
   salesType: zod.string().optional(),
   soldDate: zod.string().optional(),
   commissionType: zod.string().optional(),
+  annualPremium: zod.number().nullish(),
   estimatedCommission: zod.number().nullish(),
   notes: zod.string().nullish(),
 });
@@ -98,6 +102,7 @@ export const UpdateSaleResponse = zod.object({
   salesType: zod.string(),
   soldDate: zod.string(),
   commissionType: zod.string(),
+  annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
   notes: zod.string().nullable(),
   weekStart: zod.string(),
@@ -147,6 +152,48 @@ export const ListReportsResponseItem = zod.object({
   recipients: zod.string(),
 });
 export const ListReportsResponse = zod.array(ListReportsResponseItem);
+
+/**
+ * @summary Get current app settings
+ */
+export const GetSettingsResponse = zod.object({
+  reportDayOfWeek: zod
+    .number()
+    .describe("0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat"),
+  reportHour: zod.number().describe("Hour 0-23"),
+  reportMinute: zod.number().describe("Minute 0-59"),
+  recipients: zod.array(zod.string()),
+  commissionRates: zod
+    .record(zod.string(), zod.number())
+    .describe(
+      "Map of commission type to rate percentage (e.g. FYC: 15 means 15%)",
+    ),
+});
+
+/**
+ * @summary Update app settings
+ */
+export const UpdateSettingsBody = zod.object({
+  reportDayOfWeek: zod.number().optional(),
+  reportHour: zod.number().optional(),
+  reportMinute: zod.number().optional(),
+  recipients: zod.array(zod.string()).optional(),
+  commissionRates: zod.record(zod.string(), zod.number()).optional(),
+});
+
+export const UpdateSettingsResponse = zod.object({
+  reportDayOfWeek: zod
+    .number()
+    .describe("0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat"),
+  reportHour: zod.number().describe("Hour 0-23"),
+  reportMinute: zod.number().describe("Minute 0-59"),
+  recipients: zod.array(zod.string()),
+  commissionRates: zod
+    .record(zod.string(), zod.number())
+    .describe(
+      "Map of commission type to rate percentage (e.g. FYC: 15 means 15%)",
+    ),
+});
 
 /**
  * @summary Manually trigger sending the weekly report now

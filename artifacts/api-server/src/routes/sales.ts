@@ -16,6 +16,7 @@ import {
   SendReportResponse,
 } from "@workspace/api-zod";
 import { getCurrentWeekBounds, getWeekStartForDate, runWeeklyReport } from "../lib/scheduler";
+import type { SaleEntry } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -24,9 +25,10 @@ function parseId(raw: string | string[]): number {
   return parseInt(str, 10);
 }
 
-function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; estimatedCommission: number | null | undefined; notes: string | null | undefined; [key: string]: unknown }) {
+function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; annualPremium?: number | null; estimatedCommission: number | null | undefined; notes: string | null | undefined; [key: string]: unknown }) {
   return {
     ...s,
+    annualPremium: s.annualPremium ?? null,
     estimatedCommission: s.estimatedCommission ?? null,
     notes: s.notes ?? null,
     createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : s.createdAt,

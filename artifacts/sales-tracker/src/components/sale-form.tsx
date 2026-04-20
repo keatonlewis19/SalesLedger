@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Textarea } from "./ui/textarea";
-import { useCreateSale, useUpdateSale, getListSalesQueryKey, getGetCurrentWeekSummaryQueryKey } from "@workspace/api-client-react";
+import { useCreateSale, useUpdateSale, useGetSettings, getListSalesQueryKey, getGetCurrentWeekSummaryQueryKey } from "@workspace/api-client-react";
 import type { SaleEntry } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,6 +39,7 @@ const formSchema = z.object({
   salesType: z.string().min(1, "Sales type is required"),
   soldDate: z.string().min(1, "Sold date is required"),
   commissionType: z.string().min(1, "Commission type is required"),
+  annualPremium: z.string().optional(),
   estimatedCommission: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -64,6 +65,7 @@ export function SaleForm({
   const queryClient = useQueryClient();
   const createSale = useCreateSale();
   const updateSale = useUpdateSale();
+  const { data: settings } = useGetSettings();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -73,6 +75,7 @@ export function SaleForm({
       salesType: "",
       soldDate: format(new Date(), "yyyy-MM-dd"),
       commissionType: "",
+      annualPremium: "",
       estimatedCommission: "",
       notes: "",
     },
@@ -86,6 +89,7 @@ export function SaleForm({
         salesType: sale.salesType,
         soldDate: sale.soldDate.split("T")[0],
         commissionType: sale.commissionType,
+        annualPremium: sale.annualPremium?.toString() || "",
         estimatedCommission: sale.estimatedCommission?.toString() || "",
         notes: sale.notes || "",
       });
@@ -96,15 +100,30 @@ export function SaleForm({
         salesType: "",
         soldDate: format(new Date(), "yyyy-MM-dd"),
         commissionType: "",
+        annualPremium: "",
         estimatedCommission: "",
         notes: "",
       });
     }
   }, [open, sale, form]);
 
+  const watchedPremium = form.watch("annualPremium");
+  const watchedCommissionType = form.watch("commissionType");
+
+  useEffect(() => {
+    if (!settings?.commissionRates) return;
+    const premium = parseFloat(watchedPremium || "");
+    const rate = settings.commissionRates[watchedCommissionType];
+    if (!isNaN(premium) && premium > 0 && rate != null) {
+      const calculated = (premium * rate) / 100;
+      form.setValue("estimatedCommission", calculated.toFixed(2));
+    }
+  }, [watchedPremium, watchedCommissionType, settings, form]);
+
   const onSubmit = (data: FormValues) => {
     const formattedData = {
       ...data,
+      annualPremium: data.annualPremium ? parseFloat(data.annualPremium) : null,
       estimatedCommission: data.estimatedCommission ? parseFloat(data.estimatedCommission) : null,
       notes: data.notes || null,
     };
@@ -243,19 +262,34 @@ export function SaleForm({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="estimatedCommission"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estimated Commission ($)</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" placeholder="0.00" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="annualPremium"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Annual Premium ($)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="estimatedCommission"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Est. Commission ($)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder="Auto-calculated" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
