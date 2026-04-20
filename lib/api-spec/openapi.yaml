@@ -128,6 +128,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgencyUser"
+    patch:
+      operationId: updateMe
+      tags: [users]
+      summary: Update current user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeBody"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyUser"
 
   /users:
     get:
@@ -520,6 +537,12 @@ components:
           format: uri
         objectPath:
           type: string
+
+    UpdateMeBody:
+      type: object
+      properties:
+        fullName:
+          type: ["string", "null"]
 
     AgencyUser:
       type: object

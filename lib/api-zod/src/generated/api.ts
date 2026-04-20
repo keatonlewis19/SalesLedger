@@ -112,6 +112,23 @@ export const GetMeResponse = zod.object({
 });
 
 /**
+ * @summary Update current user's profile
+ */
+export const UpdateMeBody = zod.object({
+  fullName: zod.string().nullish(),
+});
+
+export const UpdateMeResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  role: zod.string(),
+  fullName: zod.string().nullable(),
+  email: zod.string().nullable(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
  * @summary List all agency users (admin only)
  */
 export const ListAgencyUsersResponseItem = zod.object({

@@ -86,6 +86,11 @@ export interface UploadUrlResponse {
   objectPath: string;
 }
 
+export interface UpdateMeBody {
+  /** @nullable */
+  fullName?: string | null;
+}
+
 export interface AgencyUser {
   id: number;
   clerkUserId: string;

@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Plus, Trash2, Save, Download, Upload, CheckCircle2, Lock, ImageIcon, Palette, X } from "lucide-react";
-import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey } from "@workspace/api-client-react";
+import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey, useUpdateMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,12 +77,16 @@ function formatCurrency(val: number): string {
 }
 
 export default function Settings() {
-  const { isAdmin } = useAgencyUser();
+  const { isAdmin, agencyUser } = useAgencyUser();
   const { data: settings, isLoading } = useGetSettings();
   const updateSettings = useUpdateSettings();
+  const updateMe = useUpdateMe();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [initialized, setInitialized] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [hexInput, setHexInput] = useState("#0d9488");
   const [commissionTable, setCommissionTable] = useState<CommissionTableRow[] | null>(null);
   const [uploadName, setUploadName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -108,6 +112,31 @@ export default function Settings() {
   const { register, formState: { errors }, watch, setValue } = form;
 
   useEffect(() => {
+    if (agencyUser?.fullName) {
+      setDisplayName(agencyUser.fullName);
+    }
+  }, [agencyUser]);
+
+  const handleSaveName = () => {
+    const trimmed = displayName.trim();
+    setSavingName(true);
+    updateMe.mutate(
+      { data: { fullName: trimmed || null } },
+      {
+        onSuccess: () => {
+          toast({ title: "Display name updated" });
+          queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+          setSavingName(false);
+        },
+        onError: () => {
+          toast({ title: "Failed to update name", variant: "destructive" });
+          setSavingName(false);
+        },
+      }
+    );
+  };
+
+  useEffect(() => {
     if (settings && !initialized) {
       const rates = settings.commissionRates as Record<string, number>;
       form.reset({
@@ -120,7 +149,7 @@ export default function Settings() {
       if (settings.commissionTable && (settings.commissionTable as CommissionTableRow[]).length > 0) {
         setCommissionTable(settings.commissionTable as CommissionTableRow[]);
       }
-      if (settings.brandColor) setBrandColor(settings.brandColor);
+      if (settings.brandColor) { setBrandColor(settings.brandColor); setHexInput(settings.brandColor); }
       if (settings.brandName) setBrandName(settings.brandName);
       if (settings.logoPath) {
         setLogoPath(settings.logoPath);
@@ -297,6 +326,38 @@ export default function Settings() {
           </div>
         )}
 
+        {/* Your Profile — visible to all users */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Your Profile</CardTitle>
+            <CardDescription>Update your display name shown in team lists and reports.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="displayName">Display Name</Label>
+              <div className="flex items-center gap-3 max-w-xs">
+                <Input
+                  id="displayName"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Your full name"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="gap-2 shrink-0"
+                  onClick={handleSaveName}
+                  disabled={savingName}
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  {savingName ? "Saving…" : "Save"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Shown on the Team page and in email reports.</p>
+            </div>
+          </CardContent>
+        </Card>
+
         <form onSubmit={form.handleSubmit(isAdmin ? onSubmit : (e) => e.preventDefault())} className="flex flex-col gap-6">
 
           {/* Agency Branding — admin only */}
@@ -383,13 +444,27 @@ export default function Settings() {
                       <input
                         type="color"
                         value={brandColor}
-                        onChange={(e) => setBrandColor(e.target.value)}
+                        onChange={(e) => { setBrandColor(e.target.value); setHexInput(e.target.value.toUpperCase()); }}
                         className="w-10 h-10 rounded-lg border border-border cursor-pointer bg-transparent p-0.5"
                       />
                     </div>
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/40">
-                      <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: brandColor }} />
-                      <span className="text-sm font-mono text-foreground">{brandColor.toUpperCase()}</span>
+                      <div className="w-4 h-4 rounded-sm flex-shrink-0" style={{ backgroundColor: brandColor }} />
+                      <input
+                        type="text"
+                        value={hexInput}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setHexInput(v);
+                          if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+                            setBrandColor(v);
+                          }
+                        }}
+                        onBlur={() => setHexInput(brandColor.toUpperCase())}
+                        className="text-sm font-mono text-foreground bg-transparent outline-none w-20"
+                        maxLength={7}
+                        spellCheck={false}
+                      />
                     </div>
                     <div className="text-sm text-muted-foreground">
                       Updates the sidebar, buttons, and accents in real-time.

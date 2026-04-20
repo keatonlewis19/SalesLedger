@@ -53,6 +53,20 @@ router.post("/users/invite", requireAuth, requireAdmin, async (req: AuthRequest,
   }
 });
 
+router.patch("/users/me", requireAuth, async (req: AuthRequest, res): Promise<void> => {
+  const { fullName } = req.body as { fullName?: string | null };
+  const [updated] = await db
+    .update(agencyUsersTable)
+    .set({ fullName: fullName ?? null, updatedAt: new Date() })
+    .where(eq(agencyUsersTable.clerkUserId, req.userId!))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  res.json(normalizeUser(updated));
+});
+
 router.patch("/users/:id/role", requireAuth, requireAdmin, async (req: AuthRequest, res): Promise<void> => {
   const clerkUserId = req.params.id;
   const { role } = req.body as { role: string };
