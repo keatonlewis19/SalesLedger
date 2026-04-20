@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Trash2, Save, Download, Upload, CheckCircle2, Info } from "lucide-react";
+import { Plus, Trash2, Save, Download, Upload, CheckCircle2 } from "lucide-react";
 import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -292,7 +292,8 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="text-lg">Fair Market Value Rates</CardTitle>
               <CardDescription>
-                Set the Initial FMV rate. All other commission type rates are automatically derived from it.
+                Enter the Initial FMV rate. Renewal and Monthly Renewal are calculated from it automatically.
+                Prorated Renewal is calculated per sale as <strong>Monthly Rate × months remaining in the year</strong> based on the effective date (e.g. effective Jun 1 = 7 months of coverage).
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -332,21 +333,6 @@ export default function Settings() {
                   <span className="text-xs text-muted-foreground">{formula}</span>
                 </div>
               ))}
-
-              {/* Prorated Renewal — per-sale note */}
-              <div className="flex items-start gap-3">
-                <div className="w-48 flex h-10 items-center rounded-md border border-input bg-muted px-3 text-sm font-medium text-foreground shrink-0">
-                  Prorated Renewal
-                </div>
-                <div className="flex items-start gap-2 pt-2">
-                  <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Calculated per sale: <span className="font-medium">Monthly Rate × months remaining in year</span> based on the effective date.
-                    <br />
-                    <span className="italic">e.g. Effective Jun 1 → 7 months → Monthly × 7</span>
-                  </p>
-                </div>
-              </div>
 
             </CardContent>
           </Card>
