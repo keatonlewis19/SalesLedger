@@ -114,7 +114,7 @@ router.get("/sales/summary/current-week", async (_req, res): Promise<void> => {
 
   const totalSales = sales.length;
   const totalEstimatedCommission = sales.reduce(
-    (acc, s) => acc + (s.estimatedCommission ?? 0),
+    (acc, s) => acc + (s.estimatedCommission ?? 0) + (s.hra ?? 0),
     0
   );
 
