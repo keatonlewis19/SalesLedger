@@ -24,6 +24,16 @@ function parseId(raw: string | string[]): number {
   return parseInt(str, 10);
 }
 
+function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; estimatedCommission: number | null | undefined; notes: string | null | undefined; [key: string]: unknown }) {
+  return {
+    ...s,
+    estimatedCommission: s.estimatedCommission ?? null,
+    notes: s.notes ?? null,
+    createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : s.createdAt,
+    updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : s.updatedAt,
+  };
+}
+
 router.get("/sales", async (req, res): Promise<void> => {
   const parsed = ListSalesQueryParams.safeParse(req.query);
   if (!parsed.success) {
@@ -51,11 +61,7 @@ router.get("/sales", async (req, res): Promise<void> => {
 
   res.json(
     ListSalesResponse.parse(
-      sales.map((s) => ({
-        ...s,
-        estimatedCommission: s.estimatedCommission ?? null,
-        notes: s.notes ?? null,
-      }))
+      sales.map(normalizeSale)
     )
   );
 });
@@ -80,13 +86,7 @@ router.post("/sales", async (req, res): Promise<void> => {
     })
     .returning();
 
-  res.status(201).json(
-    GetSaleResponse.parse({
-      ...sale,
-      estimatedCommission: sale.estimatedCommission ?? null,
-      notes: sale.notes ?? null,
-    })
-  );
+  res.status(201).json(GetSaleResponse.parse(normalizeSale(sale)));
 });
 
 router.get("/sales/summary/current-week", async (_req, res): Promise<void> => {
@@ -140,13 +140,7 @@ router.get("/sales/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(
-    GetSaleResponse.parse({
-      ...sale,
-      estimatedCommission: sale.estimatedCommission ?? null,
-      notes: sale.notes ?? null,
-    })
-  );
+  res.json(GetSaleResponse.parse(normalizeSale(sale)));
 });
 
 router.patch("/sales/:id", async (req, res): Promise<void> => {
@@ -189,13 +183,7 @@ router.patch("/sales/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(
-    UpdateSaleResponse.parse({
-      ...sale,
-      estimatedCommission: sale.estimatedCommission ?? null,
-      notes: sale.notes ?? null,
-    })
-  );
+  res.json(UpdateSaleResponse.parse(normalizeSale(sale)));
 });
 
 router.delete("/sales/:id", async (req, res): Promise<void> => {
