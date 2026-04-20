@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: sales
+    description: Sales entry operations
+  - name: reports
+    description: Weekly report operations
 paths:
   /healthz:
     get:
@@ -24,6 +28,172 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /sales:
+    get:
+      operationId: listSales
+      tags: [sales]
+      summary: List all sales entries
+      parameters:
+        - name: weekStart
+          in: query
+          required: false
+          schema:
+            type: string
+          description: ISO date string for the start of the week filter
+      responses:
+        "200":
+          description: List of sales entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SaleEntry"
+    post:
+      operationId: createSale
+      tags: [sales]
+      summary: Create a new sale entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSaleBody"
+      responses:
+        "201":
+          description: Created sale entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleEntry"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sales/{id}:
+    get:
+      operationId: getSale
+      tags: [sales]
+      summary: Get a single sale entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Sale entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleEntry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateSale
+      tags: [sales]
+      summary: Update a sale entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSaleBody"
+      responses:
+        "200":
+          description: Updated sale entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleEntry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteSale
+      tags: [sales]
+      summary: Delete a sale entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted successfully
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sales/summary/current-week:
+    get:
+      operationId: getCurrentWeekSummary
+      tags: [sales]
+      summary: Get summary stats for the current week
+      responses:
+        "200":
+          description: Weekly summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeekSummary"
+
+  /reports:
+    get:
+      operationId: listReports
+      tags: [reports]
+      summary: List all weekly reports
+      responses:
+        "200":
+          description: List of sent weekly reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeeklyReport"
+
+  /reports/send:
+    post:
+      operationId: sendReport
+      tags: [reports]
+      summary: Manually trigger sending the weekly report now
+      responses:
+        "200":
+          description: Report sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendReportResponse"
+        "400":
+          description: Error sending report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +204,170 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SaleEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientName:
+          type: string
+        owningAgent:
+          type: string
+        salesType:
+          type: string
+        soldDate:
+          type: string
+        commissionType:
+          type: string
+        estimatedCommission:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
+        weekStart:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - clientName
+        - owningAgent
+        - salesType
+        - soldDate
+        - commissionType
+        - estimatedCommission
+        - notes
+        - weekStart
+        - createdAt
+        - updatedAt
+
+    CreateSaleBody:
+      type: object
+      properties:
+        clientName:
+          type: string
+        owningAgent:
+          type: string
+        salesType:
+          type: string
+        soldDate:
+          type: string
+        commissionType:
+          type: string
+        estimatedCommission:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
+      required:
+        - clientName
+        - owningAgent
+        - salesType
+        - soldDate
+        - commissionType
+
+    UpdateSaleBody:
+      type: object
+      properties:
+        clientName:
+          type: string
+        owningAgent:
+          type: string
+        salesType:
+          type: string
+        soldDate:
+          type: string
+        commissionType:
+          type: string
+        estimatedCommission:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
+
+    WeekSummary:
+      type: object
+      properties:
+        totalSales:
+          type: integer
+        totalEstimatedCommission:
+          type: number
+        byOwningAgent:
+          type: array
+          items:
+            type: object
+            properties:
+              agent:
+                type: string
+              count:
+                type: integer
+            required:
+              - agent
+              - count
+        bySalesType:
+          type: array
+          items:
+            type: object
+            properties:
+              salesType:
+                type: string
+              count:
+                type: integer
+            required:
+              - salesType
+              - count
+        weekStart:
+          type: string
+        weekEnd:
+          type: string
+      required:
+        - totalSales
+        - totalEstimatedCommission
+        - byOwningAgent
+        - bySalesType
+        - weekStart
+        - weekEnd
+
+    WeeklyReport:
+      type: object
+      properties:
+        id:
+          type: integer
+        weekStart:
+          type: string
+        weekEnd:
+          type: string
+        sentAt:
+          type: string
+        totalSales:
+          type: integer
+        totalEstimatedCommission:
+          type: number
+        recipients:
+          type: string
+      required:
+        - id
+        - weekStart
+        - weekEnd
+        - sentAt
+        - totalSales
+        - totalEstimatedCommission
+        - recipients
+
+    SendReportResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        reportId:
+          type: integer
+      required:
+        - message
+        - reportId

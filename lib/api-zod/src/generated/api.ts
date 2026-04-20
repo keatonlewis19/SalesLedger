@@ -14,3 +14,144 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary List all sales entries
+ */
+export const ListSalesQueryParams = zod.object({
+  weekStart: zod.coerce
+    .string()
+    .optional()
+    .describe("ISO date string for the start of the week filter"),
+});
+
+export const ListSalesResponseItem = zod.object({
+  id: zod.number(),
+  clientName: zod.string(),
+  owningAgent: zod.string(),
+  salesType: zod.string(),
+  soldDate: zod.string(),
+  commissionType: zod.string(),
+  estimatedCommission: zod.number().nullable(),
+  notes: zod.string().nullable(),
+  weekStart: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListSalesResponse = zod.array(ListSalesResponseItem);
+
+/**
+ * @summary Create a new sale entry
+ */
+export const CreateSaleBody = zod.object({
+  clientName: zod.string(),
+  owningAgent: zod.string(),
+  salesType: zod.string(),
+  soldDate: zod.string(),
+  commissionType: zod.string(),
+  estimatedCommission: zod.number().nullish(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Get a single sale entry
+ */
+export const GetSaleParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetSaleResponse = zod.object({
+  id: zod.number(),
+  clientName: zod.string(),
+  owningAgent: zod.string(),
+  salesType: zod.string(),
+  soldDate: zod.string(),
+  commissionType: zod.string(),
+  estimatedCommission: zod.number().nullable(),
+  notes: zod.string().nullable(),
+  weekStart: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Update a sale entry
+ */
+export const UpdateSaleParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateSaleBody = zod.object({
+  clientName: zod.string().optional(),
+  owningAgent: zod.string().optional(),
+  salesType: zod.string().optional(),
+  soldDate: zod.string().optional(),
+  commissionType: zod.string().optional(),
+  estimatedCommission: zod.number().nullish(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateSaleResponse = zod.object({
+  id: zod.number(),
+  clientName: zod.string(),
+  owningAgent: zod.string(),
+  salesType: zod.string(),
+  soldDate: zod.string(),
+  commissionType: zod.string(),
+  estimatedCommission: zod.number().nullable(),
+  notes: zod.string().nullable(),
+  weekStart: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a sale entry
+ */
+export const DeleteSaleParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get summary stats for the current week
+ */
+export const GetCurrentWeekSummaryResponse = zod.object({
+  totalSales: zod.number(),
+  totalEstimatedCommission: zod.number(),
+  byOwningAgent: zod.array(
+    zod.object({
+      agent: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  bySalesType: zod.array(
+    zod.object({
+      salesType: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  weekStart: zod.string(),
+  weekEnd: zod.string(),
+});
+
+/**
+ * @summary List all weekly reports
+ */
+export const ListReportsResponseItem = zod.object({
+  id: zod.number(),
+  weekStart: zod.string(),
+  weekEnd: zod.string(),
+  sentAt: zod.string(),
+  totalSales: zod.number(),
+  totalEstimatedCommission: zod.number(),
+  recipients: zod.string(),
+});
+export const ListReportsResponse = zod.array(ListReportsResponseItem);
+
+/**
+ * @summary Manually trigger sending the weekly report now
+ */
+export const SendReportResponse = zod.object({
+  message: zod.string(),
+  reportId: zod.number(),
+});

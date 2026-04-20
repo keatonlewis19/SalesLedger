@@ -8,3 +8,88 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export interface SaleEntry {
+  id: number;
+  clientName: string;
+  owningAgent: string;
+  salesType: string;
+  soldDate: string;
+  commissionType: string;
+  /** @nullable */
+  estimatedCommission: number | null;
+  /** @nullable */
+  notes: string | null;
+  weekStart: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSaleBody {
+  clientName: string;
+  owningAgent: string;
+  salesType: string;
+  soldDate: string;
+  commissionType: string;
+  /** @nullable */
+  estimatedCommission?: number | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface UpdateSaleBody {
+  clientName?: string;
+  owningAgent?: string;
+  salesType?: string;
+  soldDate?: string;
+  commissionType?: string;
+  /** @nullable */
+  estimatedCommission?: number | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export type WeekSummaryByOwningAgentItem = {
+  agent: string;
+  count: number;
+};
+
+export type WeekSummaryBySalesTypeItem = {
+  salesType: string;
+  count: number;
+};
+
+export interface WeekSummary {
+  totalSales: number;
+  totalEstimatedCommission: number;
+  byOwningAgent: WeekSummaryByOwningAgentItem[];
+  bySalesType: WeekSummaryBySalesTypeItem[];
+  weekStart: string;
+  weekEnd: string;
+}
+
+export interface WeeklyReport {
+  id: number;
+  weekStart: string;
+  weekEnd: string;
+  sentAt: string;
+  totalSales: number;
+  totalEstimatedCommission: number;
+  recipients: string;
+}
+
+export interface SendReportResponse {
+  message: string;
+  reportId: number;
+}
+
+export type ListSalesParams = {
+  /**
+   * ISO date string for the start of the week filter
+   */
+  weekStart?: string;
+};

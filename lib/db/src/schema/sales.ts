@@ -1,0 +1,35 @@
+import { pgTable, text, serial, timestamp, doublePrecision, integer } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod/v4";
+
+export const salesTable = pgTable("sales", {
+  id: serial("id").primaryKey(),
+  clientName: text("client_name").notNull(),
+  owningAgent: text("owning_agent").notNull(),
+  salesType: text("sales_type").notNull(),
+  soldDate: text("sold_date").notNull(),
+  commissionType: text("commission_type").notNull(),
+  estimatedCommission: doublePrecision("estimated_commission"),
+  notes: text("notes"),
+  weekStart: text("week_start").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const insertSaleSchema = createInsertSchema(salesTable).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSale = z.infer<typeof insertSaleSchema>;
+export type Sale = typeof salesTable.$inferSelect;
+
+export const weeklyReportsTable = pgTable("weekly_reports", {
+  id: serial("id").primaryKey(),
+  weekStart: text("week_start").notNull(),
+  weekEnd: text("week_end").notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  totalSales: integer("total_sales").notNull().default(0),
+  totalEstimatedCommission: doublePrecision("total_estimated_commission").notNull().default(0),
+  recipients: text("recipients").notNull(),
+});
+
+export const insertWeeklyReportSchema = createInsertSchema(weeklyReportsTable).omit({ id: true, sentAt: true });
+export type InsertWeeklyReport = z.infer<typeof insertWeeklyReportSchema>;
+export type WeeklyReport = typeof weeklyReportsTable.$inferSelect;
