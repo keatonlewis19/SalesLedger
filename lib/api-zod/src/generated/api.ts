@@ -322,6 +322,10 @@ export const GetSettingsResponse = zod.object({
     .string()
     .nullable()
     .describe("Hex color string for agency brand color"),
+  panelColor: zod
+    .string()
+    .nullable()
+    .describe("Hex color string for the sidebar panel background"),
   brandName: zod.string().nullable().describe("Agency name shown in the app"),
 });
 
@@ -346,6 +350,7 @@ export const UpdateSettingsBody = zod.object({
     .nullish(),
   logoPath: zod.string().nullish(),
   brandColor: zod.string().nullish(),
+  panelColor: zod.string().nullish(),
   brandName: zod.string().nullish(),
 });
 
@@ -378,6 +383,10 @@ export const UpdateSettingsResponse = zod.object({
     .string()
     .nullable()
     .describe("Hex color string for agency brand color"),
+  panelColor: zod
+    .string()
+    .nullable()
+    .describe("Hex color string for the sidebar panel background"),
   brandName: zod.string().nullable().describe("Agency name shown in the app"),
 });
 

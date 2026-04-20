@@ -70,6 +70,7 @@ export const appSettingsTable = pgTable("app_settings", {
   commissionTable: jsonb("commission_table").$type<CommissionTableRow[]>(),
   logoPath: text("logo_path"),
   brandColor: text("brand_color").default("#0d9488"),
+  panelColor: text("panel_color").default("#0f172a"),
   brandName: text("brand_name").default("CRM Group Insurance"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

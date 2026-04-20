@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Plus, Trash2, Save, Download, Upload, CheckCircle2, Lock, ImageIcon, Palette, X } from "lucide-react";
 import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey, useUpdateMe, getGetMeQueryKey } from "@workspace/api-client-react";
+import { applyBrandColor, applyPanelColor } from "@/contexts/branding";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,6 +93,8 @@ export default function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [brandColor, setBrandColor] = useState("#0d9488");
+  const [panelColor, setPanelColor] = useState("#0f172a");
+  const [hexPanelInput, setHexPanelInput] = useState("#0f172a");
   const [brandName, setBrandName] = useState("CRM Group Insurance");
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
@@ -116,6 +119,14 @@ export default function Settings() {
       setDisplayName(agencyUser.fullName);
     }
   }, [agencyUser]);
+
+  useEffect(() => {
+    applyBrandColor(brandColor);
+  }, [brandColor]);
+
+  useEffect(() => {
+    applyPanelColor(panelColor);
+  }, [panelColor]);
 
   const handleSaveName = () => {
     const trimmed = displayName.trim();
@@ -150,6 +161,7 @@ export default function Settings() {
         setCommissionTable(settings.commissionTable as CommissionTableRow[]);
       }
       if (settings.brandColor) { setBrandColor(settings.brandColor); setHexInput(settings.brandColor); }
+      if (settings.panelColor) { setPanelColor(settings.panelColor); setHexPanelInput(settings.panelColor); }
       if (settings.brandName) setBrandName(settings.brandName);
       if (settings.logoPath) {
         setLogoPath(settings.logoPath);
@@ -246,6 +258,7 @@ export default function Settings() {
           commissionRates,
           commissionTable: commissionTable ?? null,
           brandColor,
+          panelColor,
           brandName,
           logoPath,
         },
@@ -438,7 +451,8 @@ export default function Settings() {
 
                 {/* Brand Color */}
                 <div className="flex flex-col gap-2">
-                  <Label>Brand Color</Label>
+                  <Label>Accent Color</Label>
+                  <p className="text-xs text-muted-foreground -mt-1">Used for buttons, active nav items, and highlights.</p>
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <input
@@ -466,8 +480,45 @@ export default function Settings() {
                         spellCheck={false}
                       />
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      Updates the sidebar, buttons, and accents in real-time.
+                  </div>
+                </div>
+
+                {/* Panel Color */}
+                <div className="flex flex-col gap-2">
+                  <Label>Panel Color</Label>
+                  <p className="text-xs text-muted-foreground -mt-1">Background color of the left sidebar panel.</p>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <input
+                        type="color"
+                        value={panelColor}
+                        onChange={(e) => { setPanelColor(e.target.value); setHexPanelInput(e.target.value.toUpperCase()); }}
+                        className="w-10 h-10 rounded-lg border border-border cursor-pointer bg-transparent p-0.5"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/40">
+                      <div className="w-4 h-4 rounded-sm flex-shrink-0" style={{ backgroundColor: panelColor }} />
+                      <input
+                        type="text"
+                        value={hexPanelInput}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setHexPanelInput(v);
+                          if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+                            setPanelColor(v);
+                          }
+                        }}
+                        onBlur={() => setHexPanelInput(panelColor.toUpperCase())}
+                        className="text-sm font-mono text-foreground bg-transparent outline-none w-20"
+                        maxLength={7}
+                        spellCheck={false}
+                      />
+                    </div>
+                    <div
+                      className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-white/80"
+                      style={{ backgroundColor: panelColor }}
+                    >
+                      <span className="font-medium text-white">Preview</span>
                     </div>
                   </div>
                 </div>

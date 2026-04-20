@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS = {
   commissionTable: null as CommissionTableRow[] | null,
   logoPath: null as string | null,
   brandColor: "#0d9488",
+  panelColor: "#0f172a",
   brandName: "CRM Group Insurance",
 };
 
@@ -50,6 +51,7 @@ async function getOrCreateSettings() {
       commissionTable: (r.commissionTable as CommissionTableRow[] | null) ?? null,
       logoPath: r.logoPath ?? null,
       brandColor: r.brandColor ?? "#0d9488",
+      panelColor: r.panelColor ?? "#0f172a",
       brandName: r.brandName ?? "CRM Group Insurance",
     };
   }
@@ -88,6 +90,7 @@ router.patch("/settings", requireAuth, requireAdmin, async (req, res): Promise<v
     commissionTable: (updated.commissionTable ?? null) as CommissionTableRow[] | null,
     logoPath: (updated.logoPath ?? null) as string | null,
     brandColor: (updated.brandColor ?? "#0d9488") as string,
+    panelColor: (updated.panelColor ?? "#0f172a") as string,
     brandName: (updated.brandName ?? "CRM Group Insurance") as string,
   };
 

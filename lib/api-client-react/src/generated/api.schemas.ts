@@ -49,6 +49,11 @@ export interface AppSettings {
    */
   brandColor: string | null;
   /**
+   * Hex color string for the sidebar panel background
+   * @nullable
+   */
+  panelColor: string | null;
+  /**
    * Agency name shown in the app
    * @nullable
    */
@@ -68,6 +73,8 @@ export interface UpdateSettingsBody {
   logoPath?: string | null;
   /** @nullable */
   brandColor?: string | null;
+  /** @nullable */
+  panelColor?: string | null;
   /** @nullable */
   brandName?: string | null;
 }

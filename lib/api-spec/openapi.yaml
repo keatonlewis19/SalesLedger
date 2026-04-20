@@ -471,6 +471,9 @@ components:
         brandColor:
           type: ["string", "null"]
           description: "Hex color string for agency brand color"
+        panelColor:
+          type: ["string", "null"]
+          description: "Hex color string for the sidebar panel background"
         brandName:
           type: ["string", "null"]
           description: "Agency name shown in the app"
@@ -483,6 +486,7 @@ components:
         - commissionTable
         - logoPath
         - brandColor
+        - panelColor
         - brandName
 
     UpdateSettingsBody:
@@ -510,6 +514,8 @@ components:
         logoPath:
           type: ["string", "null"]
         brandColor:
+          type: ["string", "null"]
+        panelColor:
           type: ["string", "null"]
         brandName:
           type: ["string", "null"]

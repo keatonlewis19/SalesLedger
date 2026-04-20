@@ -68,8 +68,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-64 flex-col bg-slate-900 text-slate-100">
-        <div className="h-16 flex items-center px-5 border-b border-slate-800">
+      <div className="hidden md:flex w-64 flex-col text-slate-100" style={{ backgroundColor: "var(--panel-bg, #0f172a)" }}>
+        <div className="h-16 flex items-center px-5 border-b border-white/10">
           {logoUrl ? (
             <img src={logoUrl} alt={brandName} className="h-9 w-auto object-contain max-w-[192px]" />
           ) : (
@@ -82,7 +82,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
               <div>
                 <div className="font-bold text-white text-sm leading-none">{agencyShortName}</div>
-                <div className="text-xs text-slate-400 mt-0.5">Insurance Agency</div>
+                <div className="text-xs text-white/50 mt-0.5">Insurance Agency</div>
               </div>
             </div>
           )}
@@ -97,7 +97,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm ${
                     active
                       ? "text-white font-medium"
-                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                      : "text-slate-300 hover:bg-white/10 hover:text-white"
                   }`}
                   style={active ? { backgroundColor: brandColor } : undefined}
                 >
@@ -110,10 +110,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* User Profile Footer */}
-        <div className="px-3 py-4 border-t border-slate-800">
+        <div className="px-3 py-4 border-t border-white/10">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left">
+              <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/10 transition-colors text-left">
                 <Avatar className="w-8 h-8 shrink-0">
                   <AvatarFallback className="text-white text-xs font-semibold" style={{ backgroundColor: brandColor }}>
                     {initials}
@@ -123,7 +123,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <div className="text-sm font-medium text-slate-100 truncate">{displayName}</div>
                   <Badge
                     variant="outline"
-                    className="text-[10px] px-1.5 py-0 h-4 border-0 font-normal mt-0.5 bg-slate-800 text-slate-400"
+                    className="text-[10px] px-1.5 py-0 h-4 border-0 font-normal mt-0.5 bg-white/10 text-slate-300"
                   >
                     {isAdmin ? "Admin" : "Agent"}
                   </Badge>
