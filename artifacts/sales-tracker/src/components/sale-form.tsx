@@ -40,6 +40,7 @@ const formSchema = z.object({
   soldDate: z.string().min(1, "Sold date is required"),
   commissionType: z.string().min(1, "Commission type is required"),
   leadSource: z.string().optional(),
+  hra: z.string().optional(),
   annualPremium: z.string().optional(),
   estimatedCommission: z.string().optional(),
   notes: z.string().optional(),
@@ -77,6 +78,7 @@ export function SaleForm({
       soldDate: format(new Date(), "yyyy-MM-dd"),
       commissionType: "",
       leadSource: "",
+      hra: "",
       annualPremium: "",
       estimatedCommission: "",
       notes: "",
@@ -92,6 +94,7 @@ export function SaleForm({
         soldDate: sale.soldDate.split("T")[0],
         commissionType: sale.commissionType,
         leadSource: sale.leadSource || "",
+        hra: sale.hra?.toString() || "",
         annualPremium: sale.annualPremium?.toString() || "",
         estimatedCommission: sale.estimatedCommission?.toString() || "",
         notes: sale.notes || "",
@@ -104,6 +107,7 @@ export function SaleForm({
         soldDate: format(new Date(), "yyyy-MM-dd"),
         commissionType: "",
         leadSource: "",
+        hra: "",
         annualPremium: "",
         estimatedCommission: "",
         notes: "",
@@ -128,6 +132,7 @@ export function SaleForm({
     const formattedData = {
       ...data,
       leadSource: data.leadSource || null,
+      hra: data.hra ? parseFloat(data.hra) : null,
       annualPremium: data.annualPremium ? parseFloat(data.annualPremium) : null,
       estimatedCommission: data.estimatedCommission ? parseFloat(data.estimatedCommission) : null,
       notes: data.notes || null,
@@ -280,6 +285,20 @@ export function SaleForm({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="hra"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>HRA ($) (Optional)</FormLabel>
+                  <FormControl>
+                    <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField

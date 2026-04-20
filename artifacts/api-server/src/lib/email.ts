@@ -29,6 +29,7 @@ export interface SaleRow {
   soldDate: string;
   commissionType: string;
   leadSource: string | null;
+  hra: number | null;
   estimatedCommission: number | null;
   notes: string | null;
 }
@@ -51,6 +52,7 @@ function buildEmailHtml(sales: SaleRow[], weekStart: string, weekEnd: string): s
         <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.soldDate}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.leadSource ?? ""}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.commissionType}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;">${formatCurrency(s.hra)}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;">${formatCurrency(s.estimatedCommission)}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.notes ?? ""}</td>
       </tr>
@@ -76,6 +78,7 @@ function buildEmailHtml(sales: SaleRow[], weekStart: string, weekEnd: string): s
               <th style="padding:10px 12px;text-align:left;">Sold Date</th>
               <th style="padding:10px 12px;text-align:left;">Lead Source</th>
               <th style="padding:10px 12px;text-align:left;">Commission Type</th>
+              <th style="padding:10px 12px;text-align:right;">HRA</th>
               <th style="padding:10px 12px;text-align:right;">Est. Commission</th>
               <th style="padding:10px 12px;text-align:left;">Notes</th>
             </tr>
@@ -84,6 +87,7 @@ function buildEmailHtml(sales: SaleRow[], weekStart: string, weekEnd: string): s
           <tfoot>
             <tr style="background:#f5f5f5;font-weight:bold;">
               <td colspan="6" style="padding:10px 12px;">Total</td>
+              <td style="padding:10px 12px;text-align:right;">${formatCurrency(sales.reduce((acc, s) => acc + (s.hra ?? 0), 0))}</td>
               <td style="padding:10px 12px;text-align:right;">${formatCurrency(totalCommission)}</td>
               <td></td>
             </tr>

@@ -25,10 +25,11 @@ function parseId(raw: string | string[]): number {
   return parseInt(str, 10);
 }
 
-function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; leadSource?: string | null; annualPremium?: number | null; estimatedCommission: number | null | undefined; notes: string | null | undefined; [key: string]: unknown }) {
+function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; leadSource?: string | null; hra?: number | null; annualPremium?: number | null; estimatedCommission: number | null | undefined; notes: string | null | undefined; [key: string]: unknown }) {
   return {
     ...s,
     leadSource: s.leadSource ?? null,
+    hra: s.hra ?? null,
     annualPremium: s.annualPremium ?? null,
     estimatedCommission: s.estimatedCommission ?? null,
     notes: s.notes ?? null,

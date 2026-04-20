@@ -63,6 +63,7 @@ export async function runWeeklyReport(): Promise<{ reportId: number; totalSales:
     soldDate: s.soldDate,
     commissionType: s.commissionType,
     leadSource: s.leadSource ?? null,
+    hra: s.hra ?? null,
     estimatedCommission: s.estimatedCommission ?? null,
     notes: s.notes ?? null,
   }));
