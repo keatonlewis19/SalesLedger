@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Plus, Edit2, Trash2, TrendingUp, Users } from "lucide-react";
+import { Plus, Edit2, Trash2, TrendingUp, Users, CheckCircle2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { 
-  useListSales, 
-  useGetCurrentWeekSummary, 
+import {
+  useListSales,
+  useGetCurrentWeekSummary,
   useDeleteSale,
+  useMarkSalePaid,
   getListSalesQueryKey,
-  getGetCurrentWeekSummaryQueryKey
+  getGetCurrentWeekSummaryQueryKey,
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { SaleForm } from "@/components/sale-form";
@@ -33,13 +34,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAgencyUser } from "@/hooks/useAgencyUser";
 
 export default function Home() {
   const { data: sales, isLoading: isSalesLoading } = useListSales();
   const { data: summary, isLoading: isSummaryLoading } = useGetCurrentWeekSummary();
   const deleteSale = useDeleteSale();
+  const markSalePaid = useMarkSalePaid();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isAdmin } = useAgencyUser();
 
   const [saleToDelete, setSaleToDelete] = useState<number | null>(null);
 
@@ -57,7 +62,22 @@ export default function Home() {
         onError: () => {
           toast({ title: "Failed to delete sale", variant: "destructive" });
           setSaleToDelete(null);
-        }
+        },
+      }
+    );
+  };
+
+  const handleTogglePaid = (id: number, current: boolean) => {
+    markSalePaid.mutate(
+      { id, data: { paid: !current } },
+      {
+        onSuccess: () => {
+          toast({ title: !current ? "Marked as paid" : "Marked as unpaid" });
+          queryClient.invalidateQueries({ queryKey: getListSalesQueryKey() });
+        },
+        onError: () => {
+          toast({ title: "Failed to update paid status", variant: "destructive" });
+        },
       }
     );
   };
@@ -75,12 +95,13 @@ export default function Home() {
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Current Week</h1>
             {summary && (
               <p className="text-muted-foreground mt-1">
-                {format(new Date(summary.weekStart), "MMM d")} - {format(new Date(summary.weekEnd), "MMM d, yyyy")}
+                {format(new Date(summary.weekStart), "MMM d")} -{" "}
+                {format(new Date(summary.weekEnd), "MMM d, yyyy")}
               </p>
             )}
           </div>
           <SaleForm>
-            <Button className="gap-2 shrink-0">
+            <Button className="gap-2 shrink-0 bg-teal-600 hover:bg-teal-700 text-white">
               <Plus className="w-4 h-4" />
               Add Sale
             </Button>
@@ -101,7 +122,9 @@ export default function Home() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Sales</p>
-                  <p className="text-3xl font-bold font-mono text-foreground">{summary.totalSales}</p>
+                  <p className="text-3xl font-bold font-mono text-foreground">
+                    {summary.totalSales}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -122,10 +145,16 @@ export default function Home() {
         ) : null}
 
         <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b bg-muted/20">
+          <div className="px-6 py-4 border-b bg-muted/20 flex items-center justify-between">
             <h2 className="font-semibold text-lg">Sales Log</h2>
+            {isAdmin && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+                Check "Paid" to mark commission as received
+              </span>
+            )}
           </div>
-          
+
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -139,6 +168,7 @@ export default function Home() {
                   <TableHead>Comm. Type</TableHead>
                   <TableHead className="text-right">HRA</TableHead>
                   <TableHead className="text-right">Commission</TableHead>
+                  <TableHead className="text-center">Paid</TableHead>
                   <TableHead className="w-[100px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -146,21 +176,16 @@ export default function Home() {
                 {isSalesLoading ? (
                   Array.from({ length: 3 }).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                      <TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                      {Array.from({ length: 11 }).map((_, j) => (
+                        <TableCell key={j}>
+                          <Skeleton className="h-4 w-20" />
+                        </TableCell>
+                      ))}
                     </TableRow>
                   ))
                 ) : sales?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="h-48 text-center text-muted-foreground">
+                    <TableCell colSpan={11} className="h-48 text-center text-muted-foreground">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <TrendingUp className="w-8 h-8 text-muted" />
                         <p>No sales logged this week.</p>
@@ -169,32 +194,71 @@ export default function Home() {
                   </TableRow>
                 ) : (
                   sales?.map((sale) => (
-                    <TableRow key={sale.id} className="group">
+                    <TableRow
+                      key={sale.id}
+                      className={`group ${sale.paid ? "bg-teal-50/30" : ""}`}
+                    >
                       <TableCell className="font-medium">{sale.clientName}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{sale.salesSource || "—"}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{sale.leadSource || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {sale.salesSource || "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {sale.leadSource || "—"}
+                      </TableCell>
                       <TableCell>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
                           {sale.salesType}
                         </span>
                       </TableCell>
                       <TableCell>{format(new Date(sale.soldDate), "MMM d")}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{sale.effectiveDate ? format(new Date(sale.effectiveDate), "MMM d") : "—"}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{sale.commissionType || "—"}</TableCell>
-                      <TableCell className="text-right font-mono font-medium">{sale.hra != null ? formatCurrency(sale.hra) : "None"}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {sale.effectiveDate
+                          ? format(new Date(sale.effectiveDate), "MMM d")
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {sale.commissionType || "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono font-medium">
+                        {sale.hra != null ? formatCurrency(sale.hra) : "None"}
+                      </TableCell>
                       <TableCell className="text-right font-mono font-medium">
                         {formatCurrency(sale.estimatedCommission)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {isAdmin ? (
+                          <Checkbox
+                            checked={sale.paid}
+                            onCheckedChange={() => handleTogglePaid(sale.id, sale.paid)}
+                            disabled={markSalePaid.isPending}
+                            className="data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600 mx-auto"
+                          />
+                        ) : (
+                          <span
+                            className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${
+                              sale.paid
+                                ? "bg-teal-100 text-teal-600"
+                                : "bg-slate-100 text-slate-400"
+                            }`}
+                          >
+                            {sale.paid ? "✓" : "—"}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <SaleForm sale={sale}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            >
                               <Edit2 className="w-4 h-4" />
                             </Button>
                           </SaleForm>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-destructive"
                             onClick={() => setSaleToDelete(sale.id)}
                           >
@@ -216,12 +280,16 @@ export default function Home() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Sale</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove this sale from the tracker? This action cannot be undone.
+              Are you sure you want to remove this sale from the tracker? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

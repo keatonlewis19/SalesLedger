@@ -16,6 +16,8 @@ tags:
     description: Weekly report operations
   - name: settings
     description: App configuration settings
+  - name: users
+    description: Agency user management
 paths:
   /healthz:
     get:
@@ -75,6 +77,131 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /sales/{id}/paid:
+    patch:
+      operationId: markSalePaid
+      tags: [sales]
+      summary: Toggle the paid status of a sale (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paid:
+                  type: boolean
+              required:
+                - paid
+      responses:
+        "200":
+          description: Updated sale entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaleEntry"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/me:
+    get:
+      operationId: getMe
+      tags: [users]
+      summary: Get current user's agency profile
+      responses:
+        "200":
+          description: Current agency user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyUser"
+
+  /users:
+    get:
+      operationId: listAgencyUsers
+      tags: [users]
+      summary: List all agency users (admin only)
+      responses:
+        "200":
+          description: List of agency users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgencyUser"
+
+  /users/invite:
+    post:
+      operationId: inviteAgent
+      tags: [users]
+      summary: Invite a new agent by email (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                role:
+                  type: string
+              required:
+                - email
+      responses:
+        "200":
+          description: Invitation sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+
+  /users/{id}/role:
+    patch:
+      operationId: updateUserRole
+      tags: [users]
+      summary: Update a user's role (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+              required:
+                - role
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyUser"
 
   /sales/{id}:
     get:
@@ -325,11 +452,39 @@ components:
             $ref: "#/components/schemas/CommissionTableRow"
           nullable: true
 
+    AgencyUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        clerkUserId:
+          type: string
+        role:
+          type: string
+        fullName:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - clerkUserId
+        - role
+        - fullName
+        - email
+        - createdAt
+        - updatedAt
+
     SaleEntry:
       type: object
       properties:
         id:
           type: integer
+        userId:
+          type: ["string", "null"]
         clientName:
           type: string
         owningAgent:
@@ -354,6 +509,8 @@ components:
           type: ["number", "null"]
         comments:
           type: ["string", "null"]
+        paid:
+          type: boolean
         weekStart:
           type: string
         createdAt:
@@ -362,6 +519,7 @@ components:
           type: string
       required:
         - id
+        - userId
         - clientName
         - owningAgent
         - salesSource
@@ -374,6 +532,7 @@ components:
         - annualPremium
         - estimatedCommission
         - comments
+        - paid
         - weekStart
         - createdAt
         - updatedAt

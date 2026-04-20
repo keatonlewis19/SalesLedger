@@ -27,6 +27,7 @@ export const ListSalesQueryParams = zod.object({
 
 export const ListSalesResponseItem = zod.object({
   id: zod.number(),
+  userId: zod.string().nullable(),
   clientName: zod.string(),
   owningAgent: zod.string().nullable(),
   salesSource: zod.string().nullable(),
@@ -39,6 +40,7 @@ export const ListSalesResponseItem = zod.object({
   annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
   comments: zod.string().nullable(),
+  paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -63,14 +65,19 @@ export const CreateSaleBody = zod.object({
 });
 
 /**
- * @summary Get a single sale entry
+ * @summary Toggle the paid status of a sale (admin only)
  */
-export const GetSaleParams = zod.object({
+export const MarkSalePaidParams = zod.object({
   id: zod.coerce.number(),
 });
 
-export const GetSaleResponse = zod.object({
+export const MarkSalePaidBody = zod.object({
+  paid: zod.boolean(),
+});
+
+export const MarkSalePaidResponse = zod.object({
   id: zod.number(),
+  userId: zod.string().nullable(),
   clientName: zod.string(),
   owningAgent: zod.string().nullable(),
   salesSource: zod.string().nullable(),
@@ -83,6 +90,95 @@ export const GetSaleResponse = zod.object({
   annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
   comments: zod.string().nullable(),
+  paid: zod.boolean(),
+  weekStart: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Get current user's agency profile
+ */
+export const GetMeResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  role: zod.string(),
+  fullName: zod.string().nullable(),
+  email: zod.string().nullable(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary List all agency users (admin only)
+ */
+export const ListAgencyUsersResponseItem = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  role: zod.string(),
+  fullName: zod.string().nullable(),
+  email: zod.string().nullable(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListAgencyUsersResponse = zod.array(ListAgencyUsersResponseItem);
+
+/**
+ * @summary Invite a new agent by email (admin only)
+ */
+export const InviteAgentBody = zod.object({
+  email: zod.string(),
+  role: zod.string().optional(),
+});
+
+export const InviteAgentResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary Update a user's role (admin only)
+ */
+export const UpdateUserRoleParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const UpdateUserRoleBody = zod.object({
+  role: zod.string(),
+});
+
+export const UpdateUserRoleResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  role: zod.string(),
+  fullName: zod.string().nullable(),
+  email: zod.string().nullable(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Get a single sale entry
+ */
+export const GetSaleParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetSaleResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string().nullable(),
+  clientName: zod.string(),
+  owningAgent: zod.string().nullable(),
+  salesSource: zod.string().nullable(),
+  salesType: zod.string(),
+  soldDate: zod.string(),
+  effectiveDate: zod.string().nullable(),
+  commissionType: zod.string(),
+  leadSource: zod.string().nullable(),
+  hra: zod.number().nullable(),
+  annualPremium: zod.number().nullable(),
+  estimatedCommission: zod.number().nullable(),
+  comments: zod.string().nullable(),
+  paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -111,6 +207,7 @@ export const UpdateSaleBody = zod.object({
 
 export const UpdateSaleResponse = zod.object({
   id: zod.number(),
+  userId: zod.string().nullable(),
   clientName: zod.string(),
   owningAgent: zod.string().nullable(),
   salesSource: zod.string().nullable(),
@@ -123,6 +220,7 @@ export const UpdateSaleResponse = zod.object({
   annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
   comments: zod.string().nullable(),
+  paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
   updatedAt: zod.string(),

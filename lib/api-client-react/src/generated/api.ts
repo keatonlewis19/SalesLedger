@@ -17,15 +17,20 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AgencyUser,
   AppSettings,
   CreateSaleBody,
   ErrorResponse,
   HealthStatus,
+  InviteAgent200,
+  InviteAgentBody,
   ListSalesParams,
+  MarkSalePaidBody,
   SaleEntry,
   SendReportResponse,
   UpdateSaleBody,
   UpdateSettingsBody,
+  UpdateUserRoleBody,
   WeekSummary,
   WeeklyReport,
 } from "./api.schemas";
@@ -293,6 +298,404 @@ export const useCreateSale = <
   TContext
 > => {
   return useMutation(getCreateSaleMutationOptions(options));
+};
+
+/**
+ * @summary Toggle the paid status of a sale (admin only)
+ */
+export const getMarkSalePaidUrl = (id: number) => {
+  return `/api/sales/${id}/paid`;
+};
+
+export const markSalePaid = async (
+  id: number,
+  markSalePaidBody: MarkSalePaidBody,
+  options?: RequestInit,
+): Promise<SaleEntry> => {
+  return customFetch<SaleEntry>(getMarkSalePaidUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(markSalePaidBody),
+  });
+};
+
+export const getMarkSalePaidMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markSalePaid>>,
+    TError,
+    { id: number; data: BodyType<MarkSalePaidBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof markSalePaid>>,
+  TError,
+  { id: number; data: BodyType<MarkSalePaidBody> },
+  TContext
+> => {
+  const mutationKey = ["markSalePaid"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof markSalePaid>>,
+    { id: number; data: BodyType<MarkSalePaidBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return markSalePaid(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MarkSalePaidMutationResult = NonNullable<
+  Awaited<ReturnType<typeof markSalePaid>>
+>;
+export type MarkSalePaidMutationBody = BodyType<MarkSalePaidBody>;
+export type MarkSalePaidMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Toggle the paid status of a sale (admin only)
+ */
+export const useMarkSalePaid = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markSalePaid>>,
+    TError,
+    { id: number; data: BodyType<MarkSalePaidBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof markSalePaid>>,
+  TError,
+  { id: number; data: BodyType<MarkSalePaidBody> },
+  TContext
+> => {
+  return useMutation(getMarkSalePaidMutationOptions(options));
+};
+
+/**
+ * @summary Get current user's agency profile
+ */
+export const getGetMeUrl = () => {
+  return `/api/users/me`;
+};
+
+export const getMe = async (options?: RequestInit): Promise<AgencyUser> => {
+  return customFetch<AgencyUser>(getGetMeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMeQueryKey = () => {
+  return [`/api/users/me`] as const;
+};
+
+export const getGetMeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMe>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMeQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMe>>> = ({
+    signal,
+  }) => getMe({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMe>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>;
+export type GetMeQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get current user's agency profile
+ */
+
+export function useGetMe<
+  TData = Awaited<ReturnType<typeof getMe>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMeQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all agency users (admin only)
+ */
+export const getListAgencyUsersUrl = () => {
+  return `/api/users`;
+};
+
+export const listAgencyUsers = async (
+  options?: RequestInit,
+): Promise<AgencyUser[]> => {
+  return customFetch<AgencyUser[]>(getListAgencyUsersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAgencyUsersQueryKey = () => {
+  return [`/api/users`] as const;
+};
+
+export const getListAgencyUsersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAgencyUsers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAgencyUsers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListAgencyUsersQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgencyUsers>>> = ({
+    signal,
+  }) => listAgencyUsers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAgencyUsers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAgencyUsersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAgencyUsers>>
+>;
+export type ListAgencyUsersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all agency users (admin only)
+ */
+
+export function useListAgencyUsers<
+  TData = Awaited<ReturnType<typeof listAgencyUsers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAgencyUsers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAgencyUsersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Invite a new agent by email (admin only)
+ */
+export const getInviteAgentUrl = () => {
+  return `/api/users/invite`;
+};
+
+export const inviteAgent = async (
+  inviteAgentBody: InviteAgentBody,
+  options?: RequestInit,
+): Promise<InviteAgent200> => {
+  return customFetch<InviteAgent200>(getInviteAgentUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(inviteAgentBody),
+  });
+};
+
+export const getInviteAgentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof inviteAgent>>,
+    TError,
+    { data: BodyType<InviteAgentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof inviteAgent>>,
+  TError,
+  { data: BodyType<InviteAgentBody> },
+  TContext
+> => {
+  const mutationKey = ["inviteAgent"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof inviteAgent>>,
+    { data: BodyType<InviteAgentBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return inviteAgent(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type InviteAgentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof inviteAgent>>
+>;
+export type InviteAgentMutationBody = BodyType<InviteAgentBody>;
+export type InviteAgentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Invite a new agent by email (admin only)
+ */
+export const useInviteAgent = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof inviteAgent>>,
+    TError,
+    { data: BodyType<InviteAgentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof inviteAgent>>,
+  TError,
+  { data: BodyType<InviteAgentBody> },
+  TContext
+> => {
+  return useMutation(getInviteAgentMutationOptions(options));
+};
+
+/**
+ * @summary Update a user's role (admin only)
+ */
+export const getUpdateUserRoleUrl = (id: string) => {
+  return `/api/users/${id}/role`;
+};
+
+export const updateUserRole = async (
+  id: string,
+  updateUserRoleBody: UpdateUserRoleBody,
+  options?: RequestInit,
+): Promise<AgencyUser> => {
+  return customFetch<AgencyUser>(getUpdateUserRoleUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateUserRoleBody),
+  });
+};
+
+export const getUpdateUserRoleMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateUserRole>>,
+    TError,
+    { id: string; data: BodyType<UpdateUserRoleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateUserRole>>,
+  TError,
+  { id: string; data: BodyType<UpdateUserRoleBody> },
+  TContext
+> => {
+  const mutationKey = ["updateUserRole"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateUserRole>>,
+    { id: string; data: BodyType<UpdateUserRoleBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateUserRole(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateUserRoleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateUserRole>>
+>;
+export type UpdateUserRoleMutationBody = BodyType<UpdateUserRoleBody>;
+export type UpdateUserRoleMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a user's role (admin only)
+ */
+export const useUpdateUserRole = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateUserRole>>,
+    TError,
+    { id: string; data: BodyType<UpdateUserRoleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateUserRole>>,
+  TError,
+  { id: string; data: BodyType<UpdateUserRoleBody> },
+  TContext
+> => {
+  return useMutation(getUpdateUserRoleMutationOptions(options));
 };
 
 /**

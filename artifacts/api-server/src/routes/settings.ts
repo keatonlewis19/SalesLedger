@@ -3,6 +3,7 @@ import { db, appSettingsTable } from "@workspace/db";
 import type { CommissionTableRow } from "@workspace/db";
 import { GetSettingsResponse, UpdateSettingsResponse, UpdateSettingsBody } from "@workspace/api-zod";
 import { restartScheduler } from "../lib/scheduler";
+import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -57,12 +58,12 @@ async function getOrCreateSettings() {
   return DEFAULT_SETTINGS;
 }
 
-router.get("/settings", async (_req, res): Promise<void> => {
+router.get("/settings", requireAuth, async (_req, res): Promise<void> => {
   const settings = await getOrCreateSettings();
   res.json(GetSettingsResponse.parse(settings));
 });
 
-router.patch("/settings", async (req, res): Promise<void> => {
+router.patch("/settings", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const parsed = UpdateSettingsBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

@@ -14,8 +14,10 @@ import {
   GetCurrentWeekSummaryResponse,
   ListReportsResponse,
   SendReportResponse,
+  MarkSalePaidBody,
 } from "@workspace/api-zod";
 import { getCurrentWeekBounds, getWeekStartForDate, runWeeklyReport } from "../lib/scheduler";
+import { requireAuth, requireAdmin, AuthRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -24,10 +26,11 @@ function parseId(raw: string | string[]): number {
   return parseInt(str, 10);
 }
 
-function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; owningAgent?: string | null; salesSource?: string | null; effectiveDate?: string | null; leadSource?: string | null; hra?: number | null; annualPremium?: number | null; estimatedCommission: number | null | undefined; notes: string | null | undefined; [key: string]: unknown }) {
+function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; owningAgent?: string | null; salesSource?: string | null; effectiveDate?: string | null; leadSource?: string | null; hra?: number | null; annualPremium?: number | null; estimatedCommission: number | null | undefined; notes: string | null | undefined; userId?: string | null; paid?: boolean; [key: string]: unknown }) {
   const { notes, ...rest } = s;
   return {
     ...rest,
+    userId: s.userId ?? null,
     owningAgent: s.owningAgent ?? null,
     salesSource: s.salesSource ?? null,
     effectiveDate: s.effectiveDate ?? null,
@@ -36,19 +39,19 @@ function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; 
     annualPremium: s.annualPremium ?? null,
     estimatedCommission: s.estimatedCommission ?? null,
     comments: notes ?? null,
+    paid: s.paid ?? false,
     createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : s.createdAt,
     updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : s.updatedAt,
   };
 }
 
-router.get("/sales", async (req, res): Promise<void> => {
+router.get("/sales", requireAuth, async (req: AuthRequest, res): Promise<void> => {
   const parsed = ListSalesQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  // If a specific weekStart is passed, derive that week's end; otherwise use current week
   const { weekStart, weekEnd } = parsed.data.weekStart
     ? (() => {
         const ws = parsed.data.weekStart!;
@@ -60,20 +63,27 @@ router.get("/sales", async (req, res): Promise<void> => {
       })()
     : getCurrentWeekBounds();
 
+  const isAdmin = req.agencyUser?.role === "admin";
+
+  const conditions = [
+    gte(salesTable.soldDate, weekStart),
+    lte(salesTable.soldDate, weekEnd),
+  ];
+
+  if (!isAdmin && req.userId) {
+    conditions.push(eq(salesTable.userId, req.userId));
+  }
+
   const sales = await db
     .select()
     .from(salesTable)
-    .where(and(gte(salesTable.soldDate, weekStart), lte(salesTable.soldDate, weekEnd)))
+    .where(and(...conditions))
     .orderBy(salesTable.soldDate);
 
-  res.json(
-    ListSalesResponse.parse(
-      sales.map(normalizeSale)
-    )
-  );
+  res.json(ListSalesResponse.parse(sales.map(normalizeSale)));
 });
 
-router.post("/sales", async (req, res): Promise<void> => {
+router.post("/sales", requireAuth, async (req: AuthRequest, res): Promise<void> => {
   const parsed = CreateSaleBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -86,6 +96,7 @@ router.post("/sales", async (req, res): Promise<void> => {
   const [sale] = await db
     .insert(salesTable)
     .values({
+      userId: req.userId,
       clientName: data.clientName,
       salesSource: data.salesSource ?? undefined,
       salesType: data.salesType,
@@ -104,13 +115,24 @@ router.post("/sales", async (req, res): Promise<void> => {
   res.status(201).json(GetSaleResponse.parse(normalizeSale(sale)));
 });
 
-router.get("/sales/summary/current-week", async (_req, res): Promise<void> => {
+router.get("/sales/summary/current-week", requireAuth, async (req: AuthRequest, _res): Promise<void> => {
+  const res = _res;
   const { weekStart, weekEnd } = getCurrentWeekBounds();
+  const isAdmin = req.agencyUser?.role === "admin";
+
+  const conditions = [
+    gte(salesTable.soldDate, weekStart),
+    lte(salesTable.soldDate, weekEnd),
+  ];
+
+  if (!isAdmin && req.userId) {
+    conditions.push(eq(salesTable.userId, req.userId));
+  }
 
   const sales = await db
     .select()
     .from(salesTable)
-    .where(and(gte(salesTable.soldDate, weekStart), lte(salesTable.soldDate, weekEnd)));
+    .where(and(...conditions));
 
   const totalSales = sales.length;
   const totalEstimatedCommission = sales.reduce(
@@ -142,7 +164,29 @@ router.get("/sales/summary/current-week", async (_req, res): Promise<void> => {
   );
 });
 
-router.get("/sales/:id", async (req, res): Promise<void> => {
+router.patch("/sales/:id/paid", requireAuth, requireAdmin, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseId(req.params.id);
+  const parsed = MarkSalePaidBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [sale] = await db
+    .update(salesTable)
+    .set({ paid: parsed.data.paid })
+    .where(eq(salesTable.id, id))
+    .returning();
+
+  if (!sale) {
+    res.status(404).json({ error: "Sale not found" });
+    return;
+  }
+
+  res.json(GetSaleResponse.parse(normalizeSale(sale)));
+});
+
+router.get("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<void> => {
   const params = GetSaleParams.safeParse({ id: parseId(req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -156,10 +200,16 @@ router.get("/sales/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  const isAdmin = req.agencyUser?.role === "admin";
+  if (!isAdmin && sale.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
   res.json(GetSaleResponse.parse(normalizeSale(sale)));
 });
 
-router.patch("/sales/:id", async (req, res): Promise<void> => {
+router.patch("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<void> => {
   const params = UpdateSaleParams.safeParse({ id: parseId(req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -169,6 +219,18 @@ router.patch("/sales/:id", async (req, res): Promise<void> => {
   const parsed = UpdateSaleBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [existing] = await db.select().from(salesTable).where(eq(salesTable.id, params.data.id));
+  if (!existing) {
+    res.status(404).json({ error: "Sale not found" });
+    return;
+  }
+
+  const isAdmin = req.agencyUser?.role === "admin";
+  if (!isAdmin && existing.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 
@@ -193,7 +255,6 @@ router.patch("/sales/:id", async (req, res): Promise<void> => {
 
   const [sale] = await db
     .update(salesTable)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .set(updateFields as any)
     .where(eq(salesTable.id, params.data.id))
     .returning();
@@ -206,24 +267,30 @@ router.patch("/sales/:id", async (req, res): Promise<void> => {
   res.json(UpdateSaleResponse.parse(normalizeSale(sale)));
 });
 
-router.delete("/sales/:id", async (req, res): Promise<void> => {
+router.delete("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<void> => {
   const params = DeleteSaleParams.safeParse({ id: parseId(req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const [sale] = await db.delete(salesTable).where(eq(salesTable.id, params.data.id)).returning();
-
-  if (!sale) {
+  const [existing] = await db.select().from(salesTable).where(eq(salesTable.id, params.data.id));
+  if (!existing) {
     res.status(404).json({ error: "Sale not found" });
     return;
   }
 
+  const isAdmin = req.agencyUser?.role === "admin";
+  if (!isAdmin && existing.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  await db.delete(salesTable).where(eq(salesTable.id, params.data.id));
   res.sendStatus(204);
 });
 
-router.get("/reports", async (_req, res): Promise<void> => {
+router.get("/reports", requireAuth, async (_req, res): Promise<void> => {
   const reports = await db
     .select()
     .from(weeklyReportsTable)
@@ -239,7 +306,7 @@ router.get("/reports", async (_req, res): Promise<void> => {
   );
 });
 
-router.post("/reports/send", async (_req, res): Promise<void> => {
+router.post("/reports/send", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
   const { reportId, totalSales } = await runWeeklyReport();
   res.json(
     SendReportResponse.parse({

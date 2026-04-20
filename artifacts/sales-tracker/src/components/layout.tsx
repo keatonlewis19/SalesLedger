@@ -1,31 +1,59 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, History, Settings } from "lucide-react";
+import { LayoutDashboard, History, Settings, Users, TrendingUp, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "./ui/button";
+import { useAgencyUser } from "@/hooks/useAgencyUser";
+import { useClerk, useUser } from "@clerk/react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { isAdmin } = useAgencyUser();
+  const { signOut } = useClerk();
+  const { user } = useUser();
 
   const navigation = [
-    { name: "Current Week", href: "/", icon: LayoutDashboard },
-    { name: "Past Reports", href: "/history", icon: History },
-    { name: "Settings", href: "/settings", icon: Settings },
-  ];
+    { name: "Current Week", href: "/dashboard", icon: LayoutDashboard, adminOnly: false },
+    { name: "Past Reports", href: "/history", icon: History, adminOnly: false },
+    { name: "Team", href: "/team", icon: Users, adminOnly: true },
+    { name: "Settings", href: "/settings", icon: Settings, adminOnly: false },
+  ].filter((item) => !item.adminOnly || isAdmin);
+
+  const isActive = (href: string) => location === href;
+
+  const initials = user?.fullName
+    ? user.fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : user?.emailAddresses?.[0]?.emailAddress?.charAt(0).toUpperCase() ?? "?";
+
+  const displayName = user?.fullName || user?.emailAddresses?.[0]?.emailAddress || "Agent";
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col md:flex-row">
       {/* Mobile Nav */}
       <div className="md:hidden border-b bg-card px-4 py-3 flex items-center justify-between">
-        <div className="font-semibold text-lg text-primary tracking-tight">SalesTracker</div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <div className="font-semibold text-base text-foreground tracking-tight">CRM Group</div>
+        </div>
+        <div className="flex gap-1.5">
           {navigation.map((item) => (
             <Link key={item.href} href={item.href}>
               <Button
-                variant={location === item.href ? "default" : "ghost"}
+                variant={isActive(item.href) ? "default" : "ghost"}
                 size="sm"
-                className="gap-2"
+                className="gap-1.5"
               >
                 <item.icon className="w-4 h-4" />
-                <span className="sr-only sm:not-sr-only">{item.name}</span>
+                <span className="sr-only sm:not-sr-only text-xs">{item.name}</span>
               </Button>
             </Link>
           ))}
@@ -33,33 +61,81 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-64 flex-col bg-card border-r">
-        <div className="h-16 flex items-center px-6 border-b">
-          <div className="font-semibold text-xl text-primary tracking-tight">SalesTracker</div>
+      <div className="hidden md:flex w-64 flex-col bg-slate-900 text-slate-100">
+        <div className="h-16 flex items-center px-5 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="font-bold text-white text-sm leading-none">CRM Group</div>
+              <div className="text-xs text-slate-400 mt-0.5">Insurance Agency</div>
+            </div>
+          </div>
         </div>
-        <nav className="flex-1 px-4 py-6 space-y-2">
+
+        <nav className="flex-1 px-3 py-5 space-y-1">
           {navigation.map((item) => {
-            const active = location === item.href;
+            const active = isActive(item.href);
             return (
               <Link key={item.href} href={item.href}>
                 <div
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm ${
                     active
-                      ? "bg-primary text-primary-foreground font-medium"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      ? "bg-teal-600 text-white font-medium"
+                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
                   }`}
                 >
-                  <item.icon className="w-5 h-5" />
+                  <item.icon className="w-4 h-4 shrink-0" />
                   {item.name}
                 </div>
               </Link>
             );
           })}
         </nav>
+
+        {/* User Profile Footer */}
+        <div className="px-3 py-4 border-t border-slate-800">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left">
+                <Avatar className="w-8 h-8 shrink-0">
+                  <AvatarFallback className="bg-teal-600 text-white text-xs font-semibold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-slate-100 truncate">{displayName}</div>
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] px-1.5 py-0 h-4 border-0 font-normal mt-0.5 ${
+                      isAdmin
+                        ? "bg-teal-900/50 text-teal-400"
+                        : "bg-slate-800 text-slate-400"
+                    }`}
+                  >
+                    {isAdmin ? "Admin" : "Agent"}
+                  </Badge>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="top" className="w-48">
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive cursor-pointer"
+                onClick={() => signOut({ redirectUrl: "/" })}
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8">
+      <main className="flex-1 w-full min-w-0 p-4 md:p-8 overflow-x-auto">
         {children}
       </main>
     </div>

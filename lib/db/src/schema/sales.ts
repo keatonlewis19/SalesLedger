@@ -1,9 +1,22 @@
-import { pgTable, text, serial, timestamp, doublePrecision, integer, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, doublePrecision, integer, jsonb, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
+export const agencyUsersTable = pgTable("agency_users", {
+  id: serial("id").primaryKey(),
+  clerkUserId: text("clerk_user_id").notNull().unique(),
+  role: text("role").notNull().default("agent"), // "admin" | "agent"
+  fullName: text("full_name"),
+  email: text("email"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export type AgencyUser = typeof agencyUsersTable.$inferSelect;
+
 export const salesTable = pgTable("sales", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   clientName: text("client_name").notNull(),
   owningAgent: text("owning_agent"),
   salesSource: text("sales_source"),
@@ -16,6 +29,7 @@ export const salesTable = pgTable("sales", {
   annualPremium: doublePrecision("annual_premium"),
   estimatedCommission: doublePrecision("estimated_commission"),
   notes: text("notes"),
+  paid: boolean("paid").notNull().default(false),
   weekStart: text("week_start").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

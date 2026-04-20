@@ -3,13 +3,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Trash2, Save, Download, Upload, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Save, Download, Upload, CheckCircle2, Lock } from "lucide-react";
 import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useAgencyUser } from "@/hooks/useAgencyUser";
 import {
   Select,
   SelectContent,
@@ -76,6 +77,7 @@ function formatCurrency(val: number): string {
 }
 
 export default function Settings() {
+  const { isAdmin } = useAgencyUser();
   const { data: settings, isLoading } = useGetSettings();
   const updateSettings = useUpdateSettings();
   const queryClient = useQueryClient();
@@ -195,10 +197,26 @@ export default function Settings() {
       <div className="flex flex-col gap-8 max-w-2xl">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
-          <p className="text-muted-foreground mt-1">Configure reports, schedule, and commission rates.</p>
+          <p className="text-muted-foreground mt-1">
+            {isAdmin
+              ? "Configure reports, schedule, and commission rates."
+              : "View commission rates and report settings (read-only for agents)."}
+          </p>
         </div>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+        {!isAdmin && (
+          <div className="flex items-center gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-800">
+            <Lock className="w-5 h-5 shrink-0 text-amber-600" />
+            <div>
+              <div className="font-semibold text-sm">View only</div>
+              <div className="text-xs text-amber-700 mt-0.5">
+                Commission rates and settings are managed by your agency admin.
+              </div>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={form.handleSubmit(isAdmin ? onSubmit : (e) => e.preventDefault())} className="flex flex-col gap-6">
 
           {/* Email Recipients */}
           <Card>
@@ -339,12 +357,14 @@ export default function Settings() {
 
           <Separator />
 
-          <div className="flex justify-end">
-            <Button type="submit" className="gap-2" disabled={updateSettings.isPending}>
-              <Save className="w-4 h-4" />
-              {updateSettings.isPending ? "Saving..." : "Save Settings"}
-            </Button>
-          </div>
+          {isAdmin && (
+            <div className="flex justify-end">
+              <Button type="submit" className="gap-2 bg-teal-600 hover:bg-teal-700 text-white" disabled={updateSettings.isPending}>
+                <Save className="w-4 h-4" />
+                {updateSettings.isPending ? "Saving..." : "Save Settings"}
+              </Button>
+            </div>
+          )}
         </form>
 
         {/* Commission Table — outside the main form */}

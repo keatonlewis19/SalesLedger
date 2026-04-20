@@ -51,8 +51,22 @@ export interface UpdateSettingsBody {
   commissionTable?: CommissionTableRow[] | null;
 }
 
+export interface AgencyUser {
+  id: number;
+  clerkUserId: string;
+  role: string;
+  /** @nullable */
+  fullName: string | null;
+  /** @nullable */
+  email: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SaleEntry {
   id: number;
+  /** @nullable */
+  userId: string | null;
   clientName: string;
   /** @nullable */
   owningAgent: string | null;
@@ -73,6 +87,7 @@ export interface SaleEntry {
   estimatedCommission: number | null;
   /** @nullable */
   comments: string | null;
+  paid: boolean;
   weekStart: string;
   createdAt: string;
   updatedAt: string;
@@ -159,4 +174,21 @@ export type ListSalesParams = {
    * ISO date string for the start of the week filter
    */
   weekStart?: string;
+};
+
+export type MarkSalePaidBody = {
+  paid: boolean;
+};
+
+export type InviteAgentBody = {
+  email: string;
+  role?: string;
+};
+
+export type InviteAgent200 = {
+  message: string;
+};
+
+export type UpdateUserRoleBody = {
+  role: string;
 };

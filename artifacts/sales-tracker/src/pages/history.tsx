@@ -11,12 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAgencyUser } from "@/hooks/useAgencyUser";
 
 export default function History() {
   const { data: reports, isLoading } = useListReports();
   const sendReport = useSendReport();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isAdmin } = useAgencyUser();
 
   const handleSendReport = () => {
     sendReport.mutate(undefined, {
@@ -45,14 +47,16 @@ export default function History() {
               History of weekly reports sent to upline managers.
             </p>
           </div>
-          <Button 
-            className="gap-2 shrink-0" 
-            onClick={handleSendReport}
-            disabled={sendReport.isPending}
-          >
-            <Send className="w-4 h-4" />
-            {sendReport.isPending ? "Sending..." : "Send Report Now"}
-          </Button>
+          {isAdmin && (
+            <Button
+              className="gap-2 shrink-0 bg-teal-600 hover:bg-teal-700 text-white"
+              onClick={handleSendReport}
+              disabled={sendReport.isPending}
+            >
+              <Send className="w-4 h-4" />
+              {sendReport.isPending ? "Sending..." : "Send Report Now"}
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
