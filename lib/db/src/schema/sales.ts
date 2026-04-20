@@ -39,6 +39,13 @@ export const insertWeeklyReportSchema = createInsertSchema(weeklyReportsTable).o
 export type InsertWeeklyReport = z.infer<typeof insertWeeklyReportSchema>;
 export type WeeklyReport = typeof weeklyReportsTable.$inferSelect;
 
+export type CommissionTableRow = {
+  salesSource: string;
+  salesType: string;
+  commissionType: string;
+  estimatedCommission: number | null;
+};
+
 export const appSettingsTable = pgTable("app_settings", {
   id: serial("id").primaryKey(),
   reportDayOfWeek: integer("report_day_of_week").notNull().default(4),
@@ -46,6 +53,7 @@ export const appSettingsTable = pgTable("app_settings", {
   reportMinute: integer("report_minute").notNull().default(0),
   recipients: text("recipients").notNull().default("rauni@crmgrp.com,chad@crmgrp.com"),
   commissionRates: jsonb("commission_rates").$type<Record<string, number>>().notNull(),
+  commissionTable: jsonb("commission_table").$type<CommissionTableRow[]>(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 

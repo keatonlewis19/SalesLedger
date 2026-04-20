@@ -250,6 +250,23 @@ components:
       required:
         - error
 
+    CommissionTableRow:
+      type: object
+      properties:
+        salesSource:
+          type: string
+        salesType:
+          type: string
+        commissionType:
+          type: string
+        estimatedCommission:
+          type: ["number", "null"]
+      required:
+        - salesSource
+        - salesType
+        - commissionType
+        - estimatedCommission
+
     AppSettings:
       type: object
       properties:
@@ -270,13 +287,20 @@ components:
           type: object
           additionalProperties:
             type: number
-          description: "Map of commission type to rate percentage (e.g. FYC: 15 means 15%)"
+          description: "Fair Market Value rates per commission type"
+        commissionTable:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommissionTableRow"
+          nullable: true
+          description: "Uploaded commission lookup table"
       required:
         - reportDayOfWeek
         - reportHour
         - reportMinute
         - recipients
         - commissionRates
+        - commissionTable
 
     UpdateSettingsBody:
       type: object
@@ -295,6 +319,11 @@ components:
           type: object
           additionalProperties:
             type: number
+        commissionTable:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommissionTableRow"
+          nullable: true
 
     SaleEntry:
       type: object

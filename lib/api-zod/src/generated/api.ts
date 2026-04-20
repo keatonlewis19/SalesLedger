@@ -183,9 +183,18 @@ export const GetSettingsResponse = zod.object({
   recipients: zod.array(zod.string()),
   commissionRates: zod
     .record(zod.string(), zod.number())
-    .describe(
-      "Map of commission type to rate percentage (e.g. FYC: 15 means 15%)",
-    ),
+    .describe("Fair Market Value rates per commission type"),
+  commissionTable: zod
+    .array(
+      zod.object({
+        salesSource: zod.string(),
+        salesType: zod.string(),
+        commissionType: zod.string(),
+        estimatedCommission: zod.number().nullable(),
+      }),
+    )
+    .nullable()
+    .describe("Uploaded commission lookup table"),
 });
 
 /**
@@ -197,6 +206,16 @@ export const UpdateSettingsBody = zod.object({
   reportMinute: zod.number().optional(),
   recipients: zod.array(zod.string()).optional(),
   commissionRates: zod.record(zod.string(), zod.number()).optional(),
+  commissionTable: zod
+    .array(
+      zod.object({
+        salesSource: zod.string(),
+        salesType: zod.string(),
+        commissionType: zod.string(),
+        estimatedCommission: zod.number().nullable(),
+      }),
+    )
+    .nullish(),
 });
 
 export const UpdateSettingsResponse = zod.object({
@@ -208,9 +227,18 @@ export const UpdateSettingsResponse = zod.object({
   recipients: zod.array(zod.string()),
   commissionRates: zod
     .record(zod.string(), zod.number())
-    .describe(
-      "Map of commission type to rate percentage (e.g. FYC: 15 means 15%)",
-    ),
+    .describe("Fair Market Value rates per commission type"),
+  commissionTable: zod
+    .array(
+      zod.object({
+        salesSource: zod.string(),
+        salesType: zod.string(),
+        commissionType: zod.string(),
+        estimatedCommission: zod.number().nullable(),
+      }),
+    )
+    .nullable()
+    .describe("Uploaded commission lookup table"),
 });
 
 /**

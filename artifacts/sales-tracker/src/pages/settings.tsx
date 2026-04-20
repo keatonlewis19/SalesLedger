@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Trash2, Save } from "lucide-react";
+import { Plus, Trash2, Save, Download, Upload, CheckCircle2 } from "lucide-react";
 import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 const DAY_OPTIONS = [
   { value: "0", label: "Sunday" },
@@ -36,18 +37,46 @@ const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => ({
   label: new Date(2000, 0, 1, i).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
 }));
 
+const FMV_TYPES = ["Initial", "Renewal", "Prorated Renewal", "Monthly Renewal"] as const;
+
+type CommissionTableRow = {
+  salesSource: string;
+  salesType: string;
+  commissionType: string;
+  estimatedCommission: number | null;
+};
+
 const settingsSchema = z.object({
   recipients: z.array(z.object({ email: z.string().email("Invalid email") })).min(1, "At least one recipient required"),
   reportDayOfWeek: z.string(),
   reportHour: z.string(),
   reportMinute: z.string(),
-  commissionRates: z.array(z.object({
-    type: z.string().min(1, "Type is required"),
-    rate: z.string().min(1, "Rate is required"),
-  })),
+  fmvInitial: z.string().optional(),
+  fmvRenewal: z.string().optional(),
+  fmvProratedRenewal: z.string().optional(),
+  fmvMonthlyRenewal: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+function parseCsv(text: string): CommissionTableRow[] | null {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return null;
+  const rows: CommissionTableRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    const cols = line.split(",").map((c) => c.replace(/^"|"$/g, "").trim());
+    if (cols.length < 4) continue;
+    const estimatedCommission = cols[3] === "" || cols[3] == null ? null : parseFloat(cols[3]);
+    rows.push({
+      salesSource: cols[0],
+      salesType: cols[1],
+      commissionType: cols[2],
+      estimatedCommission: isNaN(estimatedCommission as number) ? null : estimatedCommission,
+    });
+  }
+  return rows.length > 0 ? rows : null;
+}
 
 export default function Settings() {
   const { data: settings, isLoading } = useGetSettings();
@@ -55,6 +84,9 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [initialized, setInitialized] = useState(false);
+  const [commissionTable, setCommissionTable] = useState<CommissionTableRow[] | null>(null);
+  const [uploadName, setUploadName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -63,52 +95,64 @@ export default function Settings() {
       reportDayOfWeek: "4",
       reportHour: "17",
       reportMinute: "0",
-      commissionRates: [],
+      fmvInitial: "",
+      fmvRenewal: "",
+      fmvProratedRenewal: "",
+      fmvMonthlyRenewal: "",
     },
   });
 
-  const {
-    fields: recipientFields,
-    append: appendRecipient,
-    remove: removeRecipient,
-  } = useFieldArray({ control: form.control, name: "recipients" });
+  const { register, formState: { errors }, watch, setValue } = form;
 
-  const {
-    fields: rateFields,
-    append: appendRate,
-    remove: removeRate,
-  } = useFieldArray({ control: form.control, name: "commissionRates" });
+  const [recipientFields, setRecipientFields] = useState<{ id: string; email: string }[]>([{ id: "0", email: "" }]);
 
   useEffect(() => {
     if (settings && !initialized) {
+      const rates = settings.commissionRates as Record<string, number>;
+      setRecipientFields(settings.recipients.map((e, i) => ({ id: String(i), email: e })));
       form.reset({
         recipients: settings.recipients.map((e) => ({ email: e })),
         reportDayOfWeek: String(settings.reportDayOfWeek),
         reportHour: String(settings.reportHour),
         reportMinute: String(settings.reportMinute),
-        commissionRates: Object.entries(settings.commissionRates).map(([type, rate]) => ({
-          type,
-          rate: String(rate),
-        })),
+        fmvInitial: rates["Initial"] != null ? String(rates["Initial"]) : "",
+        fmvRenewal: rates["Renewal"] != null ? String(rates["Renewal"]) : "",
+        fmvProratedRenewal: rates["Prorated Renewal"] != null ? String(rates["Prorated Renewal"]) : "",
+        fmvMonthlyRenewal: rates["Monthly Renewal"] != null ? String(rates["Monthly Renewal"]) : "",
       });
+      if (settings.commissionTable && (settings.commissionTable as CommissionTableRow[]).length > 0) {
+        setCommissionTable(settings.commissionTable as CommissionTableRow[]);
+      }
       setInitialized(true);
     }
   }, [settings, initialized, form]);
 
+  const addRecipient = () => setRecipientFields((f) => [...f, { id: String(Date.now()), email: "" }]);
+  const removeRecipient = (id: string) => setRecipientFields((f) => f.filter((r) => r.id !== id));
+
   const onSubmit = (data: SettingsFormValues) => {
     const commissionRates: Record<string, number> = {};
-    data.commissionRates.forEach(({ type, rate }) => {
-      commissionRates[type.trim()] = parseFloat(rate);
-    });
+    if (data.fmvInitial) commissionRates["Initial"] = parseFloat(data.fmvInitial);
+    if (data.fmvRenewal) commissionRates["Renewal"] = parseFloat(data.fmvRenewal);
+    if (data.fmvProratedRenewal) commissionRates["Prorated Renewal"] = parseFloat(data.fmvProratedRenewal);
+    if (data.fmvMonthlyRenewal) commissionRates["Monthly Renewal"] = parseFloat(data.fmvMonthlyRenewal);
+
+    const recipients = recipientFields.map((r) => {
+      const watched = data.recipients.find((_, i) => String(i) === r.id || recipientFields[recipientFields.findIndex(f => f.id === r.id)]?.email);
+      return r.email || watched?.email || "";
+    }).filter(Boolean);
+
+    const formRecipients = data.recipients.map((r) => r.email.trim()).filter(Boolean);
 
     updateSettings.mutate(
       {
         data: {
-          recipients: data.recipients.map((r) => r.email.trim()),
+          recipients: formRecipients,
           reportDayOfWeek: parseInt(data.reportDayOfWeek),
           reportHour: parseInt(data.reportHour),
           reportMinute: parseInt(data.reportMinute),
           commissionRates,
+          commissionTable: commissionTable ?? null,
         },
       },
       {
@@ -123,6 +167,40 @@ export default function Settings() {
     );
   };
 
+  const handleDownloadTemplate = () => {
+    const link = document.createElement("a");
+    link.href = "/api/settings/commission-table-template";
+    link.download = "commission_table_template.csv";
+    link.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadName(file.name);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const parsed = parseCsv(text);
+      if (parsed) {
+        setCommissionTable(parsed);
+        toast({ title: `Commission table loaded — ${parsed.length} rows` });
+      } else {
+        toast({ title: "Could not parse CSV. Check the format and try again.", variant: "destructive" });
+        setUploadName(null);
+      }
+    };
+    reader.readAsText(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const fmvRows: { key: keyof SettingsFormValues; label: string }[] = [
+    { key: "fmvInitial", label: "Initial" },
+    { key: "fmvRenewal", label: "Renewal" },
+    { key: "fmvProratedRenewal", label: "Prorated Renewal" },
+    { key: "fmvMonthlyRenewal", label: "Monthly Renewal" },
+  ];
+
   if (isLoading) {
     return (
       <Layout>
@@ -135,8 +213,6 @@ export default function Settings() {
       </Layout>
     );
   }
-
-  const { register, formState: { errors }, watch, setValue } = form;
 
   return (
     <Layout>
@@ -155,8 +231,8 @@ export default function Settings() {
               <CardDescription>Who receives the weekly email report.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {recipientFields.map((field, idx) => (
-                <div key={field.id} className="flex gap-2 items-start">
+              {watch("recipients").map((_, idx) => (
+                <div key={idx} className="flex gap-2 items-start">
                   <div className="flex-1">
                     <Input
                       type="email"
@@ -172,8 +248,13 @@ export default function Settings() {
                     variant="ghost"
                     size="icon"
                     className="text-muted-foreground hover:text-destructive shrink-0"
-                    onClick={() => removeRecipient(idx)}
-                    disabled={recipientFields.length === 1}
+                    onClick={() => {
+                      const curr = watch("recipients");
+                      if (curr.length > 1) {
+                        setValue("recipients", curr.filter((_, i) => i !== idx));
+                      }
+                    }}
+                    disabled={watch("recipients").length === 1}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -184,7 +265,7 @@ export default function Settings() {
                 variant="outline"
                 size="sm"
                 className="gap-2 self-start"
-                onClick={() => appendRecipient({ email: "" })}
+                onClick={() => setValue("recipients", [...watch("recipients"), { email: "" }])}
               >
                 <Plus className="w-4 h-4" />
                 Add Recipient
@@ -236,30 +317,23 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* Commission Rates */}
+          {/* Fair Market Value Rates */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Commission Rates</CardTitle>
+              <CardTitle className="text-lg">Fair Market Value Rates</CardTitle>
               <CardDescription>
-                Set a flat dollar amount per commission type (e.g., 500 = $500.00). When you select a commission type on a sale, the estimated commission is automatically filled with this flat rate.
+                Set the FMV dollar amount for each commission type. These are the baseline values used when calculating estimated commissions.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {rateFields.length === 0 && (
-                <p className="text-sm text-muted-foreground">No rates configured yet. Add one below.</p>
-              )}
-              {rateFields.map((field, idx) => (
-                <div key={field.id} className="flex gap-2 items-start">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Commission type (e.g. FYC)"
-                      {...register(`commissionRates.${idx}.type`)}
-                    />
-                    {errors.commissionRates?.[idx]?.type && (
-                      <p className="text-destructive text-xs mt-1">{errors.commissionRates[idx]?.type?.message}</p>
-                    )}
+              {fmvRows.map(({ key, label }) => (
+                <div key={key} className="flex items-center gap-3">
+                  <div className="w-44">
+                    <div className="flex h-10 items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground font-medium">
+                      {label}
+                    </div>
                   </div>
-                  <div className="w-36 relative">
+                  <div className="w-40 relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">$</span>
                     <Input
                       type="number"
@@ -267,33 +341,11 @@ export default function Settings() {
                       min="0"
                       placeholder="0.00"
                       className="pl-7"
-                      {...register(`commissionRates.${idx}.rate`)}
+                      {...register(key)}
                     />
-                    {errors.commissionRates?.[idx]?.rate && (
-                      <p className="text-destructive text-xs mt-1">{errors.commissionRates[idx]?.rate?.message}</p>
-                    )}
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-destructive shrink-0"
-                    onClick={() => removeRate(idx)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
               ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2 self-start"
-                onClick={() => appendRate({ type: "", rate: "" })}
-              >
-                <Plus className="w-4 h-4" />
-                Add Rate
-              </Button>
             </CardContent>
           </Card>
 
@@ -306,6 +358,107 @@ export default function Settings() {
             </Button>
           </div>
         </form>
+
+        {/* Commission Table — outside the main form */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Commission Table</CardTitle>
+            <CardDescription>
+              Download the CSV template, fill in the Estimated Commission for each sales combination, then upload it. The app will use this table to auto-calculate commissions on new sales.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex gap-3 flex-wrap">
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                onClick={handleDownloadTemplate}
+              >
+                <Download className="w-4 h-4" />
+                Download Template
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="w-4 h-4" />
+                Upload Filled CSV
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </div>
+
+            {commissionTable && commissionTable.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {uploadName ? `${uploadName} loaded` : "Commission table active"} — {commissionTable.length} rows
+                </div>
+                <div className="rounded-lg border overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-muted text-muted-foreground">
+                        <th className="px-3 py-2 text-left font-medium">Sales Source</th>
+                        <th className="px-3 py-2 text-left font-medium">Sales Type</th>
+                        <th className="px-3 py-2 text-left font-medium">Commission Type</th>
+                        <th className="px-3 py-2 text-right font-medium">Est. Commission</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {commissionTable.map((row, i) => (
+                        <tr key={i} className="border-t border-border">
+                          <td className="px-3 py-1.5">{row.salesSource}</td>
+                          <td className="px-3 py-1.5">{row.salesType}</td>
+                          <td className="px-3 py-1.5">{row.commissionType}</td>
+                          <td className="px-3 py-1.5 text-right">
+                            {row.estimatedCommission != null
+                              ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(row.estimatedCommission)
+                              : <span className="text-muted-foreground">—</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start gap-2 text-muted-foreground hover:text-destructive"
+                  onClick={() => {
+                    updateSettings.mutate(
+                      { data: { commissionTable: null } },
+                      {
+                        onSuccess: () => {
+                          setCommissionTable(null);
+                          setUploadName(null);
+                          toast({ title: "Commission table cleared" });
+                          queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+                        },
+                      }
+                    );
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Clear Table
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No commission table uploaded yet. Download the template, fill in your values, and upload it here.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
       </div>
     </Layout>
   );

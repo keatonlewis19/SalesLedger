@@ -1,5 +1,6 @@
 import { Router, IRouter } from "express";
 import { db, appSettingsTable } from "@workspace/db";
+import type { CommissionTableRow } from "@workspace/db";
 import { GetSettingsResponse, UpdateSettingsResponse, UpdateSettingsBody } from "@workspace/api-zod";
 import { restartScheduler } from "../lib/scheduler";
 
@@ -11,7 +12,26 @@ const DEFAULT_SETTINGS = {
   reportMinute: 0,
   recipients: ["rauni@crmgrp.com", "chad@crmgrp.com"],
   commissionRates: {} as Record<string, number>,
+  commissionTable: null as CommissionTableRow[] | null,
 };
+
+const COMMISSION_TABLE_TEMPLATE: CommissionTableRow[] = [
+  { salesSource: "Company Provided", salesType: "New Client", commissionType: "Initial", estimatedCommission: null },
+  { salesSource: "Company Provided", salesType: "New Client", commissionType: "Monthly Renewal", estimatedCommission: null },
+  { salesSource: "Company Provided", salesType: "Plan Change", commissionType: "Initial", estimatedCommission: null },
+  { salesSource: "Company Provided", salesType: "Plan Change", commissionType: "Renewal", estimatedCommission: null },
+  { salesSource: "Company Provided", salesType: "Plan Change", commissionType: "Prorated Renewal", estimatedCommission: null },
+  { salesSource: "Company Provided", salesType: "AOR", commissionType: "Initial", estimatedCommission: null },
+  { salesSource: "Company Provided", salesType: "AOR", commissionType: "Renewal", estimatedCommission: null },
+  { salesSource: "Company Provided", salesType: "AOR", commissionType: "Prorated Renewal", estimatedCommission: null },
+  { salesSource: "Company Provided", salesType: "AOR", commissionType: "Monthly Renewal", estimatedCommission: null },
+  { salesSource: "Self-Generated", salesType: "New Client", commissionType: "Initial", estimatedCommission: null },
+  { salesSource: "Self-Generated", salesType: "New Client", commissionType: "Monthly Renewal", estimatedCommission: null },
+  { salesSource: "Self-Generated", salesType: "Plan Change", commissionType: "Initial", estimatedCommission: null },
+  { salesSource: "Self-Generated", salesType: "Plan Change", commissionType: "Renewal", estimatedCommission: null },
+  { salesSource: "Self-Generated", salesType: "Plan Change", commissionType: "Prorated Renewal", estimatedCommission: null },
+  { salesSource: "Self-Generated", salesType: "AOR", commissionType: "Prorated Renewal", estimatedCommission: null },
+];
 
 async function getOrCreateSettings() {
   const rows = await db.select().from(appSettingsTable).limit(1);
@@ -23,6 +43,7 @@ async function getOrCreateSettings() {
       reportMinute: r.reportMinute,
       recipients: r.recipients.split(",").map((s) => s.trim()).filter(Boolean),
       commissionRates: (r.commissionRates as Record<string, number>) ?? {},
+      commissionTable: (r.commissionTable as CommissionTableRow[] | null) ?? null,
     };
   }
 
@@ -30,6 +51,7 @@ async function getOrCreateSettings() {
     ...DEFAULT_SETTINGS,
     recipients: DEFAULT_SETTINGS.recipients.join(","),
     commissionRates: DEFAULT_SETTINGS.commissionRates,
+    commissionTable: DEFAULT_SETTINGS.commissionTable,
   });
 
   return DEFAULT_SETTINGS;
@@ -51,11 +73,12 @@ router.patch("/settings", async (req, res): Promise<void> => {
   const updated = { ...current, ...parsed.data };
 
   const dbValue = {
-    reportDayOfWeek: updated.reportDayOfWeek,
-    reportHour: updated.reportHour,
-    reportMinute: updated.reportMinute,
+    reportDayOfWeek: updated.reportDayOfWeek as number,
+    reportHour: updated.reportHour as number,
+    reportMinute: updated.reportMinute as number,
     recipients: (updated.recipients as string[]).join(","),
     commissionRates: updated.commissionRates as Record<string, number>,
+    commissionTable: (updated.commissionTable ?? null) as CommissionTableRow[] | null,
   };
 
   const rows = await db.select().from(appSettingsTable).limit(1);
@@ -70,6 +93,18 @@ router.patch("/settings", async (req, res): Promise<void> => {
   restartScheduler(updated.reportDayOfWeek as number, updated.reportHour as number, updated.reportMinute as number);
 
   res.json(UpdateSettingsResponse.parse(updated));
+});
+
+router.get("/settings/commission-table-template", (_req, res): void => {
+  const header = "Sales Source,Sales Type,Commission Type,Estimated Commission";
+  const rows = COMMISSION_TABLE_TEMPLATE.map(
+    (r) => `"${r.salesSource}","${r.salesType}","${r.commissionType}",""`
+  );
+  const csv = [header, ...rows].join("\r\n");
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", `attachment; filename="commission_table_template.csv"`);
+  res.send(csv);
 });
 
 export { router as settingsRouter, getOrCreateSettings };

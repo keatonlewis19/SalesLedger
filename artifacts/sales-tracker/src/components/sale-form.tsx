@@ -118,14 +118,31 @@ export function SaleForm({
   }, [open, sale, form]);
 
   const watchedCommissionType = form.watch("commissionType");
+  const watchedSalesSource = form.watch("salesSource");
+  const watchedSalesType = form.watch("salesType");
 
   useEffect(() => {
-    if (!settings?.commissionRates) return;
-    const flatRate = settings.commissionRates[watchedCommissionType];
-    if (flatRate != null) {
-      form.setValue("estimatedCommission", flatRate.toFixed(2));
+    if (!settings) return;
+    const table = settings.commissionTable as Array<{ salesSource: string; salesType: string; commissionType: string; estimatedCommission: number | null }> | null | undefined;
+    if (table && watchedSalesSource && watchedSalesType && watchedCommissionType) {
+      const match = table.find(
+        (r) =>
+          r.salesSource === watchedSalesSource &&
+          r.salesType === watchedSalesType &&
+          r.commissionType === watchedCommissionType
+      );
+      if (match && match.estimatedCommission != null) {
+        form.setValue("estimatedCommission", match.estimatedCommission.toFixed(2));
+        return;
+      }
     }
-  }, [watchedCommissionType, settings, form]);
+    if (settings.commissionRates && watchedCommissionType) {
+      const flatRate = (settings.commissionRates as Record<string, number>)[watchedCommissionType];
+      if (flatRate != null) {
+        form.setValue("estimatedCommission", flatRate.toFixed(2));
+      }
+    }
+  }, [watchedCommissionType, watchedSalesSource, watchedSalesType, settings, form]);
 
   const onSubmit = (data: FormValues) => {
     const formattedData = {

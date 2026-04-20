@@ -13,8 +13,16 @@ export interface ErrorResponse {
   error: string;
 }
 
+export interface CommissionTableRow {
+  salesSource: string;
+  salesType: string;
+  commissionType: string;
+  /** @nullable */
+  estimatedCommission: number | null;
+}
+
 /**
- * Map of commission type to rate percentage (e.g. FYC: 15 means 15%)
+ * Fair Market Value rates per commission type
  */
 export type AppSettingsCommissionRates = { [key: string]: number };
 
@@ -26,8 +34,10 @@ export interface AppSettings {
   /** Minute 0-59 */
   reportMinute: number;
   recipients: string[];
-  /** Map of commission type to rate percentage (e.g. FYC: 15 means 15%) */
+  /** Fair Market Value rates per commission type */
   commissionRates: AppSettingsCommissionRates;
+  /** Uploaded commission lookup table */
+  commissionTable: CommissionTableRow[] | null;
 }
 
 export type UpdateSettingsBodyCommissionRates = { [key: string]: number };
@@ -38,6 +48,7 @@ export interface UpdateSettingsBody {
   reportMinute?: number;
   recipients?: string[];
   commissionRates?: UpdateSettingsBodyCommissionRates;
+  commissionTable?: CommissionTableRow[] | null;
 }
 
 export interface SaleEntry {
