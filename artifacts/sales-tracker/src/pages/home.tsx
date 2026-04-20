@@ -131,11 +131,12 @@ export default function Home() {
               <TableHeader>
                 <TableRow className="bg-muted/10">
                   <TableHead>Client</TableHead>
-                  <TableHead>Agent</TableHead>
+                  <TableHead>Sales Source</TableHead>
+                  <TableHead>Lead Source</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Sold Date</TableHead>
                   <TableHead>Eff. Date</TableHead>
-                  <TableHead>Lead Source</TableHead>
+                  <TableHead>Comm. Type</TableHead>
                   <TableHead className="text-right">HRA</TableHead>
                   <TableHead className="text-right">Commission</TableHead>
                   <TableHead className="w-[100px] text-right">Actions</TableHead>
@@ -146,19 +147,20 @@ export default function Home() {
                   Array.from({ length: 3 }).map((_, i) => (
                     <TableRow key={i}>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                       <TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
                     </TableRow>
                   ))
                 ) : sales?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-48 text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="h-48 text-center text-muted-foreground">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <TrendingUp className="w-8 h-8 text-muted" />
                         <p>No sales logged this week.</p>
@@ -169,7 +171,8 @@ export default function Home() {
                   sales?.map((sale) => (
                     <TableRow key={sale.id} className="group">
                       <TableCell className="font-medium">{sale.clientName}</TableCell>
-                      <TableCell>{sale.owningAgent}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{sale.salesSource || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{sale.leadSource || "—"}</TableCell>
                       <TableCell>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
                           {sale.salesType}
@@ -177,8 +180,8 @@ export default function Home() {
                       </TableCell>
                       <TableCell>{format(new Date(sale.soldDate), "MMM d")}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{sale.effectiveDate ? format(new Date(sale.effectiveDate), "MMM d") : "—"}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{sale.leadSource || "—"}</TableCell>
-                      <TableCell className="text-right font-mono font-medium">{formatCurrency(sale.hra)}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{sale.commissionType || "—"}</TableCell>
+                      <TableCell className="text-right font-mono font-medium">{sale.hra != null ? formatCurrency(sale.hra) : "None"}</TableCell>
                       <TableCell className="text-right font-mono font-medium">
                         {formatCurrency(sale.estimatedCommission)}
                       </TableCell>

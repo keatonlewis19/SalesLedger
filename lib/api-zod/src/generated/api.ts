@@ -28,7 +28,8 @@ export const ListSalesQueryParams = zod.object({
 export const ListSalesResponseItem = zod.object({
   id: zod.number(),
   clientName: zod.string(),
-  owningAgent: zod.string(),
+  owningAgent: zod.string().nullable(),
+  salesSource: zod.string().nullable(),
   salesType: zod.string(),
   soldDate: zod.string(),
   effectiveDate: zod.string().nullable(),
@@ -37,7 +38,7 @@ export const ListSalesResponseItem = zod.object({
   hra: zod.number().nullable(),
   annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
-  notes: zod.string().nullable(),
+  comments: zod.string().nullable(),
   weekStart: zod.string(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -49,7 +50,7 @@ export const ListSalesResponse = zod.array(ListSalesResponseItem);
  */
 export const CreateSaleBody = zod.object({
   clientName: zod.string(),
-  owningAgent: zod.string(),
+  salesSource: zod.string().nullish(),
   salesType: zod.string(),
   soldDate: zod.string(),
   effectiveDate: zod.string().nullish(),
@@ -58,7 +59,7 @@ export const CreateSaleBody = zod.object({
   hra: zod.number().nullish(),
   annualPremium: zod.number().nullish(),
   estimatedCommission: zod.number().nullish(),
-  notes: zod.string().nullish(),
+  comments: zod.string().nullish(),
 });
 
 /**
@@ -71,7 +72,8 @@ export const GetSaleParams = zod.object({
 export const GetSaleResponse = zod.object({
   id: zod.number(),
   clientName: zod.string(),
-  owningAgent: zod.string(),
+  owningAgent: zod.string().nullable(),
+  salesSource: zod.string().nullable(),
   salesType: zod.string(),
   soldDate: zod.string(),
   effectiveDate: zod.string().nullable(),
@@ -80,7 +82,7 @@ export const GetSaleResponse = zod.object({
   hra: zod.number().nullable(),
   annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
-  notes: zod.string().nullable(),
+  comments: zod.string().nullable(),
   weekStart: zod.string(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -95,7 +97,7 @@ export const UpdateSaleParams = zod.object({
 
 export const UpdateSaleBody = zod.object({
   clientName: zod.string().optional(),
-  owningAgent: zod.string().optional(),
+  salesSource: zod.string().nullish(),
   salesType: zod.string().optional(),
   soldDate: zod.string().optional(),
   effectiveDate: zod.string().nullish(),
@@ -104,13 +106,14 @@ export const UpdateSaleBody = zod.object({
   hra: zod.number().nullish(),
   annualPremium: zod.number().nullish(),
   estimatedCommission: zod.number().nullish(),
-  notes: zod.string().nullish(),
+  comments: zod.string().nullish(),
 });
 
 export const UpdateSaleResponse = zod.object({
   id: zod.number(),
   clientName: zod.string(),
-  owningAgent: zod.string(),
+  owningAgent: zod.string().nullable(),
+  salesSource: zod.string().nullable(),
   salesType: zod.string(),
   soldDate: zod.string(),
   effectiveDate: zod.string().nullable(),
@@ -119,7 +122,7 @@ export const UpdateSaleResponse = zod.object({
   hra: zod.number().nullable(),
   annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
-  notes: zod.string().nullable(),
+  comments: zod.string().nullable(),
   weekStart: zod.string(),
   createdAt: zod.string(),
   updatedAt: zod.string(),

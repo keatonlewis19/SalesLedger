@@ -43,7 +43,10 @@ export interface UpdateSettingsBody {
 export interface SaleEntry {
   id: number;
   clientName: string;
-  owningAgent: string;
+  /** @nullable */
+  owningAgent: string | null;
+  /** @nullable */
+  salesSource: string | null;
   salesType: string;
   soldDate: string;
   /** @nullable */
@@ -58,7 +61,7 @@ export interface SaleEntry {
   /** @nullable */
   estimatedCommission: number | null;
   /** @nullable */
-  notes: string | null;
+  comments: string | null;
   weekStart: string;
   createdAt: string;
   updatedAt: string;
@@ -66,7 +69,8 @@ export interface SaleEntry {
 
 export interface CreateSaleBody {
   clientName: string;
-  owningAgent: string;
+  /** @nullable */
+  salesSource?: string | null;
   salesType: string;
   soldDate: string;
   /** @nullable */
@@ -81,12 +85,13 @@ export interface CreateSaleBody {
   /** @nullable */
   estimatedCommission?: number | null;
   /** @nullable */
-  notes?: string | null;
+  comments?: string | null;
 }
 
 export interface UpdateSaleBody {
   clientName?: string;
-  owningAgent?: string;
+  /** @nullable */
+  salesSource?: string | null;
   salesType?: string;
   soldDate?: string;
   /** @nullable */
@@ -101,7 +106,7 @@ export interface UpdateSaleBody {
   /** @nullable */
   estimatedCommission?: number | null;
   /** @nullable */
-  notes?: string | null;
+  comments?: string | null;
 }
 
 export type WeekSummaryByOwningAgentItem = {

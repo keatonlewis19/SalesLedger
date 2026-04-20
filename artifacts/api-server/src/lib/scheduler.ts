@@ -80,7 +80,7 @@ function isFirstBusinessDayOfYear(date: Date): boolean {
 function toSaleRows(sales: typeof salesTable.$inferSelect[]): SaleRow[] {
   return sales.map((s) => ({
     clientName: s.clientName,
-    owningAgent: s.owningAgent,
+    salesSource: s.salesSource ?? null,
     salesType: s.salesType,
     soldDate: s.soldDate,
     effectiveDate: s.effectiveDate ?? null,
@@ -88,7 +88,7 @@ function toSaleRows(sales: typeof salesTable.$inferSelect[]): SaleRow[] {
     leadSource: s.leadSource ?? null,
     hra: s.hra ?? null,
     estimatedCommission: s.estimatedCommission ?? null,
-    notes: s.notes ?? null,
+    comments: s.notes ?? null,
   }));
 }
 

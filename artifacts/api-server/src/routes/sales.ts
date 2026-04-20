@@ -24,15 +24,18 @@ function parseId(raw: string | string[]): number {
   return parseInt(str, 10);
 }
 
-function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; effectiveDate?: string | null; leadSource?: string | null; hra?: number | null; annualPremium?: number | null; estimatedCommission: number | null | undefined; notes: string | null | undefined; [key: string]: unknown }) {
+function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; owningAgent?: string | null; salesSource?: string | null; effectiveDate?: string | null; leadSource?: string | null; hra?: number | null; annualPremium?: number | null; estimatedCommission: number | null | undefined; notes: string | null | undefined; [key: string]: unknown }) {
+  const { notes, ...rest } = s;
   return {
-    ...s,
+    ...rest,
+    owningAgent: s.owningAgent ?? null,
+    salesSource: s.salesSource ?? null,
     effectiveDate: s.effectiveDate ?? null,
     leadSource: s.leadSource ?? null,
     hra: s.hra ?? null,
     annualPremium: s.annualPremium ?? null,
     estimatedCommission: s.estimatedCommission ?? null,
-    notes: s.notes ?? null,
+    comments: notes ?? null,
     createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : s.createdAt,
     updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : s.updatedAt,
   };
@@ -83,9 +86,17 @@ router.post("/sales", async (req, res): Promise<void> => {
   const [sale] = await db
     .insert(salesTable)
     .values({
-      ...data,
+      clientName: data.clientName,
+      salesSource: data.salesSource ?? undefined,
+      salesType: data.salesType,
+      soldDate: data.soldDate,
+      effectiveDate: data.effectiveDate ?? undefined,
+      commissionType: data.commissionType,
+      leadSource: data.leadSource ?? undefined,
+      hra: data.hra ?? undefined,
+      annualPremium: data.annualPremium ?? undefined,
       estimatedCommission: data.estimatedCommission ?? undefined,
-      notes: data.notes ?? undefined,
+      notes: data.comments ?? undefined,
       weekStart,
     })
     .returning();
@@ -111,7 +122,8 @@ router.get("/sales/summary/current-week", async (_req, res): Promise<void> => {
   const typeCounts: Record<string, number> = {};
 
   for (const s of sales) {
-    agentCounts[s.owningAgent] = (agentCounts[s.owningAgent] ?? 0) + 1;
+    const agent = s.owningAgent ?? "Unknown";
+    agentCounts[agent] = (agentCounts[agent] ?? 0) + 1;
     typeCounts[s.salesType] = (typeCounts[s.salesType] ?? 0) + 1;
   }
 
@@ -164,11 +176,15 @@ router.patch("/sales/:id", async (req, res): Promise<void> => {
   const updateFields: Record<string, unknown> = {};
 
   if (updateData.clientName !== undefined) updateFields.clientName = updateData.clientName;
-  if (updateData.owningAgent !== undefined) updateFields.owningAgent = updateData.owningAgent;
+  if (updateData.salesSource !== undefined) updateFields.salesSource = updateData.salesSource;
   if (updateData.salesType !== undefined) updateFields.salesType = updateData.salesType;
+  if (updateData.effectiveDate !== undefined) updateFields.effectiveDate = updateData.effectiveDate;
   if (updateData.commissionType !== undefined) updateFields.commissionType = updateData.commissionType;
+  if (updateData.leadSource !== undefined) updateFields.leadSource = updateData.leadSource;
+  if (updateData.hra !== undefined) updateFields.hra = updateData.hra;
+  if (updateData.annualPremium !== undefined) updateFields.annualPremium = updateData.annualPremium;
   if (updateData.estimatedCommission !== undefined) updateFields.estimatedCommission = updateData.estimatedCommission;
-  if (updateData.notes !== undefined) updateFields.notes = updateData.notes;
+  if (updateData.comments !== undefined) updateFields.notes = updateData.comments;
 
   if (updateData.soldDate !== undefined) {
     updateFields.soldDate = updateData.soldDate;

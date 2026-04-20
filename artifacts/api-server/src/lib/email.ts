@@ -24,7 +24,7 @@ export function getTransporter() {
 
 export interface SaleRow {
   clientName: string;
-  owningAgent: string;
+  salesSource: string | null;
   salesType: string;
   soldDate: string;
   effectiveDate: string | null;
@@ -32,7 +32,7 @@ export interface SaleRow {
   leadSource: string | null;
   hra: number | null;
   estimatedCommission: number | null;
-  notes: string | null;
+  comments: string | null;
 }
 
 function formatCurrency(val: number | null): string {
@@ -49,15 +49,15 @@ function buildSalesTable(sales: SaleRow[]): string {
       (s) => `
       <tr>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.clientName}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.owningAgent}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.salesSource ?? ""}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.salesType}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.soldDate}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.effectiveDate ?? ""}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.leadSource ?? ""}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.commissionType}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;">${formatCurrency(s.hra)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;">${s.hra != null ? formatCurrency(s.hra) : "None"}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;">${formatCurrency(s.estimatedCommission)}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.notes ?? ""}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;">${s.comments ?? ""}</td>
       </tr>
     `
     )
@@ -68,7 +68,7 @@ function buildSalesTable(sales: SaleRow[]): string {
       <thead>
         <tr style="background:#1a3c5e;color:#fff;">
           <th style="padding:10px 12px;text-align:left;">Client Name</th>
-          <th style="padding:10px 12px;text-align:left;">Owning Agent</th>
+          <th style="padding:10px 12px;text-align:left;">Sales Source</th>
           <th style="padding:10px 12px;text-align:left;">Sales Type</th>
           <th style="padding:10px 12px;text-align:left;">Sold Date</th>
           <th style="padding:10px 12px;text-align:left;">Eff. Date</th>
@@ -76,7 +76,7 @@ function buildSalesTable(sales: SaleRow[]): string {
           <th style="padding:10px 12px;text-align:left;">Commission Type</th>
           <th style="padding:10px 12px;text-align:right;">HRA</th>
           <th style="padding:10px 12px;text-align:right;">Est. Commission</th>
-          <th style="padding:10px 12px;text-align:left;">Notes</th>
+          <th style="padding:10px 12px;text-align:left;">Comments</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>

@@ -5,7 +5,8 @@ import { z } from "zod/v4";
 export const salesTable = pgTable("sales", {
   id: serial("id").primaryKey(),
   clientName: text("client_name").notNull(),
-  owningAgent: text("owning_agent").notNull(),
+  owningAgent: text("owning_agent"),
+  salesSource: text("sales_source"),
   salesType: text("sales_type").notNull(),
   soldDate: text("sold_date").notNull(),
   effectiveDate: text("effective_date"),
