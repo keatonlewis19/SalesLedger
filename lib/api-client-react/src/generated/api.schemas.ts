@@ -48,6 +48,8 @@ export interface SaleEntry {
   soldDate: string;
   commissionType: string;
   /** @nullable */
+  leadSource: string | null;
+  /** @nullable */
   annualPremium: number | null;
   /** @nullable */
   estimatedCommission: number | null;
@@ -65,6 +67,8 @@ export interface CreateSaleBody {
   soldDate: string;
   commissionType: string;
   /** @nullable */
+  leadSource?: string | null;
+  /** @nullable */
   annualPremium?: number | null;
   /** @nullable */
   estimatedCommission?: number | null;
@@ -78,6 +82,8 @@ export interface UpdateSaleBody {
   salesType?: string;
   soldDate?: string;
   commissionType?: string;
+  /** @nullable */
+  leadSource?: string | null;
   /** @nullable */
   annualPremium?: number | null;
   /** @nullable */

@@ -39,6 +39,7 @@ const formSchema = z.object({
   salesType: z.string().min(1, "Sales type is required"),
   soldDate: z.string().min(1, "Sold date is required"),
   commissionType: z.string().min(1, "Commission type is required"),
+  leadSource: z.string().optional(),
   annualPremium: z.string().optional(),
   estimatedCommission: z.string().optional(),
   notes: z.string().optional(),
@@ -75,6 +76,7 @@ export function SaleForm({
       salesType: "",
       soldDate: format(new Date(), "yyyy-MM-dd"),
       commissionType: "",
+      leadSource: "",
       annualPremium: "",
       estimatedCommission: "",
       notes: "",
@@ -89,6 +91,7 @@ export function SaleForm({
         salesType: sale.salesType,
         soldDate: sale.soldDate.split("T")[0],
         commissionType: sale.commissionType,
+        leadSource: sale.leadSource || "",
         annualPremium: sale.annualPremium?.toString() || "",
         estimatedCommission: sale.estimatedCommission?.toString() || "",
         notes: sale.notes || "",
@@ -100,6 +103,7 @@ export function SaleForm({
         salesType: "",
         soldDate: format(new Date(), "yyyy-MM-dd"),
         commissionType: "",
+        leadSource: "",
         annualPremium: "",
         estimatedCommission: "",
         notes: "",
@@ -123,6 +127,7 @@ export function SaleForm({
   const onSubmit = (data: FormValues) => {
     const formattedData = {
       ...data,
+      leadSource: data.leadSource || null,
       annualPremium: data.annualPremium ? parseFloat(data.annualPremium) : null,
       estimatedCommission: data.estimatedCommission ? parseFloat(data.estimatedCommission) : null,
       notes: data.notes || null,
@@ -231,6 +236,20 @@ export function SaleForm({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="leadSource"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lead Source (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Referral, Cold Call, Walk-in" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField

@@ -9,6 +9,7 @@ export const salesTable = pgTable("sales", {
   salesType: text("sales_type").notNull(),
   soldDate: text("sold_date").notNull(),
   commissionType: text("commission_type").notNull(),
+  leadSource: text("lead_source"),
   annualPremium: doublePrecision("annual_premium"),
   estimatedCommission: doublePrecision("estimated_commission"),
   notes: text("notes"),

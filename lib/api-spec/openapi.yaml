@@ -311,6 +311,8 @@ components:
           type: string
         commissionType:
           type: string
+        leadSource:
+          type: ["string", "null"]
         annualPremium:
           type: ["number", "null"]
         estimatedCommission:
@@ -330,6 +332,7 @@ components:
         - salesType
         - soldDate
         - commissionType
+        - leadSource
         - annualPremium
         - estimatedCommission
         - notes
@@ -350,6 +353,8 @@ components:
           type: string
         commissionType:
           type: string
+        leadSource:
+          type: ["string", "null"]
         annualPremium:
           type: ["number", "null"]
         estimatedCommission:
@@ -376,6 +381,8 @@ components:
           type: string
         commissionType:
           type: string
+        leadSource:
+          type: ["string", "null"]
         annualPremium:
           type: ["number", "null"]
         estimatedCommission:
