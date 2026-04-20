@@ -309,6 +309,8 @@ components:
           type: string
         soldDate:
           type: string
+        effectiveDate:
+          type: ["string", "null"]
         commissionType:
           type: string
         leadSource:
@@ -333,6 +335,7 @@ components:
         - owningAgent
         - salesType
         - soldDate
+        - effectiveDate
         - commissionType
         - leadSource
         - hra
@@ -354,6 +357,8 @@ components:
           type: string
         soldDate:
           type: string
+        effectiveDate:
+          type: ["string", "null"]
         commissionType:
           type: string
         leadSource:
@@ -384,6 +389,8 @@ components:
           type: string
         soldDate:
           type: string
+        effectiveDate:
+          type: ["string", "null"]
         commissionType:
           type: string
         leadSource:

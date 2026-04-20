@@ -38,6 +38,7 @@ const formSchema = z.object({
   owningAgent: z.string().min(1, "Agent is required"),
   salesType: z.string().min(1, "Sales type is required"),
   soldDate: z.string().min(1, "Sold date is required"),
+  effectiveDate: z.string().optional(),
   commissionType: z.string().min(1, "Commission type is required"),
   leadSource: z.string().optional(),
   hra: z.string().optional(),
@@ -79,6 +80,7 @@ export function SaleForm({
       commissionType: "",
       leadSource: "",
       hra: "",
+      effectiveDate: "",
       annualPremium: "",
       estimatedCommission: "",
       notes: "",
@@ -92,6 +94,7 @@ export function SaleForm({
         owningAgent: sale.owningAgent,
         salesType: sale.salesType,
         soldDate: sale.soldDate.split("T")[0],
+        effectiveDate: sale.effectiveDate?.split("T")[0] || "",
         commissionType: sale.commissionType,
         leadSource: sale.leadSource || "",
         hra: sale.hra?.toString() || "",
@@ -105,6 +108,7 @@ export function SaleForm({
         owningAgent: "",
         salesType: "",
         soldDate: format(new Date(), "yyyy-MM-dd"),
+        effectiveDate: "",
         commissionType: "",
         leadSource: "",
         hra: "",
@@ -120,17 +124,16 @@ export function SaleForm({
 
   useEffect(() => {
     if (!settings?.commissionRates) return;
-    const premium = parseFloat(watchedPremium || "");
-    const rate = settings.commissionRates[watchedCommissionType];
-    if (!isNaN(premium) && premium > 0 && rate != null) {
-      const calculated = (premium * rate) / 100;
-      form.setValue("estimatedCommission", calculated.toFixed(2));
+    const flatRate = settings.commissionRates[watchedCommissionType];
+    if (flatRate != null) {
+      form.setValue("estimatedCommission", flatRate.toFixed(2));
     }
-  }, [watchedPremium, watchedCommissionType, settings, form]);
+  }, [watchedCommissionType, settings, form]);
 
   const onSubmit = (data: FormValues) => {
     const formattedData = {
       ...data,
+      effectiveDate: data.effectiveDate || null,
       leadSource: data.leadSource || null,
       hra: data.hra ? parseFloat(data.hra) : null,
       annualPremium: data.annualPremium ? parseFloat(data.annualPremium) : null,
@@ -273,18 +276,32 @@ export function SaleForm({
 
               <FormField
                 control={form.control}
-                name="commissionType"
+                name="effectiveDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Comm. Type</FormLabel>
+                    <FormLabel>Effective Date</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. FYC, Renewal" {...field} />
+                      <Input type="date" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="commissionType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Commission Type</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. FYC, Renewal" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

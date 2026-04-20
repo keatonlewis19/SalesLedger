@@ -133,7 +133,8 @@ export default function Home() {
                   <TableHead>Client</TableHead>
                   <TableHead>Agent</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead>Sold Date</TableHead>
+                  <TableHead>Eff. Date</TableHead>
                   <TableHead>Lead Source</TableHead>
                   <TableHead className="text-right">HRA</TableHead>
                   <TableHead className="text-right">Commission</TableHead>
@@ -149,14 +150,15 @@ export default function Home() {
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                       <TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
                     </TableRow>
                   ))
                 ) : sales?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-48 text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="h-48 text-center text-muted-foreground">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <TrendingUp className="w-8 h-8 text-muted" />
                         <p>No sales logged this week.</p>
@@ -174,6 +176,7 @@ export default function Home() {
                         </span>
                       </TableCell>
                       <TableCell>{format(new Date(sale.soldDate), "MMM d")}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{sale.effectiveDate ? format(new Date(sale.effectiveDate), "MMM d") : "—"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{sale.leadSource || "—"}</TableCell>
                       <TableCell className="text-right font-mono font-medium">{formatCurrency(sale.hra)}</TableCell>
                       <TableCell className="text-right font-mono font-medium">

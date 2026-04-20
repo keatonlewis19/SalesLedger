@@ -8,6 +8,7 @@ export const salesTable = pgTable("sales", {
   owningAgent: text("owning_agent").notNull(),
   salesType: text("sales_type").notNull(),
   soldDate: text("sold_date").notNull(),
+  effectiveDate: text("effective_date"),
   commissionType: text("commission_type").notNull(),
   leadSource: text("lead_source"),
   hra: doublePrecision("hra"),

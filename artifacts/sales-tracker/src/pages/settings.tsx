@@ -241,7 +241,7 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="text-lg">Commission Rates</CardTitle>
               <CardDescription>
-                Set rates per commission type as a percentage of annual premium (e.g., 15 = 15%). Used to auto-calculate estimated commission when you enter a premium amount on a sale.
+                Set a flat dollar amount per commission type (e.g., 500 = $500.00). When you select a commission type on a sale, the estimated commission is automatically filled with this flat rate.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
@@ -259,17 +259,16 @@ export default function Settings() {
                       <p className="text-destructive text-xs mt-1">{errors.commissionRates[idx]?.type?.message}</p>
                     )}
                   </div>
-                  <div className="w-32 relative">
+                  <div className="w-36 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">$</span>
                     <Input
                       type="number"
                       step="0.01"
                       min="0"
-                      max="100"
-                      placeholder="15"
-                      className="pr-8"
+                      placeholder="0.00"
+                      className="pl-7"
                       {...register(`commissionRates.${idx}.rate`)}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">%</span>
                     {errors.commissionRates?.[idx]?.rate && (
                       <p className="text-destructive text-xs mt-1">{errors.commissionRates[idx]?.rate?.message}</p>
                     )}

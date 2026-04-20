@@ -61,6 +61,7 @@ export async function runWeeklyReport(): Promise<{ reportId: number; totalSales:
     owningAgent: s.owningAgent,
     salesType: s.salesType,
     soldDate: s.soldDate,
+    effectiveDate: s.effectiveDate ?? null,
     commissionType: s.commissionType,
     leadSource: s.leadSource ?? null,
     hra: s.hra ?? null,

@@ -46,6 +46,8 @@ export interface SaleEntry {
   owningAgent: string;
   salesType: string;
   soldDate: string;
+  /** @nullable */
+  effectiveDate: string | null;
   commissionType: string;
   /** @nullable */
   leadSource: string | null;
@@ -67,6 +69,8 @@ export interface CreateSaleBody {
   owningAgent: string;
   salesType: string;
   soldDate: string;
+  /** @nullable */
+  effectiveDate?: string | null;
   commissionType: string;
   /** @nullable */
   leadSource?: string | null;
@@ -85,6 +89,8 @@ export interface UpdateSaleBody {
   owningAgent?: string;
   salesType?: string;
   soldDate?: string;
+  /** @nullable */
+  effectiveDate?: string | null;
   commissionType?: string;
   /** @nullable */
   leadSource?: string | null;
