@@ -1,24 +1,40 @@
 import cron from "node-cron";
 import { db, salesTable, weeklyReportsTable } from "@workspace/db";
-import { eq, gte, lte, and, sql } from "drizzle-orm";
+import { gte, lte, and } from "drizzle-orm";
 import { sendWeeklyReport, RECIPIENTS, type SaleRow } from "./email";
 import { logger } from "./logger";
 
+/**
+ * Week runs Friday → Thursday.
+ * Given any date, returns the Friday that starts that week and the Thursday that ends it.
+ */
 function getWeekBounds(date: Date): { weekStart: string; weekEnd: string } {
   const d = new Date(date);
-  const day = d.getDay();
-  const diffToSunday = day;
-  const sunday = new Date(d);
-  sunday.setDate(d.getDate() - diffToSunday);
-  const saturday = new Date(sunday);
-  saturday.setDate(sunday.getDate() + 6);
+  const dayOfWeek = d.getDay(); // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+
+  // Days back to the most recent Friday
+  const daysBackToFriday = (dayOfWeek - 5 + 7) % 7;
+
+  const friday = new Date(d);
+  friday.setDate(d.getDate() - daysBackToFriday);
+
+  const thursday = new Date(friday);
+  thursday.setDate(friday.getDate() + 6);
 
   const fmt = (dt: Date) => dt.toISOString().slice(0, 10);
-  return { weekStart: fmt(sunday), weekEnd: fmt(saturday) };
+  return { weekStart: fmt(friday), weekEnd: fmt(thursday) };
 }
 
 export function getCurrentWeekBounds() {
   return getWeekBounds(new Date());
+}
+
+/**
+ * Given a sold date string (YYYY-MM-DD), returns the weekStart (Friday) for that week.
+ */
+export function getWeekStartForDate(soldDate: string): string {
+  const d = new Date(soldDate + "T12:00:00Z"); // noon UTC to avoid timezone edge cases
+  return getWeekBounds(d).weekStart;
 }
 
 export async function runWeeklyReport(): Promise<{ reportId: number; totalSales: number }> {
@@ -70,9 +86,9 @@ export async function runWeeklyReport(): Promise<{ reportId: number; totalSales:
 }
 
 export function startScheduler(): void {
-  // Saturday at 5:00 PM (17:00) — cron: "0 17 * * 6"
-  cron.schedule("0 17 * * 6", async () => {
-    logger.info("Scheduled Saturday 5pm report triggered");
+  // Thursday at 5:00 PM (17:00) — cron: "0 17 * * 4"
+  cron.schedule("0 17 * * 4", async () => {
+    logger.info("Scheduled Thursday 5pm report triggered");
     try {
       await runWeeklyReport();
     } catch (err) {
@@ -80,5 +96,5 @@ export function startScheduler(): void {
     }
   });
 
-  logger.info("Weekly report scheduler started (Saturdays at 5:00 PM)");
+  logger.info("Weekly report scheduler started (Thursdays at 5:00 PM)");
 }

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, gte, lte, and, sql } from "drizzle-orm";
+import { eq, gte, lte, and } from "drizzle-orm";
 import { db, salesTable, weeklyReportsTable } from "@workspace/db";
 import {
   CreateSaleBody,
@@ -8,26 +8,20 @@ import {
   UpdateSaleParams,
   DeleteSaleParams,
   ListSalesQueryParams,
-  ListSalesResponseItem,
   ListSalesResponse,
   GetSaleResponse,
   UpdateSaleResponse,
   GetCurrentWeekSummaryResponse,
   ListReportsResponse,
-  ListReportsResponseItem,
   SendReportResponse,
 } from "@workspace/api-zod";
-import { getCurrentWeekBounds, runWeeklyReport } from "../lib/scheduler";
+import { getCurrentWeekBounds, getWeekStartForDate, runWeeklyReport } from "../lib/scheduler";
 
 const router: IRouter = Router();
 
 function parseId(raw: string | string[]): number {
   const str = Array.isArray(raw) ? raw[0] : raw;
   return parseInt(str, 10);
-}
-
-function currentWeekStart(): string {
-  return getCurrentWeekBounds().weekStart;
 }
 
 router.get("/sales", async (req, res): Promise<void> => {
@@ -37,16 +31,15 @@ router.get("/sales", async (req, res): Promise<void> => {
     return;
   }
 
-  const weekStartFilter = parsed.data.weekStart ?? currentWeekStart();
-
-  const { weekStart, weekEnd } = weekStartFilter
+  // If a specific weekStart is passed, derive that week's end; otherwise use current week
+  const { weekStart, weekEnd } = parsed.data.weekStart
     ? (() => {
-        const d = new Date(weekStartFilter);
-        const sunday = new Date(d);
-        const saturday = new Date(d);
-        saturday.setDate(sunday.getDate() + 6);
+        const ws = parsed.data.weekStart!;
+        const friday = new Date(ws + "T12:00:00Z");
+        const thursday = new Date(friday);
+        thursday.setDate(friday.getDate() + 6);
         const fmt = (dt: Date) => dt.toISOString().slice(0, 10);
-        return { weekStart: fmt(sunday), weekEnd: fmt(saturday) };
+        return { weekStart: fmt(friday), weekEnd: fmt(thursday) };
       })()
     : getCurrentWeekBounds();
 
@@ -56,7 +49,15 @@ router.get("/sales", async (req, res): Promise<void> => {
     .where(and(gte(salesTable.soldDate, weekStart), lte(salesTable.soldDate, weekEnd)))
     .orderBy(salesTable.soldDate);
 
-  res.json(ListSalesResponse.parse(sales.map((s) => ({ ...s, estimatedCommission: s.estimatedCommission ?? null, notes: s.notes ?? null }))));
+  res.json(
+    ListSalesResponse.parse(
+      sales.map((s) => ({
+        ...s,
+        estimatedCommission: s.estimatedCommission ?? null,
+        notes: s.notes ?? null,
+      }))
+    )
+  );
 });
 
 router.post("/sales", async (req, res): Promise<void> => {
@@ -67,14 +68,7 @@ router.post("/sales", async (req, res): Promise<void> => {
   }
 
   const data = parsed.data;
-
-  // Compute weekStart from soldDate
-  const soldDateObj = new Date(data.soldDate);
-  const dayOfWeek = soldDateObj.getDay();
-  const sundayOffset = dayOfWeek;
-  const sunday = new Date(soldDateObj);
-  sunday.setDate(soldDateObj.getDate() - sundayOffset);
-  const weekStart = sunday.toISOString().slice(0, 10);
+  const weekStart = getWeekStartForDate(data.soldDate);
 
   const [sale] = await db
     .insert(salesTable)
@@ -86,7 +80,13 @@ router.post("/sales", async (req, res): Promise<void> => {
     })
     .returning();
 
-  res.status(201).json(GetSaleResponse.parse({ ...sale, estimatedCommission: sale.estimatedCommission ?? null, notes: sale.notes ?? null }));
+  res.status(201).json(
+    GetSaleResponse.parse({
+      ...sale,
+      estimatedCommission: sale.estimatedCommission ?? null,
+      notes: sale.notes ?? null,
+    })
+  );
 });
 
 router.get("/sales/summary/current-week", async (_req, res): Promise<void> => {
@@ -140,7 +140,13 @@ router.get("/sales/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(GetSaleResponse.parse({ ...sale, estimatedCommission: sale.estimatedCommission ?? null, notes: sale.notes ?? null }));
+  res.json(
+    GetSaleResponse.parse({
+      ...sale,
+      estimatedCommission: sale.estimatedCommission ?? null,
+      notes: sale.notes ?? null,
+    })
+  );
 });
 
 router.patch("/sales/:id", async (req, res): Promise<void> => {
@@ -168,11 +174,7 @@ router.patch("/sales/:id", async (req, res): Promise<void> => {
 
   if (updateData.soldDate !== undefined) {
     updateFields.soldDate = updateData.soldDate;
-    const soldDateObj = new Date(updateData.soldDate);
-    const dayOfWeek = soldDateObj.getDay();
-    const sunday = new Date(soldDateObj);
-    sunday.setDate(soldDateObj.getDate() - dayOfWeek);
-    updateFields.weekStart = sunday.toISOString().slice(0, 10);
+    updateFields.weekStart = getWeekStartForDate(updateData.soldDate);
   }
 
   const [sale] = await db
@@ -187,7 +189,13 @@ router.patch("/sales/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(UpdateSaleResponse.parse({ ...sale, estimatedCommission: sale.estimatedCommission ?? null, notes: sale.notes ?? null }));
+  res.json(
+    UpdateSaleResponse.parse({
+      ...sale,
+      estimatedCommission: sale.estimatedCommission ?? null,
+      notes: sale.notes ?? null,
+    })
+  );
 });
 
 router.delete("/sales/:id", async (req, res): Promise<void> => {
@@ -208,7 +216,11 @@ router.delete("/sales/:id", async (req, res): Promise<void> => {
 });
 
 router.get("/reports", async (_req, res): Promise<void> => {
-  const reports = await db.select().from(weeklyReportsTable).orderBy(weeklyReportsTable.sentAt);
+  const reports = await db
+    .select()
+    .from(weeklyReportsTable)
+    .orderBy(weeklyReportsTable.sentAt);
+
   res.json(
     ListReportsResponse.parse(
       reports.map((r) => ({
@@ -221,7 +233,12 @@ router.get("/reports", async (_req, res): Promise<void> => {
 
 router.post("/reports/send", async (_req, res): Promise<void> => {
   const { reportId, totalSales } = await runWeeklyReport();
-  res.json(SendReportResponse.parse({ message: `Report sent successfully with ${totalSales} sales.`, reportId }));
+  res.json(
+    SendReportResponse.parse({
+      message: `Report sent successfully with ${totalSales} sales.`,
+      reportId,
+    })
+  );
 });
 
 export default router;

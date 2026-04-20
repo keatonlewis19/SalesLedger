@@ -30,3 +30,11 @@ externalPort = 80
 [[ports]]
 localPort = 22084
 externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = "587"
+SMTP_USER = "keaton@crmgrp.com"
+SMTP_FROM = "keaton@crmgrp.com"
