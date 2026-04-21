@@ -232,6 +232,8 @@ export type MarkSalePaidBody = {
 export type InviteAgentBody = {
   email: string;
   role?: string;
+  /** URL to redirect the invited user to after accepting the invite */
+  redirectUrl?: string;
 };
 
 export type InviteAgent200 = {

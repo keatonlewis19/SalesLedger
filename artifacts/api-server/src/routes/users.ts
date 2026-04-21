@@ -28,18 +28,22 @@ router.get("/users", requireAuth, requireAdmin, async (_req, res): Promise<void>
 });
 
 router.post("/users/invite", requireAuth, requireAdmin, async (req: AuthRequest, res): Promise<void> => {
-  const { email, role = "agent" } = req.body as { email: string; role?: string };
+  const { email, role = "agent", redirectUrl: bodyRedirectUrl } = req.body as { email: string; role?: string; redirectUrl?: string };
 
   if (!email) {
     res.status(400).json({ error: "Email is required" });
     return;
   }
 
+  // Derive a sign-up redirect URL from the request origin if the client didn't provide one
+  const origin = req.headers.origin || req.headers.referer?.replace(/\/$/, "");
+  const redirectUrl = bodyRedirectUrl || (origin ? `${origin}/sign-up` : undefined);
+
   try {
     const invitation = await clerkClient.invitations.createInvitation({
       emailAddress: email,
       publicMetadata: { role },
-      redirectUrl: undefined,
+      redirectUrl,
     });
 
     await db

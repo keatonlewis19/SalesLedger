@@ -177,6 +177,9 @@ paths:
                   type: string
                 role:
                   type: string
+                redirectUrl:
+                  type: string
+                  description: "URL to redirect the invited user to after accepting the invite"
               required:
                 - email
       responses:

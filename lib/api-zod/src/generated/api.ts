@@ -148,6 +148,10 @@ export const ListAgencyUsersResponse = zod.array(ListAgencyUsersResponseItem);
 export const InviteAgentBody = zod.object({
   email: zod.string(),
   role: zod.string().optional(),
+  redirectUrl: zod
+    .string()
+    .optional()
+    .describe("URL to redirect the invited user to after accepting the invite"),
 });
 
 export const InviteAgentResponse = zod.object({

@@ -51,8 +51,10 @@ export default function TeamPage() {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
 
+    const signUpUrl = `${window.location.origin}${import.meta.env.BASE_URL}sign-up`;
+
     inviteAgent.mutate(
-      { data: { email: inviteEmail.trim(), role: inviteRole } },
+      { data: { email: inviteEmail.trim(), role: inviteRole, redirectUrl: signUpUrl } },
       {
         onSuccess: () => {
           toast({ title: `Invitation sent to ${inviteEmail}` });
