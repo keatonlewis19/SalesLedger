@@ -20,6 +20,12 @@ tags:
     description: Agency user management
   - name: storage
     description: Object storage upload and serving endpoints
+  - name: leads
+    description: Lead pipeline tracking
+  - name: lead-sources
+    description: Lead source management
+  - name: metrics
+    description: Sales metrics and dashboard analytics
 paths:
   /healthz:
     get:
@@ -406,6 +412,282 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /lead-sources:
+    get:
+      operationId: listLeadSources
+      tags: [lead-sources]
+      summary: List all lead sources
+      responses:
+        "200":
+          description: List of lead sources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeadSource"
+    post:
+      operationId: createLeadSource
+      tags: [lead-sources]
+      summary: Create a lead source (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                costPerLead:
+                  type: number
+                isPaid:
+                  type: boolean
+              required:
+                - name
+      responses:
+        "201":
+          description: Created lead source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadSource"
+
+  /lead-sources/{id}:
+    patch:
+      operationId: updateLeadSource
+      tags: [lead-sources]
+      summary: Update a lead source (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                costPerLead:
+                  type: number
+                isPaid:
+                  type: boolean
+      responses:
+        "200":
+          description: Updated lead source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadSource"
+    delete:
+      operationId: deleteLeadSource
+      tags: [lead-sources]
+      summary: Delete a lead source (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /leads:
+    get:
+      operationId: listLeads
+      tags: [leads]
+      summary: List leads (own for agents, all for admins)
+      responses:
+        "200":
+          description: List of leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lead"
+    post:
+      operationId: createLead
+      tags: [leads]
+      summary: Create a new lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                leadSourceId:
+                  type: integer
+                  nullable: true
+                status:
+                  type: string
+                revenue:
+                  type: number
+                  nullable: true
+                carrier:
+                  type: string
+                  nullable: true
+                salesType:
+                  type: string
+                  nullable: true
+                commissionType:
+                  type: string
+                  nullable: true
+                costPerLead:
+                  type: number
+                  nullable: true
+                notes:
+                  type: string
+                  nullable: true
+                enteredDate:
+                  type: string
+                soldDate:
+                  type: string
+                  nullable: true
+              required:
+                - firstName
+                - enteredDate
+      responses:
+        "201":
+          description: Created lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+
+  /leads/{id}:
+    patch:
+      operationId: updateLead
+      tags: [leads]
+      summary: Update a lead (including status change)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                leadSourceId:
+                  type: integer
+                  nullable: true
+                status:
+                  type: string
+                  enum: [new, in_comm, appt_set, follow_up, sold, lost]
+                revenue:
+                  type: number
+                  nullable: true
+                carrier:
+                  type: string
+                  nullable: true
+                salesType:
+                  type: string
+                  nullable: true
+                commissionType:
+                  type: string
+                  nullable: true
+                costPerLead:
+                  type: number
+                  nullable: true
+                notes:
+                  type: string
+                  nullable: true
+                enteredDate:
+                  type: string
+                soldDate:
+                  type: string
+                  nullable: true
+      responses:
+        "200":
+          description: Updated lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+    delete:
+      operationId: deleteLead
+      tags: [leads]
+      summary: Delete a lead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /metrics:
+    get:
+      operationId: getMetrics
+      tags: [metrics]
+      summary: Get computed sales metrics and pipeline analytics
+      responses:
+        "200":
+          description: Metrics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    $ref: "#/components/schemas/MetricsSummary"
+                  leadSourcePerformance:
+                    type: array
+                    items:
+                      type: object
+                  leadSourcePipeline:
+                    type: array
+                    items:
+                      type: object
+                  carrierPerformance:
+                    type: array
+                    items:
+                      type: object
+
 components:
   schemas:
     HealthStatus:
@@ -776,3 +1058,129 @@ components:
       required:
         - message
         - reportId
+
+    LeadSource:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        costPerLead:
+          type: number
+          nullable: true
+        isPaid:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - isPaid
+
+    Lead:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        leadSourceId:
+          type: integer
+          nullable: true
+        leadSource:
+          $ref: "#/components/schemas/LeadSource"
+          nullable: true
+        status:
+          type: string
+          enum: [new, in_comm, appt_set, follow_up, sold, lost]
+        revenue:
+          type: number
+          nullable: true
+        carrier:
+          type: string
+          nullable: true
+        salesType:
+          type: string
+          nullable: true
+        commissionType:
+          type: string
+          nullable: true
+        costPerLead:
+          type: number
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        enteredDate:
+          type: string
+        soldDate:
+          type: string
+          nullable: true
+        linkedSaleId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - firstName
+        - status
+        - enteredDate
+
+    MetricsSummary:
+      type: object
+      properties:
+        totalLeads:
+          type: integer
+        newSales:
+          type: integer
+        closeRate:
+          type: number
+        totalRevenue:
+          type: number
+        avgRevenuePerSale:
+          type: number
+        avgRevenuePerLead:
+          type: number
+        paidMarketingRevenue:
+          type: number
+        costPerAcquisition:
+          type: number
+        marketingRoi:
+          type: number
+          nullable: true
+        openLeads:
+          type: integer
+        avgDaysToClose:
+          type: number
+        leadsOlderThan14:
+          type: integer
+      required:
+        - totalLeads
+        - newSales
+        - closeRate
+        - totalRevenue
+        - avgRevenuePerSale
+        - avgRevenuePerLead
+        - paidMarketingRevenue
+        - costPerAcquisition
+        - openLeads
+        - avgDaysToClose
+        - leadsOlderThan14

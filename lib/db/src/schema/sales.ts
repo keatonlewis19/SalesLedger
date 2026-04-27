@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, doublePrecision, integer, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, doublePrecision, integer, jsonb, boolean, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -85,3 +85,39 @@ export const pendingInvitesTable = pgTable("pending_invites", {
 });
 
 export type PendingInvite = typeof pendingInvitesTable.$inferSelect;
+
+export const leadSourcesTable = pgTable("lead_sources", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  costPerLead: doublePrecision("cost_per_lead").default(0),
+  isPaid: boolean("is_paid").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export type LeadSource = typeof leadSourcesTable.$inferSelect;
+
+export const leadsTable = pgTable("leads", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  email: varchar("email", { length: 255 }),
+  leadSourceId: integer("lead_source_id").references(() => leadSourcesTable.id),
+  status: varchar("status", { length: 50 }).notNull().default("new"),
+  revenue: doublePrecision("revenue"),
+  carrier: varchar("carrier", { length: 255 }),
+  salesType: varchar("sales_type", { length: 255 }),
+  commissionType: varchar("commission_type", { length: 255 }),
+  costPerLead: doublePrecision("cost_per_lead"),
+  notes: text("notes"),
+  enteredDate: text("entered_date").notNull(),
+  soldDate: text("sold_date"),
+  linkedSaleId: integer("linked_sale_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export type Lead = typeof leadsTable.$inferSelect;
+export const insertLeadSchema = createInsertSchema(leadsTable).omit({ id: true, createdAt: true, updatedAt: true });

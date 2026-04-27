@@ -218,6 +218,64 @@ export interface SendReportResponse {
   reportId: number;
 }
 
+export interface LeadSource {
+  id: number;
+  name: string;
+  costPerLead?: number | null;
+  isPaid: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type LeadStatus = (typeof LeadStatus)[keyof typeof LeadStatus];
+
+export const LeadStatus = {
+  new: "new",
+  in_comm: "in_comm",
+  appt_set: "appt_set",
+  follow_up: "follow_up",
+  sold: "sold",
+  lost: "lost",
+} as const;
+
+export interface Lead {
+  id: number;
+  userId: string;
+  firstName: string;
+  lastName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  leadSourceId?: number | null;
+  leadSource?: LeadSource | null;
+  status: LeadStatus;
+  revenue?: number | null;
+  carrier?: string | null;
+  salesType?: string | null;
+  commissionType?: string | null;
+  costPerLead?: number | null;
+  notes?: string | null;
+  enteredDate: string;
+  soldDate?: string | null;
+  linkedSaleId?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface MetricsSummary {
+  totalLeads: number;
+  newSales: number;
+  closeRate: number;
+  totalRevenue: number;
+  avgRevenuePerSale: number;
+  avgRevenuePerLead: number;
+  paidMarketingRevenue: number;
+  costPerAcquisition: number;
+  marketingRoi?: number | null;
+  openLeads: number;
+  avgDaysToClose: number;
+  leadsOlderThan14: number;
+}
+
 export type ListSalesParams = {
   /**
    * ISO date string for the start of the week filter
@@ -242,4 +300,83 @@ export type InviteAgent200 = {
 
 export type UpdateUserRoleBody = {
   role: string;
+};
+
+export type CreateLeadSourceBody = {
+  name: string;
+  costPerLead?: number;
+  isPaid?: boolean;
+};
+
+export type UpdateLeadSourceBody = {
+  name?: string;
+  costPerLead?: number;
+  isPaid?: boolean;
+};
+
+export type DeleteLeadSource200 = {
+  success?: boolean;
+};
+
+export type CreateLeadBody = {
+  firstName: string;
+  lastName?: string;
+  phone?: string;
+  email?: string;
+  leadSourceId?: number | null;
+  status?: string;
+  revenue?: number | null;
+  carrier?: string | null;
+  salesType?: string | null;
+  commissionType?: string | null;
+  costPerLead?: number | null;
+  notes?: string | null;
+  enteredDate: string;
+  soldDate?: string | null;
+};
+
+export type UpdateLeadBodyStatus =
+  (typeof UpdateLeadBodyStatus)[keyof typeof UpdateLeadBodyStatus];
+
+export const UpdateLeadBodyStatus = {
+  new: "new",
+  in_comm: "in_comm",
+  appt_set: "appt_set",
+  follow_up: "follow_up",
+  sold: "sold",
+  lost: "lost",
+} as const;
+
+export type UpdateLeadBody = {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  email?: string;
+  leadSourceId?: number | null;
+  status?: UpdateLeadBodyStatus;
+  revenue?: number | null;
+  carrier?: string | null;
+  salesType?: string | null;
+  commissionType?: string | null;
+  costPerLead?: number | null;
+  notes?: string | null;
+  enteredDate?: string;
+  soldDate?: string | null;
+};
+
+export type DeleteLead200 = {
+  success?: boolean;
+};
+
+export type GetMetrics200LeadSourcePerformanceItem = { [key: string]: unknown };
+
+export type GetMetrics200LeadSourcePipelineItem = { [key: string]: unknown };
+
+export type GetMetrics200CarrierPerformanceItem = { [key: string]: unknown };
+
+export type GetMetrics200 = {
+  summary?: MetricsSummary;
+  leadSourcePerformance?: GetMetrics200LeadSourcePerformanceItem[];
+  leadSourcePipeline?: GetMetrics200LeadSourcePipelineItem[];
+  carrierPerformance?: GetMetrics200CarrierPerformanceItem[];
 };

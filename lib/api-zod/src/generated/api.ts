@@ -416,3 +416,208 @@ export const RequestUploadUrlResponse = zod.object({
   uploadURL: zod.string().url(),
   objectPath: zod.string(),
 });
+
+/**
+ * @summary List all lead sources
+ */
+export const ListLeadSourcesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  costPerLead: zod.number().nullish(),
+  isPaid: zod.boolean(),
+  createdAt: zod.string().optional(),
+  updatedAt: zod.string().optional(),
+});
+export const ListLeadSourcesResponse = zod.array(ListLeadSourcesResponseItem);
+
+/**
+ * @summary Create a lead source (admin only)
+ */
+export const CreateLeadSourceBody = zod.object({
+  name: zod.string(),
+  costPerLead: zod.number().optional(),
+  isPaid: zod.boolean().optional(),
+});
+
+/**
+ * @summary Update a lead source (admin only)
+ */
+export const UpdateLeadSourceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateLeadSourceBody = zod.object({
+  name: zod.string().optional(),
+  costPerLead: zod.number().optional(),
+  isPaid: zod.boolean().optional(),
+});
+
+export const UpdateLeadSourceResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  costPerLead: zod.number().nullish(),
+  isPaid: zod.boolean(),
+  createdAt: zod.string().optional(),
+  updatedAt: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a lead source (admin only)
+ */
+export const DeleteLeadSourceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteLeadSourceResponse = zod.object({
+  success: zod.boolean().optional(),
+});
+
+/**
+ * @summary List leads (own for agents, all for admins)
+ */
+export const ListLeadsResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string().nullish(),
+  phone: zod.string().nullish(),
+  email: zod.string().nullish(),
+  leadSourceId: zod.number().nullish(),
+  leadSource: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      costPerLead: zod.number().nullish(),
+      isPaid: zod.boolean(),
+      createdAt: zod.string().optional(),
+      updatedAt: zod.string().optional(),
+    })
+    .nullish(),
+  status: zod.enum(["new", "in_comm", "appt_set", "follow_up", "sold", "lost"]),
+  revenue: zod.number().nullish(),
+  carrier: zod.string().nullish(),
+  salesType: zod.string().nullish(),
+  commissionType: zod.string().nullish(),
+  costPerLead: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  enteredDate: zod.string(),
+  soldDate: zod.string().nullish(),
+  linkedSaleId: zod.number().nullish(),
+  createdAt: zod.string().optional(),
+  updatedAt: zod.string().optional(),
+});
+export const ListLeadsResponse = zod.array(ListLeadsResponseItem);
+
+/**
+ * @summary Create a new lead
+ */
+export const CreateLeadBody = zod.object({
+  firstName: zod.string(),
+  lastName: zod.string().optional(),
+  phone: zod.string().optional(),
+  email: zod.string().optional(),
+  leadSourceId: zod.number().nullish(),
+  status: zod.string().optional(),
+  revenue: zod.number().nullish(),
+  carrier: zod.string().nullish(),
+  salesType: zod.string().nullish(),
+  commissionType: zod.string().nullish(),
+  costPerLead: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  enteredDate: zod.string(),
+  soldDate: zod.string().nullish(),
+});
+
+/**
+ * @summary Update a lead (including status change)
+ */
+export const UpdateLeadParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateLeadBody = zod.object({
+  firstName: zod.string().optional(),
+  lastName: zod.string().optional(),
+  phone: zod.string().optional(),
+  email: zod.string().optional(),
+  leadSourceId: zod.number().nullish(),
+  status: zod
+    .enum(["new", "in_comm", "appt_set", "follow_up", "sold", "lost"])
+    .optional(),
+  revenue: zod.number().nullish(),
+  carrier: zod.string().nullish(),
+  salesType: zod.string().nullish(),
+  commissionType: zod.string().nullish(),
+  costPerLead: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  enteredDate: zod.string().optional(),
+  soldDate: zod.string().nullish(),
+});
+
+export const UpdateLeadResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string().nullish(),
+  phone: zod.string().nullish(),
+  email: zod.string().nullish(),
+  leadSourceId: zod.number().nullish(),
+  leadSource: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      costPerLead: zod.number().nullish(),
+      isPaid: zod.boolean(),
+      createdAt: zod.string().optional(),
+      updatedAt: zod.string().optional(),
+    })
+    .nullish(),
+  status: zod.enum(["new", "in_comm", "appt_set", "follow_up", "sold", "lost"]),
+  revenue: zod.number().nullish(),
+  carrier: zod.string().nullish(),
+  salesType: zod.string().nullish(),
+  commissionType: zod.string().nullish(),
+  costPerLead: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  enteredDate: zod.string(),
+  soldDate: zod.string().nullish(),
+  linkedSaleId: zod.number().nullish(),
+  createdAt: zod.string().optional(),
+  updatedAt: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a lead
+ */
+export const DeleteLeadParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteLeadResponse = zod.object({
+  success: zod.boolean().optional(),
+});
+
+/**
+ * @summary Get computed sales metrics and pipeline analytics
+ */
+export const GetMetricsResponse = zod.object({
+  summary: zod
+    .object({
+      totalLeads: zod.number(),
+      newSales: zod.number(),
+      closeRate: zod.number(),
+      totalRevenue: zod.number(),
+      avgRevenuePerSale: zod.number(),
+      avgRevenuePerLead: zod.number(),
+      paidMarketingRevenue: zod.number(),
+      costPerAcquisition: zod.number(),
+      marketingRoi: zod.number().nullish(),
+      openLeads: zod.number(),
+      avgDaysToClose: zod.number(),
+      leadsOlderThan14: zod.number(),
+    })
+    .optional(),
+  leadSourcePerformance: zod.array(zod.object({}).passthrough()).optional(),
+  leadSourcePipeline: zod.array(zod.object({}).passthrough()).optional(),
+  carrierPerformance: zod.array(zod.object({}).passthrough()).optional(),
+});

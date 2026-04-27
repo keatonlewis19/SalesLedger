@@ -10,6 +10,8 @@ import History from "@/pages/history";
 import SettingsPage from "@/pages/settings";
 import TeamPage from "@/pages/team";
 import LandingPage from "@/pages/landing";
+import LeadsPage from "@/pages/leads";
+import MetricsPage from "@/pages/metrics";
 import { BrandingProvider } from "@/contexts/branding";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -199,6 +201,8 @@ function ClerkProviderWithRoutes() {
               <Route path="/sign-up/*?" component={SignUpPage} />
               <Route path="/dashboard" component={() => <ProtectedRoute component={Home} />} />
               <Route path="/history" component={() => <ProtectedRoute component={History} />} />
+              <Route path="/leads" component={() => <ProtectedRoute component={LeadsPage} />} />
+              <Route path="/metrics" component={() => <ProtectedRoute component={MetricsPage} />} />
               <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
               <Route path="/team" component={() => <ProtectedRoute component={TeamPage} />} />
               <Route component={NotFound} />

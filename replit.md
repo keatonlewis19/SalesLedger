@@ -21,8 +21,24 @@ pnpm workspace monorepo using TypeScript. Multi-tenant agency management platfor
 
 ## Artifacts
 
-- **sales-tracker** (`/`) — React + Vite frontend (Clerk auth, role-based UI)
+- **sales-tracker** (`/`) — React + Vite frontend (Clerk auth, role-based UI). Pages: Dashboard, History, Leads, Metrics, Team (admin), Settings
 - **api-server** (`/api`) — Express 5 backend (Clerk middleware, admin/agent routes)
+
+## Lead Pipeline & Metrics System
+
+### Database Tables
+- `lead_sources` — App-wide lead sources with name, costPerLead, isPaid flag
+- `leads` — Individual lead tracking per agent with: firstName, lastName, phone, email, leadSourceId, status (new/in_comm/appt_set/follow_up/sold/lost), revenue, carrier, salesType, commissionType, costPerLead override, notes, enteredDate, soldDate, linkedSaleId
+
+### Auto-sync
+When a lead status changes to "sold", the API automatically creates a corresponding entry in the `sales` table (weekly report), linking it via `linkedSaleId`. When a lead is un-sold or deleted, the linked sale is removed.
+
+### API Routes
+- `GET/POST /api/lead-sources` — list/create (create: admin only)
+- `PATCH/DELETE /api/lead-sources/:id` — update/delete (admin only)
+- `GET/POST /api/leads` — list (own for agents, all for admins) / create
+- `PATCH/DELETE /api/leads/:id` — update (triggers sale sync) / delete
+- `GET /api/metrics` — computed KPIs: summary, leadSourcePerformance, leadSourcePipeline, carrierPerformance
 
 ## Authentication & Roles
 
