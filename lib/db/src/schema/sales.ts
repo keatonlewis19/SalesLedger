@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, doublePrecision, integer, jsonb, boolean, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, doublePrecision, integer, jsonb, boolean, varchar, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -123,3 +123,15 @@ export const leadsTable = pgTable("leads", {
 
 export type Lead = typeof leadsTable.$inferSelect;
 export const insertLeadSchema = createInsertSchema(leadsTable).omit({ id: true, createdAt: true, updatedAt: true });
+
+export const leadSourcePaymentsTable = pgTable("lead_source_payments", {
+  id: serial("id").primaryKey(),
+  leadSourceId: integer("lead_source_id").notNull().references(() => leadSourcesTable.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  amount: doublePrecision("amount").notNull(),
+  paidDate: date("paid_date").notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type LeadSourcePayment = typeof leadSourcePaymentsTable.$inferSelect;

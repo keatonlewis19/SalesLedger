@@ -439,10 +439,6 @@ paths:
               properties:
                 name:
                   type: string
-                costPerLead:
-                  type: number
-                totalInvested:
-                  type: number
                 isPaid:
                   type: boolean
               required:
@@ -475,10 +471,6 @@ paths:
               properties:
                 name:
                   type: string
-                costPerLead:
-                  type: number
-                totalInvested:
-                  type: number
                 isPaid:
                   type: boolean
       responses:
@@ -491,9 +483,91 @@ paths:
     delete:
       operationId: deleteLeadSource
       tags: [lead-sources]
-      summary: Delete a lead source (admin only)
+      summary: Delete a lead source
       parameters:
         - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /lead-sources/{id}/payments:
+    get:
+      operationId: listLeadSourcePayments
+      tags: [lead-sources]
+      summary: List payments for a lead source
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeadSourcePayment"
+    post:
+      operationId: createLeadSourcePayment
+      tags: [lead-sources]
+      summary: Add a payment to a lead source
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                paidDate:
+                  type: string
+                note:
+                  type: string
+                  nullable: true
+              required:
+                - amount
+                - paidDate
+      responses:
+        "201":
+          description: Created payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadSourcePayment"
+
+  /lead-sources/{id}/payments/{paymentId}:
+    delete:
+      operationId: deleteLeadSourcePayment
+      tags: [lead-sources]
+      summary: Delete a payment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: paymentId
           in: path
           required: true
           schema:
@@ -1079,6 +1153,9 @@ components:
         totalInvested:
           type: number
           nullable: true
+        leadCount:
+          type: number
+          nullable: true
         isPaid:
           type: boolean
         createdAt:
@@ -1089,6 +1166,31 @@ components:
         - id
         - name
         - isPaid
+
+    LeadSourcePayment:
+      type: object
+      properties:
+        id:
+          type: integer
+        leadSourceId:
+          type: integer
+        userId:
+          type: string
+        amount:
+          type: number
+        paidDate:
+          type: string
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - leadSourceId
+        - userId
+        - amount
+        - paidDate
 
     Lead:
       type: object

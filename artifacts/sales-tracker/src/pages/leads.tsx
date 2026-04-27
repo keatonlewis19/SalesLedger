@@ -9,8 +9,12 @@ import {
   useCreateLeadSource,
   useUpdateLeadSource,
   useDeleteLeadSource,
+  useListLeadSourcePayments,
+  useCreateLeadSourcePayment,
+  useDeleteLeadSourcePayment,
   getListLeadsQueryKey,
   getListLeadSourcesQueryKey,
+  getListLeadSourcePaymentsQueryKey,
   getGetMetricsQueryKey,
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
@@ -37,7 +41,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAgencyUser } from "@/hooks/useAgencyUser";
-import { Plus, Trash2, Pencil, ChevronDown, Settings2 } from "lucide-react";
+import { Plus, Trash2, Pencil, ChevronDown, Settings2, ArrowLeft, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -136,6 +140,8 @@ export default function LeadsPage() {
   const createSource = useCreateLeadSource();
   const updateSource = useUpdateLeadSource();
   const deleteSource = useDeleteLeadSource();
+  const createPayment = useCreateLeadSourcePayment();
+  const deletePayment = useDeleteLeadSourcePayment();
 
   const [addOpen, setAddOpen] = useState(false);
   const [editLead, setEditLead] = useState<any | null>(null);
@@ -144,9 +150,23 @@ export default function LeadsPage() {
   const [sourceOpen, setSourceOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<any | null>(null);
   const [sourceName, setSourceName] = useState("");
-  const [sourceCostPerLead, setSourceCostPerLead] = useState("");
-  const [sourceTotalInvested, setSourceTotalInvested] = useState("");
   const [sourceIsPaid, setSourceIsPaid] = useState(false);
+
+  // Payments sub-view — null = show sources list, set = show payments for that source
+  const [paymentsSource, setPaymentsSource] = useState<any | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentDate, setPaymentDate] = useState(today);
+  const [paymentNote, setPaymentNote] = useState("");
+
+  const { data: sourcePayments = [] } = useListLeadSourcePayments(
+    paymentsSource?.id ?? 0,
+    {
+      query: {
+        enabled: !!paymentsSource,
+        queryKey: getListLeadSourcePaymentsQueryKey(paymentsSource?.id ?? 0),
+      },
+    },
+  );
 
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
@@ -249,27 +269,27 @@ export default function LeadsPage() {
   const resetSourceForm = () => {
     setEditingSource(null);
     setSourceName("");
-    setSourceCostPerLead("");
-    setSourceTotalInvested("");
     setSourceIsPaid(false);
   };
 
   const openEditSource = (src: any) => {
     setEditingSource(src);
     setSourceName(src.name ?? "");
-    setSourceCostPerLead(src.costPerLead != null ? String(src.costPerLead) : "");
-    setSourceTotalInvested(src.totalInvested != null ? String(src.totalInvested) : "");
     setSourceIsPaid(src.isPaid ?? false);
+    setPaymentsSource(null);
+  };
+
+  const openPaymentsView = (src: any) => {
+    setPaymentsSource(src);
+    setEditingSource(null);
+    setPaymentAmount("");
+    setPaymentDate(today);
+    setPaymentNote("");
   };
 
   const handleSaveSource = () => {
     if (!sourceName.trim()) return;
-    const payload = {
-      name: sourceName.trim(),
-      costPerLead: sourceCostPerLead ? parseFloat(sourceCostPerLead) : 0,
-      totalInvested: sourceTotalInvested ? parseFloat(sourceTotalInvested) : 0,
-      isPaid: sourceIsPaid,
-    };
+    const payload = { name: sourceName.trim(), isPaid: sourceIsPaid };
     if (editingSource) {
       updateSource.mutate(
         { id: editingSource.id, data: payload },
@@ -296,6 +316,44 @@ export default function LeadsPage() {
         },
       );
     }
+  };
+
+  const handleAddPayment = () => {
+    if (!paymentAmount || !paymentDate || !paymentsSource) return;
+    createPayment.mutate(
+      {
+        id: paymentsSource.id,
+        data: { amount: parseFloat(paymentAmount), paidDate: paymentDate, note: paymentNote || undefined },
+      },
+      {
+        onSuccess: () => {
+          toast({ title: "Payment added" });
+          qc.invalidateQueries({ queryKey: getListLeadSourcePaymentsQueryKey(paymentsSource.id) });
+          qc.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
+          qc.invalidateQueries({ queryKey: getGetMetricsQueryKey() });
+          setPaymentAmount("");
+          setPaymentDate(today);
+          setPaymentNote("");
+        },
+        onError: () => toast({ title: "Failed to add payment", variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleDeletePayment = (paymentId: number) => {
+    if (!paymentsSource) return;
+    deletePayment.mutate(
+      { id: paymentsSource.id, paymentId },
+      {
+        onSuccess: () => {
+          toast({ title: "Payment removed" });
+          qc.invalidateQueries({ queryKey: getListLeadSourcePaymentsQueryKey(paymentsSource.id) });
+          qc.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
+          qc.invalidateQueries({ queryKey: getGetMetricsQueryKey() });
+        },
+        onError: () => toast({ title: "Failed to delete payment", variant: "destructive" }),
+      },
+    );
   };
 
   const handleDeleteSource = (id: number) => {
@@ -547,70 +605,131 @@ export default function LeadsPage() {
       </Dialog>
 
       {/* Lead Sources Manager */}
-      <Dialog open={sourceOpen} onOpenChange={(open) => { setSourceOpen(open); if (!open) resetSourceForm(); }}>
+      <Dialog open={sourceOpen} onOpenChange={(open) => { setSourceOpen(open); if (!open) { resetSourceForm(); setPaymentsSource(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingSource ? "Edit Lead Source" : "Manage Lead Sources"}</DialogTitle>
+            <DialogTitle>
+              {paymentsSource
+                ? <span className="flex items-center gap-2"><button onClick={() => setPaymentsSource(null)} className="p-0 bg-transparent border-0 cursor-pointer text-muted-foreground hover:text-foreground"><ArrowLeft className="w-4 h-4" /></button>Payments · {paymentsSource.name}</span>
+                : editingSource ? "Edit Lead Source" : "Manage Lead Sources"}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid gap-2">
-              <div className="space-y-1">
-                <Label>Source Name</Label>
-                <Input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. QuoteWizard" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label>Cost per Lead ($)</Label>
-                  <Input type="number" value={sourceCostPerLead} onChange={(e) => setSourceCostPerLead(e.target.value)} placeholder="0.00" min="0" step="0.01" />
-                </div>
-                <div className="space-y-1">
-                  <Label>Total Invested ($)</Label>
-                  <Input type="number" value={sourceTotalInvested} onChange={(e) => setSourceTotalInvested(e.target.value)} placeholder="0.00" min="0" step="0.01" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label>Paid Source?</Label>
-                <div className="flex items-center gap-2 pt-1">
-                  <Switch checked={sourceIsPaid} onCheckedChange={setSourceIsPaid} />
-                  <span className="text-sm text-muted-foreground">{sourceIsPaid ? "Yes" : "No"}</span>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={handleSaveSource} disabled={createSource.isPending || updateSource.isPending} className="flex-1">
-                  {editingSource ? <><Pencil className="w-4 h-4 mr-1" /> Save Changes</> : <><Plus className="w-4 h-4 mr-1" /> Add Source</>}
-                </Button>
-                {editingSource && (
-                  <Button variant="outline" onClick={resetSourceForm} className="flex-1">Cancel</Button>
-                )}
-              </div>
-            </div>
-            {!editingSource && (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {(leadSources as any[]).length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">No lead sources yet</p>
-                )}
-                {(leadSources as any[]).map((src) => (
-                  <div key={src.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                    <div>
-                      <p className="font-medium text-sm">{src.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {src.isPaid ? `Paid · $${src.costPerLead ?? 0}/lead` : "Organic"}
-                        {src.totalInvested ? ` · $${Number(src.totalInvested).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} invested` : ""}
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditSource(src)}>
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteSource(src.id)}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
+
+          {/* === PAYMENTS SUB-VIEW === */}
+          {paymentsSource && (
+            <div className="space-y-4">
+              {/* Computed stats */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {[
+                  { label: "Total Invested", value: `$${Number(paymentsSource.totalInvested ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+                  { label: "Leads", value: String(paymentsSource.leadCount ?? 0) },
+                  { label: "Cost / Lead", value: `$${Number(paymentsSource.costPerLead ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+                ].map((stat) => (
+                  <div key={stat.label} className="rounded-lg border bg-muted/30 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
+                    <p className="font-semibold text-sm">{stat.value}</p>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+              {/* Add payment form */}
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Add Payment</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label>Amount ($) *</Label>
+                    <Input type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="0.00" min="0.01" step="0.01" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Paid Date *</Label>
+                    <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label>Note (optional)</Label>
+                  <Input value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)} placeholder="e.g. Monthly subscription" />
+                </div>
+                <Button onClick={handleAddPayment} disabled={createPayment.isPending || !paymentAmount || !paymentDate} className="w-full">
+                  <Plus className="w-4 h-4 mr-1" /> Add Payment
+                </Button>
+              </div>
+              {/* Payment history */}
+              <div className="space-y-1 max-h-52 overflow-y-auto">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Payment History</p>
+                {(sourcePayments as any[]).length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No payments recorded yet</p>
+                )}
+                {(sourcePayments as any[]).map((pmt) => (
+                  <div key={pmt.id} className="flex items-center justify-between px-3 py-2 rounded-lg border bg-muted/20">
+                    <div>
+                      <p className="text-sm font-medium">${Number(pmt.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="text-xs text-muted-foreground">{pmt.paidDate}{pmt.note ? ` · ${pmt.note}` : ""}</p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeletePayment(pmt.id)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* === SOURCES VIEW === */}
+          {!paymentsSource && (
+            <div className="space-y-4">
+              <div className="grid gap-2">
+                <div className="space-y-1">
+                  <Label>Source Name</Label>
+                  <Input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. QuoteWizard" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Paid Source?</Label>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Switch checked={sourceIsPaid} onCheckedChange={setSourceIsPaid} />
+                    <span className="text-sm text-muted-foreground">{sourceIsPaid ? "Yes" : "No"}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleSaveSource} disabled={createSource.isPending || updateSource.isPending} className="flex-1">
+                    {editingSource ? <><Pencil className="w-4 h-4 mr-1" /> Save Changes</> : <><Plus className="w-4 h-4 mr-1" /> Add Source</>}
+                  </Button>
+                  {editingSource && (
+                    <Button variant="outline" onClick={resetSourceForm} className="flex-1">Cancel</Button>
+                  )}
+                </div>
+              </div>
+              {!editingSource && (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {(leadSources as any[]).length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No lead sources yet</p>
+                  )}
+                  {(leadSources as any[]).map((src) => (
+                    <div key={src.id} className="p-3 rounded-lg border bg-muted/30 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-sm">{src.name}</p>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Payments" onClick={() => openPaymentsView(src)}>
+                            <DollarSign className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => openEditSource(src)}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" title="Delete" onClick={() => handleDeleteSource(src.id)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex gap-3 text-xs text-muted-foreground">
+                        <span>{src.isPaid ? "Paid" : "Organic"}</span>
+                        {(src.totalInvested ?? 0) > 0 && <span>Invested: ${Number(src.totalInvested).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
+                        {(src.leadCount ?? 0) > 0 && <span>{src.leadCount} leads</span>}
+                        {(src.costPerLead ?? 0) > 0 && <span>~${Number(src.costPerLead).toFixed(2)}/lead</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Layout>

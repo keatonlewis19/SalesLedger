@@ -21,9 +21,11 @@ import type {
   AppSettings,
   CreateLeadBody,
   CreateLeadSourceBody,
+  CreateLeadSourcePaymentBody,
   CreateSaleBody,
   DeleteLead200,
   DeleteLeadSource200,
+  DeleteLeadSourcePayment200,
   ErrorResponse,
   GetMetrics200,
   HealthStatus,
@@ -31,6 +33,7 @@ import type {
   InviteAgentBody,
   Lead,
   LeadSource,
+  LeadSourcePayment,
   ListSalesParams,
   MarkSalePaidBody,
   SaleEntry,
@@ -1771,7 +1774,7 @@ export const useUpdateLeadSource = <
 };
 
 /**
- * @summary Delete a lead source (admin only)
+ * @summary Delete a lead source
  */
 export const getDeleteLeadSourceUrl = (id: number) => {
   return `/api/lead-sources/${id}`;
@@ -1832,7 +1835,7 @@ export type DeleteLeadSourceMutationResult = NonNullable<
 export type DeleteLeadSourceMutationError = ErrorType<unknown>;
 
 /**
- * @summary Delete a lead source (admin only)
+ * @summary Delete a lead source
  */
 export const useDeleteLeadSource = <
   TError = ErrorType<unknown>,
@@ -1852,6 +1855,273 @@ export const useDeleteLeadSource = <
   TContext
 > => {
   return useMutation(getDeleteLeadSourceMutationOptions(options));
+};
+
+/**
+ * @summary List payments for a lead source
+ */
+export const getListLeadSourcePaymentsUrl = (id: number) => {
+  return `/api/lead-sources/${id}/payments`;
+};
+
+export const listLeadSourcePayments = async (
+  id: number,
+  options?: RequestInit,
+): Promise<LeadSourcePayment[]> => {
+  return customFetch<LeadSourcePayment[]>(getListLeadSourcePaymentsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListLeadSourcePaymentsQueryKey = (id: number) => {
+  return [`/api/lead-sources/${id}/payments`] as const;
+};
+
+export const getListLeadSourcePaymentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listLeadSourcePayments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listLeadSourcePayments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListLeadSourcePaymentsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listLeadSourcePayments>>
+  > = ({ signal }) => listLeadSourcePayments(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listLeadSourcePayments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListLeadSourcePaymentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listLeadSourcePayments>>
+>;
+export type ListLeadSourcePaymentsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List payments for a lead source
+ */
+
+export function useListLeadSourcePayments<
+  TData = Awaited<ReturnType<typeof listLeadSourcePayments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listLeadSourcePayments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListLeadSourcePaymentsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add a payment to a lead source
+ */
+export const getCreateLeadSourcePaymentUrl = (id: number) => {
+  return `/api/lead-sources/${id}/payments`;
+};
+
+export const createLeadSourcePayment = async (
+  id: number,
+  createLeadSourcePaymentBody: CreateLeadSourcePaymentBody,
+  options?: RequestInit,
+): Promise<LeadSourcePayment> => {
+  return customFetch<LeadSourcePayment>(getCreateLeadSourcePaymentUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createLeadSourcePaymentBody),
+  });
+};
+
+export const getCreateLeadSourcePaymentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createLeadSourcePayment>>,
+    TError,
+    { id: number; data: BodyType<CreateLeadSourcePaymentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createLeadSourcePayment>>,
+  TError,
+  { id: number; data: BodyType<CreateLeadSourcePaymentBody> },
+  TContext
+> => {
+  const mutationKey = ["createLeadSourcePayment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createLeadSourcePayment>>,
+    { id: number; data: BodyType<CreateLeadSourcePaymentBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return createLeadSourcePayment(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateLeadSourcePaymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createLeadSourcePayment>>
+>;
+export type CreateLeadSourcePaymentMutationBody =
+  BodyType<CreateLeadSourcePaymentBody>;
+export type CreateLeadSourcePaymentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add a payment to a lead source
+ */
+export const useCreateLeadSourcePayment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createLeadSourcePayment>>,
+    TError,
+    { id: number; data: BodyType<CreateLeadSourcePaymentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createLeadSourcePayment>>,
+  TError,
+  { id: number; data: BodyType<CreateLeadSourcePaymentBody> },
+  TContext
+> => {
+  return useMutation(getCreateLeadSourcePaymentMutationOptions(options));
+};
+
+/**
+ * @summary Delete a payment
+ */
+export const getDeleteLeadSourcePaymentUrl = (
+  id: number,
+  paymentId: number,
+) => {
+  return `/api/lead-sources/${id}/payments/${paymentId}`;
+};
+
+export const deleteLeadSourcePayment = async (
+  id: number,
+  paymentId: number,
+  options?: RequestInit,
+): Promise<DeleteLeadSourcePayment200> => {
+  return customFetch<DeleteLeadSourcePayment200>(
+    getDeleteLeadSourcePaymentUrl(id, paymentId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getDeleteLeadSourcePaymentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteLeadSourcePayment>>,
+    TError,
+    { id: number; paymentId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteLeadSourcePayment>>,
+  TError,
+  { id: number; paymentId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteLeadSourcePayment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteLeadSourcePayment>>,
+    { id: number; paymentId: number }
+  > = (props) => {
+    const { id, paymentId } = props ?? {};
+
+    return deleteLeadSourcePayment(id, paymentId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteLeadSourcePaymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteLeadSourcePayment>>
+>;
+
+export type DeleteLeadSourcePaymentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a payment
+ */
+export const useDeleteLeadSourcePayment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteLeadSourcePayment>>,
+    TError,
+    { id: number; paymentId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteLeadSourcePayment>>,
+  TError,
+  { id: number; paymentId: number },
+  TContext
+> => {
+  return useMutation(getDeleteLeadSourcePaymentMutationOptions(options));
 };
 
 /**

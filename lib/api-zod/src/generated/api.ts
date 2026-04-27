@@ -426,6 +426,7 @@ export const ListLeadSourcesResponseItem = zod.object({
   name: zod.string(),
   costPerLead: zod.number().nullish(),
   totalInvested: zod.number().nullish(),
+  leadCount: zod.number().nullish(),
   isPaid: zod.boolean(),
   createdAt: zod.string().optional(),
   updatedAt: zod.string().optional(),
@@ -437,8 +438,6 @@ export const ListLeadSourcesResponse = zod.array(ListLeadSourcesResponseItem);
  */
 export const CreateLeadSourceBody = zod.object({
   name: zod.string(),
-  costPerLead: zod.number().optional(),
-  totalInvested: zod.number().optional(),
   isPaid: zod.boolean().optional(),
 });
 
@@ -451,8 +450,6 @@ export const UpdateLeadSourceParams = zod.object({
 
 export const UpdateLeadSourceBody = zod.object({
   name: zod.string().optional(),
-  costPerLead: zod.number().optional(),
-  totalInvested: zod.number().optional(),
   isPaid: zod.boolean().optional(),
 });
 
@@ -462,19 +459,65 @@ export const UpdateLeadSourceResponse = zod.object({
   name: zod.string(),
   costPerLead: zod.number().nullish(),
   totalInvested: zod.number().nullish(),
+  leadCount: zod.number().nullish(),
   isPaid: zod.boolean(),
   createdAt: zod.string().optional(),
   updatedAt: zod.string().optional(),
 });
 
 /**
- * @summary Delete a lead source (admin only)
+ * @summary Delete a lead source
  */
 export const DeleteLeadSourceParams = zod.object({
   id: zod.coerce.number(),
 });
 
 export const DeleteLeadSourceResponse = zod.object({
+  success: zod.boolean().optional(),
+});
+
+/**
+ * @summary List payments for a lead source
+ */
+export const ListLeadSourcePaymentsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListLeadSourcePaymentsResponseItem = zod.object({
+  id: zod.number(),
+  leadSourceId: zod.number(),
+  userId: zod.string(),
+  amount: zod.number(),
+  paidDate: zod.string(),
+  note: zod.string().nullish(),
+  createdAt: zod.string().optional(),
+});
+export const ListLeadSourcePaymentsResponse = zod.array(
+  ListLeadSourcePaymentsResponseItem,
+);
+
+/**
+ * @summary Add a payment to a lead source
+ */
+export const CreateLeadSourcePaymentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateLeadSourcePaymentBody = zod.object({
+  amount: zod.number(),
+  paidDate: zod.string(),
+  note: zod.string().nullish(),
+});
+
+/**
+ * @summary Delete a payment
+ */
+export const DeleteLeadSourcePaymentParams = zod.object({
+  id: zod.coerce.number(),
+  paymentId: zod.coerce.number(),
+});
+
+export const DeleteLeadSourcePaymentResponse = zod.object({
   success: zod.boolean().optional(),
 });
 
@@ -496,6 +539,7 @@ export const ListLeadsResponseItem = zod.object({
       name: zod.string(),
       costPerLead: zod.number().nullish(),
       totalInvested: zod.number().nullish(),
+      leadCount: zod.number().nullish(),
       isPaid: zod.boolean(),
       createdAt: zod.string().optional(),
       updatedAt: zod.string().optional(),
@@ -577,6 +621,7 @@ export const UpdateLeadResponse = zod.object({
       name: zod.string(),
       costPerLead: zod.number().nullish(),
       totalInvested: zod.number().nullish(),
+      leadCount: zod.number().nullish(),
       isPaid: zod.boolean(),
       createdAt: zod.string().optional(),
       updatedAt: zod.string().optional(),

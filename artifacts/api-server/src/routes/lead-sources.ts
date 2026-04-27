@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, leadSourcesTable } from "@workspace/db";
-import { eq, and, or, isNull } from "drizzle-orm";
+import { db, leadSourcesTable, leadSourcePaymentsTable, leadsTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../middlewares/auth";
 import { z } from "zod";
 
@@ -8,17 +8,47 @@ const router: IRouter = Router();
 
 const LeadSourceBody = z.object({
   name: z.string().min(1),
-  costPerLead: z.number().nonnegative().optional(),
-  totalInvested: z.number().nonnegative().optional(),
   isPaid: z.boolean().optional(),
 });
+
+// Enrich sources with computed totalInvested and costPerLead
+async function enrichSources(sources: typeof leadSourcesTable.$inferSelect[]) {
+  if (sources.length === 0) return [];
+
+  // Sum payments per source
+  const paymentSums = await db
+    .select({
+      leadSourceId: leadSourcePaymentsTable.leadSourceId,
+      total: sql<number>`coalesce(sum(${leadSourcePaymentsTable.amount}), 0)`.as("total"),
+    })
+    .from(leadSourcePaymentsTable)
+    .groupBy(leadSourcePaymentsTable.leadSourceId);
+
+  // Count leads per source
+  const leadCounts = await db
+    .select({
+      leadSourceId: leadsTable.leadSourceId,
+      count: sql<number>`count(*)`.as("count"),
+    })
+    .from(leadsTable)
+    .groupBy(leadsTable.leadSourceId);
+
+  const paymentMap = new Map(paymentSums.map((p) => [p.leadSourceId, Number(p.total)]));
+  const leadCountMap = new Map(leadCounts.map((l) => [l.leadSourceId, Number(l.count)]));
+
+  return sources.map((src) => {
+    const totalInvested = paymentMap.get(src.id) ?? 0;
+    const leadCount = leadCountMap.get(src.id) ?? 0;
+    const costPerLead = leadCount > 0 ? totalInvested / leadCount : 0;
+    return { ...src, totalInvested, costPerLead, leadCount };
+  });
+}
 
 // Each agent sees only their own sources
 router.get("/lead-sources", requireAuth, async (req: AuthRequest, res): Promise<void> => {
   const { userId, agencyUser } = req;
   const isAdmin = agencyUser?.role === "admin";
 
-  // Admins see all sources; agents see only their own
   const sources = isAdmin
     ? await db.select().from(leadSourcesTable).orderBy(leadSourcesTable.name)
     : await db
@@ -27,7 +57,7 @@ router.get("/lead-sources", requireAuth, async (req: AuthRequest, res): Promise<
         .where(eq(leadSourcesTable.userId, userId!))
         .orderBy(leadSourcesTable.name);
 
-  res.json(sources);
+  res.json(await enrichSources(sources));
 });
 
 // Any authenticated agent can create their own source
@@ -42,12 +72,13 @@ router.post("/lead-sources", requireAuth, async (req: AuthRequest, res): Promise
     .values({
       userId: req.userId!,
       name: parsed.data.name,
-      costPerLead: parsed.data.costPerLead ?? 0,
-      totalInvested: parsed.data.totalInvested ?? 0,
+      costPerLead: 0,
+      totalInvested: 0,
       isPaid: parsed.data.isPaid ?? false,
     })
     .returning();
-  res.status(201).json(source);
+  const enriched = await enrichSources([source]);
+  res.status(201).json(enriched[0]);
 });
 
 // Agents can only edit their own sources; admins can edit any
@@ -76,7 +107,8 @@ router.patch("/lead-sources/:id", requireAuth, async (req: AuthRequest, res): Pr
     .set(parsed.data)
     .where(eq(leadSourcesTable.id, id))
     .returning();
-  res.json(source);
+  const enriched = await enrichSources([source]);
+  res.json(enriched[0]);
 });
 
 // Agents can only delete their own sources; admins can delete any

@@ -224,9 +224,20 @@ export interface LeadSource {
   name: string;
   costPerLead?: number | null;
   totalInvested?: number | null;
+  leadCount?: number | null;
   isPaid: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface LeadSourcePayment {
+  id: number;
+  leadSourceId: number;
+  userId: string;
+  amount: number;
+  paidDate: string;
+  note?: string | null;
+  createdAt?: string;
 }
 
 export type LeadStatus = (typeof LeadStatus)[keyof typeof LeadStatus];
@@ -306,19 +317,25 @@ export type UpdateUserRoleBody = {
 
 export type CreateLeadSourceBody = {
   name: string;
-  costPerLead?: number;
-  totalInvested?: number;
   isPaid?: boolean;
 };
 
 export type UpdateLeadSourceBody = {
   name?: string;
-  costPerLead?: number;
-  totalInvested?: number;
   isPaid?: boolean;
 };
 
 export type DeleteLeadSource200 = {
+  success?: boolean;
+};
+
+export type CreateLeadSourcePaymentBody = {
+  amount: number;
+  paidDate: string;
+  note?: string | null;
+};
+
+export type DeleteLeadSourcePayment200 = {
   success?: boolean;
 };
 
