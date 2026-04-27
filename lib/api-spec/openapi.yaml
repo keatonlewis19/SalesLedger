@@ -840,6 +840,13 @@ paths:
       operationId: getMetrics
       tags: [metrics]
       summary: Get computed sales metrics and pipeline analytics
+      parameters:
+        - in: query
+          name: agentUserId
+          schema:
+            type: string
+          required: false
+          description: Filter metrics to a specific agent (admin only)
       responses:
         "200":
           description: Metrics data

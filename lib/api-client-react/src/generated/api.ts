@@ -28,6 +28,7 @@ import type {
   DeleteLeadSourcePayment200,
   ErrorResponse,
   GetMetrics200,
+  GetMetricsParams,
   HealthStatus,
   ImportLeads200,
   ImportLeadsBody,
@@ -2537,41 +2538,57 @@ export const useDeleteLead = <
 /**
  * @summary Get computed sales metrics and pipeline analytics
  */
-export const getGetMetricsUrl = () => {
-  return `/api/metrics`;
+export const getGetMetricsUrl = (params?: GetMetricsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/metrics?${stringifiedParams}`
+    : `/api/metrics`;
 };
 
 export const getMetrics = async (
+  params?: GetMetricsParams,
   options?: RequestInit,
 ): Promise<GetMetrics200> => {
-  return customFetch<GetMetrics200>(getGetMetricsUrl(), {
+  return customFetch<GetMetrics200>(getGetMetricsUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getGetMetricsQueryKey = () => {
-  return [`/api/metrics`] as const;
+export const getGetMetricsQueryKey = (params?: GetMetricsParams) => {
+  return [`/api/metrics`, ...(params ? [params] : [])] as const;
 };
 
 export const getGetMetricsQueryOptions = <
   TData = Awaited<ReturnType<typeof getMetrics>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getMetrics>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: GetMetricsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMetrics>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetMetricsQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getGetMetricsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getMetrics>>> = ({
     signal,
-  }) => getMetrics({ signal, ...requestOptions });
+  }) => getMetrics(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof getMetrics>>,
@@ -2592,15 +2609,18 @@ export type GetMetricsQueryError = ErrorType<unknown>;
 export function useGetMetrics<
   TData = Awaited<ReturnType<typeof getMetrics>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getMetrics>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetMetricsQueryOptions(options);
+>(
+  params?: GetMetricsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMetrics>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMetricsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

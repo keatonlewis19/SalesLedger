@@ -25,7 +25,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: "Current Week", href: "/dashboard", icon: LayoutDashboard, adminOnly: false },
     { name: "Past Reports", href: "/history", icon: History, adminOnly: false },
     { name: "Leads", href: "/leads", icon: Target, adminOnly: false },
-    { name: "Metrics", href: "/metrics", icon: BarChart2, adminOnly: false },
+    { name: "Medicare Analytics", href: "/metrics", icon: BarChart2, adminOnly: false },
     { name: "Team", href: "/team", icon: Users, adminOnly: true },
     { name: "Settings", href: "/settings", icon: Settings, adminOnly: false },
   ].filter((item) => !item.adminOnly || isAdmin);

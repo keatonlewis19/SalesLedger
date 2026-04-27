@@ -17,6 +17,7 @@ import {
   getListLeadSourcePaymentsQueryKey,
   getGetMetricsQueryKey,
   useGetSettings,
+  useListAgencyUsers,
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { LeadImportDialog } from "@/components/lead-import-dialog";
@@ -225,7 +226,9 @@ export default function LeadsPage() {
   const { data: leads = [], isLoading } = useListLeads();
   const { data: leadSources = [] } = useListLeadSources();
   const { data: settings } = useGetSettings();
+  const { data: agencyUsers = [] } = useListAgencyUsers();
   const carrierOptions = Object.keys((settings as any)?.carrierColors ?? {}).sort();
+  const [selectedAgent, setSelectedAgent] = useState<string>("__all");
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
   const deleteLead = useDeleteLead();
@@ -559,7 +562,9 @@ export default function LeadsPage() {
 
   const STATUS_ORDER: Record<string, number> = { new: 0, in_comm: 1, appt_set: 2, follow_up: 3, sold: 4, lost: 5 };
 
-  const lobLeads = (leads as any[]).filter((l) => (l.lineOfBusiness ?? "medicare") === activeLob);
+  const lobLeads = (leads as any[])
+    .filter((l) => (l.lineOfBusiness ?? "medicare") === activeLob)
+    .filter((l) => !isAdmin || selectedAgent === "__all" || l.userId === selectedAgent);
   const baseFiltered = filterStatuses.size === 0 ? lobLeads : lobLeads.filter((l: any) => filterStatuses.has(l.status));
 
   const filtered = [...baseFiltered].sort((a: any, b: any) => {
@@ -601,6 +606,26 @@ export default function LeadsPage() {
                 ? "Track leads through the Medicare sales pipeline"
                 : `Record ${LOB_TABS.find((t) => t.value === activeLob)?.label} sales as they happen`}
             </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {isAdmin && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">Agent:</span>
+                <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue placeholder="All Agents" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all">All Agents</SelectItem>
+                    {(agencyUsers as any[]).map((u) => (
+                      <SelectItem key={u.clerkUserId} value={u.clerkUserId}>
+                        {u.fullName || u.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             {activeLob === "medicare" && (

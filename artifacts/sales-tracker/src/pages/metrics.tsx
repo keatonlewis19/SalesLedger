@@ -1,6 +1,14 @@
 import { useState } from "react";
-import { useGetMetrics, useGetSettings } from "@workspace/api-client-react";
+import { useGetMetrics, useGetSettings, useListAgencyUsers } from "@workspace/api-client-react";
+import { useAgencyUser } from "@/hooks/useAgencyUser";
 import { Layout } from "@/components/layout";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -133,7 +141,15 @@ function CustomBarTooltip({ active, payload, label }: any) {
 }
 
 export default function MetricsPage() {
-  const { data, isLoading } = useGetMetrics();
+  const { isAdmin } = useAgencyUser();
+  const [selectedAgent, setSelectedAgent] = useState<string>("__all");
+  const { data: agencyUsers = [] } = useListAgencyUsers();
+
+  const metricsParams = isAdmin && selectedAgent !== "__all"
+    ? { agentUserId: selectedAgent }
+    : undefined;
+
+  const { data, isLoading } = useGetMetrics(metricsParams);
   const { data: settings } = useGetSettings();
 
   const carrierColors: Record<string, string> = (settings as any)?.carrierColors ?? {};
@@ -189,9 +205,29 @@ export default function MetricsPage() {
   return (
     <Layout>
       <div className="p-6 space-y-8 max-w-7xl mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Medicare Analytics</h1>
-          <p className="text-muted-foreground text-sm">Medicare business performance — all metrics reflect Medicare leads only</p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Medicare Analytics</h1>
+            <p className="text-muted-foreground text-sm">Medicare business performance — all metrics reflect Medicare leads only</p>
+          </div>
+          {isAdmin && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">View:</span>
+              <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Whole Agency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">Whole Agency</SelectItem>
+                  {(agencyUsers as any[]).map((u) => (
+                    <SelectItem key={u.clerkUserId} value={u.clerkUserId}>
+                      {u.fullName || u.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {/* Business Performance KPIs */}

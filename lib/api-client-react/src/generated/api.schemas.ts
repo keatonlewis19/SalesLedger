@@ -482,6 +482,13 @@ export type DeleteLead200 = {
   success?: boolean;
 };
 
+export type GetMetricsParams = {
+  /**
+   * Filter metrics to a specific agent (admin only)
+   */
+  agentUserId?: string;
+};
+
 export type GetMetrics200LeadSourcePerformanceItem = { [key: string]: unknown };
 
 export type GetMetrics200LeadSourcePipelineItem = { [key: string]: unknown };

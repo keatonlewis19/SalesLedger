@@ -723,6 +723,13 @@ export const DeleteLeadResponse = zod.object({
 /**
  * @summary Get computed sales metrics and pipeline analytics
  */
+export const GetMetricsQueryParams = zod.object({
+  agentUserId: zod.coerce
+    .string()
+    .optional()
+    .describe("Filter metrics to a specific agent (admin only)"),
+});
+
 export const GetMetricsResponse = zod.object({
   summary: zod
     .object({

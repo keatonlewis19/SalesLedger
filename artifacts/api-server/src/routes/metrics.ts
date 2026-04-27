@@ -8,17 +8,21 @@ const router: IRouter = Router();
 router.get("/metrics", requireAuth, async (req: AuthRequest, res): Promise<void> => {
   const { userId, agencyUser } = req;
   const isAdmin = agencyUser?.role === "admin";
+  const agentUserId = typeof req.query["agentUserId"] === "string" ? req.query["agentUserId"] : null;
 
-  const rows = isAdmin
+  // Admin can optionally filter to a specific agent; agents always see only own data
+  const filterUserId = isAdmin ? (agentUserId ?? null) : (userId ?? null);
+
+  const rows = filterUserId
     ? await db
         .select()
         .from(leadsTable)
         .leftJoin(leadSourcesTable, eq(leadsTable.leadSourceId, leadSourcesTable.id))
+        .where(eq(leadsTable.userId, filterUserId))
     : await db
         .select()
         .from(leadsTable)
-        .leftJoin(leadSourcesTable, eq(leadsTable.leadSourceId, leadSourcesTable.id))
-        .where(eq(leadsTable.userId, userId!));
+        .leftJoin(leadSourcesTable, eq(leadsTable.leadSourceId, leadSourcesTable.id));
 
   const allLeads = rows.map((r) => ({ ...r.leads, leadSource: r.lead_sources }));
 
