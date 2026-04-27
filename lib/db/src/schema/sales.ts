@@ -88,8 +88,10 @@ export type PendingInvite = typeof pendingInvitesTable.$inferSelect;
 
 export const leadSourcesTable = pgTable("lead_sources", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   name: varchar("name", { length: 255 }).notNull(),
   costPerLead: doublePrecision("cost_per_lead").default(0),
+  totalInvested: doublePrecision("total_invested").default(0),
   isPaid: boolean("is_paid").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

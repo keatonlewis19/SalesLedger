@@ -429,7 +429,7 @@ paths:
     post:
       operationId: createLeadSource
       tags: [lead-sources]
-      summary: Create a lead source (admin only)
+      summary: Create a lead source
       requestBody:
         required: true
         content:
@@ -440,6 +440,8 @@ paths:
                 name:
                   type: string
                 costPerLead:
+                  type: number
+                totalInvested:
                   type: number
                 isPaid:
                   type: boolean
@@ -457,7 +459,7 @@ paths:
     patch:
       operationId: updateLeadSource
       tags: [lead-sources]
-      summary: Update a lead source (admin only)
+      summary: Update a lead source
       parameters:
         - name: id
           in: path
@@ -474,6 +476,8 @@ paths:
                 name:
                   type: string
                 costPerLead:
+                  type: number
+                totalInvested:
                   type: number
                 isPaid:
                   type: boolean
@@ -1064,9 +1068,15 @@ components:
       properties:
         id:
           type: integer
+        userId:
+          type: string
+          nullable: true
         name:
           type: string
         costPerLead:
+          type: number
+          nullable: true
+        totalInvested:
           type: number
           nullable: true
         isPaid:

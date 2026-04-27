@@ -220,8 +220,10 @@ export interface SendReportResponse {
 
 export interface LeadSource {
   id: number;
+  userId?: string | null;
   name: string;
   costPerLead?: number | null;
+  totalInvested?: number | null;
   isPaid: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -305,12 +307,14 @@ export type UpdateUserRoleBody = {
 export type CreateLeadSourceBody = {
   name: string;
   costPerLead?: number;
+  totalInvested?: number;
   isPaid?: boolean;
 };
 
 export type UpdateLeadSourceBody = {
   name?: string;
   costPerLead?: number;
+  totalInvested?: number;
   isPaid?: boolean;
 };
 

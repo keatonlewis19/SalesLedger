@@ -1598,7 +1598,7 @@ export function useListLeadSources<
 }
 
 /**
- * @summary Create a lead source (admin only)
+ * @summary Create a lead source
  */
 export const getCreateLeadSourceUrl = () => {
   return `/api/lead-sources`;
@@ -1661,7 +1661,7 @@ export type CreateLeadSourceMutationBody = BodyType<CreateLeadSourceBody>;
 export type CreateLeadSourceMutationError = ErrorType<unknown>;
 
 /**
- * @summary Create a lead source (admin only)
+ * @summary Create a lead source
  */
 export const useCreateLeadSource = <
   TError = ErrorType<unknown>,
@@ -1684,7 +1684,7 @@ export const useCreateLeadSource = <
 };
 
 /**
- * @summary Update a lead source (admin only)
+ * @summary Update a lead source
  */
 export const getUpdateLeadSourceUrl = (id: number) => {
   return `/api/lead-sources/${id}`;
@@ -1748,7 +1748,7 @@ export type UpdateLeadSourceMutationBody = BodyType<UpdateLeadSourceBody>;
 export type UpdateLeadSourceMutationError = ErrorType<unknown>;
 
 /**
- * @summary Update a lead source (admin only)
+ * @summary Update a lead source
  */
 export const useUpdateLeadSource = <
   TError = ErrorType<unknown>,

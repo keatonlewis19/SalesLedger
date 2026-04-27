@@ -422,8 +422,10 @@ export const RequestUploadUrlResponse = zod.object({
  */
 export const ListLeadSourcesResponseItem = zod.object({
   id: zod.number(),
+  userId: zod.string().nullish(),
   name: zod.string(),
   costPerLead: zod.number().nullish(),
+  totalInvested: zod.number().nullish(),
   isPaid: zod.boolean(),
   createdAt: zod.string().optional(),
   updatedAt: zod.string().optional(),
@@ -431,16 +433,17 @@ export const ListLeadSourcesResponseItem = zod.object({
 export const ListLeadSourcesResponse = zod.array(ListLeadSourcesResponseItem);
 
 /**
- * @summary Create a lead source (admin only)
+ * @summary Create a lead source
  */
 export const CreateLeadSourceBody = zod.object({
   name: zod.string(),
   costPerLead: zod.number().optional(),
+  totalInvested: zod.number().optional(),
   isPaid: zod.boolean().optional(),
 });
 
 /**
- * @summary Update a lead source (admin only)
+ * @summary Update a lead source
  */
 export const UpdateLeadSourceParams = zod.object({
   id: zod.coerce.number(),
@@ -449,13 +452,16 @@ export const UpdateLeadSourceParams = zod.object({
 export const UpdateLeadSourceBody = zod.object({
   name: zod.string().optional(),
   costPerLead: zod.number().optional(),
+  totalInvested: zod.number().optional(),
   isPaid: zod.boolean().optional(),
 });
 
 export const UpdateLeadSourceResponse = zod.object({
   id: zod.number(),
+  userId: zod.string().nullish(),
   name: zod.string(),
   costPerLead: zod.number().nullish(),
+  totalInvested: zod.number().nullish(),
   isPaid: zod.boolean(),
   createdAt: zod.string().optional(),
   updatedAt: zod.string().optional(),
@@ -486,8 +492,10 @@ export const ListLeadsResponseItem = zod.object({
   leadSource: zod
     .object({
       id: zod.number(),
+      userId: zod.string().nullish(),
       name: zod.string(),
       costPerLead: zod.number().nullish(),
+      totalInvested: zod.number().nullish(),
       isPaid: zod.boolean(),
       createdAt: zod.string().optional(),
       updatedAt: zod.string().optional(),
@@ -565,8 +573,10 @@ export const UpdateLeadResponse = zod.object({
   leadSource: zod
     .object({
       id: zod.number(),
+      userId: zod.string().nullish(),
       name: zod.string(),
       costPerLead: zod.number().nullish(),
+      totalInvested: zod.number().nullish(),
       isPaid: zod.boolean(),
       createdAt: zod.string().optional(),
       updatedAt: zod.string().optional(),

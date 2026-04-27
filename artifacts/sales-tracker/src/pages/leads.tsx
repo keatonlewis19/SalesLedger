@@ -7,6 +7,7 @@ import {
   useDeleteLead,
   useListLeadSources,
   useCreateLeadSource,
+  useUpdateLeadSource,
   useDeleteLeadSource,
   getListLeadsQueryKey,
   getListLeadSourcesQueryKey,
@@ -133,6 +134,7 @@ export default function LeadsPage() {
   const updateLead = useUpdateLead();
   const deleteLead = useDeleteLead();
   const createSource = useCreateLeadSource();
+  const updateSource = useUpdateLeadSource();
   const deleteSource = useDeleteLeadSource();
 
   const [addOpen, setAddOpen] = useState(false);
@@ -140,8 +142,10 @@ export default function LeadsPage() {
   const [form, setForm] = useState<LeadForm>(emptyForm());
 
   const [sourceOpen, setSourceOpen] = useState(false);
+  const [editingSource, setEditingSource] = useState<any | null>(null);
   const [sourceName, setSourceName] = useState("");
   const [sourceCostPerLead, setSourceCostPerLead] = useState("");
+  const [sourceTotalInvested, setSourceTotalInvested] = useState("");
   const [sourceIsPaid, setSourceIsPaid] = useState(false);
 
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -242,27 +246,56 @@ export default function LeadsPage() {
     );
   };
 
-  const handleAddSource = () => {
+  const resetSourceForm = () => {
+    setEditingSource(null);
+    setSourceName("");
+    setSourceCostPerLead("");
+    setSourceTotalInvested("");
+    setSourceIsPaid(false);
+  };
+
+  const openEditSource = (src: any) => {
+    setEditingSource(src);
+    setSourceName(src.name ?? "");
+    setSourceCostPerLead(src.costPerLead != null ? String(src.costPerLead) : "");
+    setSourceTotalInvested(src.totalInvested != null ? String(src.totalInvested) : "");
+    setSourceIsPaid(src.isPaid ?? false);
+  };
+
+  const handleSaveSource = () => {
     if (!sourceName.trim()) return;
-    createSource.mutate(
-      {
-        data: {
-          name: sourceName.trim(),
-          costPerLead: sourceCostPerLead ? parseFloat(sourceCostPerLead) : 0,
-          isPaid: sourceIsPaid,
+    const payload = {
+      name: sourceName.trim(),
+      costPerLead: sourceCostPerLead ? parseFloat(sourceCostPerLead) : 0,
+      totalInvested: sourceTotalInvested ? parseFloat(sourceTotalInvested) : 0,
+      isPaid: sourceIsPaid,
+    };
+    if (editingSource) {
+      updateSource.mutate(
+        { id: editingSource.id, data: payload },
+        {
+          onSuccess: () => {
+            toast({ title: "Lead source updated" });
+            qc.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
+            qc.invalidateQueries({ queryKey: getGetMetricsQueryKey() });
+            resetSourceForm();
+          },
+          onError: () => toast({ title: "Failed to update source", variant: "destructive" }),
         },
-      },
-      {
-        onSuccess: () => {
-          toast({ title: "Lead source added" });
-          qc.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
-          setSourceName("");
-          setSourceCostPerLead("");
-          setSourceIsPaid(false);
+      );
+    } else {
+      createSource.mutate(
+        { data: payload },
+        {
+          onSuccess: () => {
+            toast({ title: "Lead source added" });
+            qc.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
+            resetSourceForm();
+          },
+          onError: () => toast({ title: "Failed to add source", variant: "destructive" }),
         },
-        onError: () => toast({ title: "Failed to add source", variant: "destructive" }),
-      },
-    );
+      );
+    }
   };
 
   const handleDeleteSource = (id: number) => {
@@ -294,11 +327,9 @@ export default function LeadsPage() {
             <p className="text-muted-foreground text-sm">Track your leads through the sales pipeline</p>
           </div>
           <div className="flex gap-2">
-            {isAdmin && (
-              <Button variant="outline" size="sm" onClick={() => setSourceOpen(true)}>
-                <Settings2 className="w-4 h-4 mr-1" /> Lead Sources
-              </Button>
-            )}
+            <Button variant="outline" size="sm" onClick={() => { resetSourceForm(); setSourceOpen(true); }}>
+              <Settings2 className="w-4 h-4 mr-1" /> Lead Sources
+            </Button>
             <Button size="sm" onClick={openAdd}>
               <Plus className="w-4 h-4 mr-1" /> Add Lead
             </Button>
@@ -441,12 +472,12 @@ export default function LeadsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Lead Source</Label>
-                <Select value={form.leadSourceId} onValueChange={(v) => setForm((p) => ({ ...p, leadSourceId: v }))}>
+                <Select value={form.leadSourceId || "none"} onValueChange={(v) => setForm((p) => ({ ...p, leadSourceId: v === "none" ? "" : v }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select source…" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {(leadSources as any[]).map((src) => (
                       <SelectItem key={src.id} value={String(src.id)}>{src.name}</SelectItem>
                     ))}
@@ -515,37 +546,46 @@ export default function LeadsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Lead Sources Manager (Admin) */}
-      {isAdmin && (
-        <Dialog open={sourceOpen} onOpenChange={setSourceOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Manage Lead Sources</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid gap-2">
-                <div className="space-y-1">
-                  <Label>Source Name</Label>
-                  <Input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. QuoteWizard" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label>Cost per Lead ($)</Label>
-                    <Input type="number" value={sourceCostPerLead} onChange={(e) => setSourceCostPerLead(e.target.value)} placeholder="0.00" min="0" step="0.01" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Paid Source?</Label>
-                    <div className="flex items-center gap-2 pt-2">
-                      <Switch checked={sourceIsPaid} onCheckedChange={setSourceIsPaid} />
-                      <span className="text-sm text-muted-foreground">{sourceIsPaid ? "Yes" : "No"}</span>
-                    </div>
-                  </div>
-                </div>
-                <Button onClick={handleAddSource} disabled={createSource.isPending} className="w-full">
-                  <Plus className="w-4 h-4 mr-1" /> Add Source
-                </Button>
+      {/* Lead Sources Manager */}
+      <Dialog open={sourceOpen} onOpenChange={(open) => { setSourceOpen(open); if (!open) resetSourceForm(); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingSource ? "Edit Lead Source" : "Manage Lead Sources"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <div className="space-y-1">
+                <Label>Source Name</Label>
+                <Input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. QuoteWizard" />
               </div>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label>Cost per Lead ($)</Label>
+                  <Input type="number" value={sourceCostPerLead} onChange={(e) => setSourceCostPerLead(e.target.value)} placeholder="0.00" min="0" step="0.01" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Total Invested ($)</Label>
+                  <Input type="number" value={sourceTotalInvested} onChange={(e) => setSourceTotalInvested(e.target.value)} placeholder="0.00" min="0" step="0.01" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Paid Source?</Label>
+                <div className="flex items-center gap-2 pt-1">
+                  <Switch checked={sourceIsPaid} onCheckedChange={setSourceIsPaid} />
+                  <span className="text-sm text-muted-foreground">{sourceIsPaid ? "Yes" : "No"}</span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleSaveSource} disabled={createSource.isPending || updateSource.isPending} className="flex-1">
+                  {editingSource ? <><Pencil className="w-4 h-4 mr-1" /> Save Changes</> : <><Plus className="w-4 h-4 mr-1" /> Add Source</>}
+                </Button>
+                {editingSource && (
+                  <Button variant="outline" onClick={resetSourceForm} className="flex-1">Cancel</Button>
+                )}
+              </div>
+            </div>
+            {!editingSource && (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
                 {(leadSources as any[]).length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-4">No lead sources yet</p>
                 )}
@@ -555,23 +595,24 @@ export default function LeadsPage() {
                       <p className="font-medium text-sm">{src.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {src.isPaid ? `Paid · $${src.costPerLead ?? 0}/lead` : "Organic"}
+                        {src.totalInvested ? ` · $${Number(src.totalInvested).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} invested` : ""}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteSource(src.id)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditSource(src)}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteSource(src.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
