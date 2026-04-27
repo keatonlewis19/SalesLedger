@@ -256,7 +256,7 @@ export default function DashboardScreen() {
     >
       <View style={s.header}>
         <Text style={s.greeting}>
-          {me ? `Hello, ${me.first_name ?? "Agent"}` : "Dashboard"}
+          {me ? `Hello, ${me.fullName?.split(" ")[0] ?? "Agent"}` : "Dashboard"}
         </Text>
         <Text style={s.week}>{getWeekLabel()}</Text>
       </View>
