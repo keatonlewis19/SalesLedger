@@ -161,12 +161,13 @@ export default function LeadsScreen() {
       flexDirection: "row",
       paddingHorizontal: 16,
       gap: 8,
-      paddingBottom: 12,
+      paddingTop: 4,
+      paddingBottom: 14,
     },
     chip: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 16,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 20,
       borderWidth: 1,
     },
     chipText: {
