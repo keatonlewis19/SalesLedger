@@ -16,6 +16,7 @@ import {
   getListLeadSourcesQueryKey,
   getListLeadSourcePaymentsQueryKey,
   getGetMetricsQueryKey,
+  useGetSettings,
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { LeadImportDialog } from "@/components/lead-import-dialog";
@@ -113,6 +114,45 @@ const emptyLobSaleForm = (): LobSaleForm => ({
   notes: "",
 });
 
+function CarrierSelect({
+  value,
+  onChange,
+  carriers,
+  placeholder = "Select carrier…",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  carriers: string[];
+  placeholder?: string;
+}) {
+  const allOptions = [...carriers];
+  if (value && !allOptions.includes(value)) allOptions.unshift(value);
+
+  if (allOptions.length === 0) {
+    return (
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="e.g. Humana"
+      />
+    );
+  }
+
+  return (
+    <Select value={value || "__none"} onValueChange={(v) => onChange(v === "__none" ? "" : v)}>
+      <SelectTrigger>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none">— None —</SelectItem>
+        {allOptions.map((c) => (
+          <SelectItem key={c} value={c}>{c}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const found = STATUSES.find((s) => s.value === status);
   return (
@@ -184,6 +224,8 @@ export default function LeadsPage() {
 
   const { data: leads = [], isLoading } = useListLeads();
   const { data: leadSources = [] } = useListLeadSources();
+  const { data: settings } = useGetSettings();
+  const carrierOptions = Object.keys((settings as any)?.carrierColors ?? {}).sort();
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
   const deleteLead = useDeleteLead();
@@ -871,7 +913,11 @@ export default function LeadsPage() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="carrier">Carrier</Label>
-                <Input id="carrier" value={form.carrier} onChange={f("carrier")} placeholder="e.g. Humana" />
+                <CarrierSelect
+                  value={form.carrier}
+                  onChange={(v) => setForm((p) => ({ ...p, carrier: v }))}
+                  carriers={carrierOptions}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -949,10 +995,10 @@ export default function LeadsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Carrier</Label>
-                <Input
+                <CarrierSelect
                   value={lobSaleForm.carrier}
-                  onChange={(e) => setLobSaleForm((p) => ({ ...p, carrier: e.target.value }))}
-                  placeholder="e.g. Aetna"
+                  onChange={(v) => setLobSaleForm((p) => ({ ...p, carrier: v }))}
+                  carriers={carrierOptions}
                 />
               </div>
               <div className="space-y-1">
