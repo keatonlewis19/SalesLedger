@@ -174,11 +174,9 @@ export default function Settings() {
       const cc = (settings as any).carrierColors as Record<string, string> | null | undefined;
       if (cc && typeof cc === "object") {
         setCarrierList(
-          Object.entries(cc).map(([name, color]) => ({
-            id: crypto.randomUUID(),
-            name,
-            color: color || "#6366f1",
-          }))
+          Object.entries(cc)
+            .map(([name, color]) => ({ id: crypto.randomUUID(), name, color: color || "#6366f1" }))
+            .sort((a, b) => a.name.localeCompare(b.name))
         );
       }
       setInitialized(true);
@@ -751,6 +749,11 @@ export default function Settings() {
                         onChange={(e) =>
                           setCarrierList((prev) =>
                             prev.map((c) => c.id === entry.id ? { ...c, name: e.target.value } : c)
+                          )
+                        }
+                        onBlur={() =>
+                          setCarrierList((prev) =>
+                            [...prev].sort((a, b) => a.name.localeCompare(b.name))
                           )
                         }
                         className="flex-1"
