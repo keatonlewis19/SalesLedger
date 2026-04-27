@@ -38,15 +38,22 @@ function fmtMoney(n: number | null | undefined) {
 }
 function roiColor(roi: number | null | undefined) {
   if (roi == null) return "";
-  return roi >= 0 ? "text-green-600" : "text-red-600";
+  return roi > 0 ? "text-green-600" : "text-red-600";
 }
 
-function KpiCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function cpaColor(cpa: number | null | undefined, avgRevPerSale: number | null | undefined) {
+  if (cpa == null || !avgRevPerSale || avgRevPerSale === 0) return "";
+  if (cpa > avgRevPerSale) return "text-red-600";
+  if (cpa >= avgRevPerSale * 0.7) return "text-yellow-600";
+  return "text-green-600";
+}
+
+function KpiCard({ label, value, sub, valueColor }: { label: string; value: string; sub?: string; valueColor?: string }) {
   return (
     <Card>
       <CardContent className="pt-5 pb-4">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
-        <p className="text-2xl font-bold text-foreground">{value}</p>
+        <p className={cn("text-2xl font-bold", valueColor ?? "text-foreground")}>{value}</p>
         {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
       </CardContent>
     </Card>
@@ -207,12 +214,21 @@ export default function MetricsPage() {
             <KpiCard label="Paid Marketing Revenue" value={fmtMoney(s?.paidMarketingRevenue ?? 0) ?? "—"} />
             <KpiCard
               label="Cost per Acquisition"
-              value={fmtMoney(s?.costPerAcquisition ?? 0) ?? "—"}
+              value={s?.costPerAcquisition ? fmtMoney(s.costPerAcquisition) : "—"}
+              valueColor={cpaColor(s?.costPerAcquisition, s?.avgRevenuePerSale)}
               sub={s?.costPerAcquisition && s?.avgRevenuePerSale
-                ? s.costPerAcquisition > s.avgRevenuePerSale ? "⚠ CPA exceeds avg sale" : "✓ Profitable"
+                ? s.costPerAcquisition > s.avgRevenuePerSale
+                  ? "⚠ CPA exceeds avg sale"
+                  : s.costPerAcquisition >= s.avgRevenuePerSale * 0.7
+                    ? "⚠ CPA approaching avg sale"
+                    : "✓ CPA well below avg sale"
                 : undefined}
             />
-            <KpiCard label="Marketing ROI" value={fmtPct(s?.marketingRoi)} />
+            <KpiCard
+              label="Marketing ROI"
+              value={fmtPct(s?.marketingRoi)}
+              valueColor={s?.marketingRoi != null ? (s.marketingRoi > 0 ? "text-green-600" : "text-red-600") : undefined}
+            />
             <KpiCard label="Open Leads" value={String(s?.openLeads ?? 0)} />
             <KpiCard label="Avg Days to Close" value={fmt(s?.avgDaysToClose ?? 0, 1)} />
             <KpiCard label="Leads > 14 Days" value={String(s?.leadsOlderThan14 ?? 0)} />
@@ -249,7 +265,9 @@ export default function MetricsPage() {
                           <td className="px-4 py-3 text-right">{row.sales}</td>
                           <td className="px-4 py-3 text-right">{fmtMoney(row.revenue)}</td>
                           <td className="px-4 py-3 text-right">{row.costPerLead != null ? fmtMoney(row.costPerLead) : "—"}</td>
-                          <td className="px-4 py-3 text-right">{row.cpa != null ? fmtMoney(row.cpa) : "—"}</td>
+                          <td className={cn("px-4 py-3 text-right font-medium", cpaColor(row.cpa, s?.avgRevenuePerSale))}>
+                            {row.cpa != null ? fmtMoney(row.cpa) : "—"}
+                          </td>
                           <td className={cn("px-4 py-3 text-right font-medium", roiColor(row.roi))}>
                             {fmtPct(row.roi)}
                           </td>
