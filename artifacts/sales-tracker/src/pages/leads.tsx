@@ -42,7 +42,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAgencyUser } from "@/hooks/useAgencyUser";
-import { Plus, Trash2, Pencil, ChevronDown, Settings2, ArrowLeft, DollarSign, Upload } from "lucide-react";
+import { Plus, Trash2, Pencil, ChevronDown, Settings2, ArrowLeft, DollarSign, Upload, ChevronsUpDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -171,6 +171,13 @@ export default function LeadsPage() {
   );
 
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [sortCol, setSortCol] = useState<string>("entered");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const handleSort = (col: string) => {
+    if (sortCol === col) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortCol(col); setSortDir("asc"); }
+  };
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: getListLeadsQueryKey() });
@@ -372,7 +379,33 @@ export default function LeadsPage() {
     );
   };
 
-  const filtered = filterStatus === "all" ? leads : leads.filter((l: any) => l.status === filterStatus);
+  const STATUS_ORDER: Record<string, number> = { new: 0, in_comm: 1, appt_set: 2, follow_up: 3, sold: 4, lost: 5 };
+
+  const baseFiltered = filterStatus === "all" ? leads : leads.filter((l: any) => l.status === filterStatus);
+
+  const filtered = [...baseFiltered].sort((a: any, b: any) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    let av: any, bv: any;
+    switch (sortCol) {
+      case "name":   av = `${a.firstName} ${a.lastName ?? ""}`; bv = `${b.firstName} ${b.lastName ?? ""}`; break;
+      case "source": av = a.leadSource?.name ?? ""; bv = b.leadSource?.name ?? ""; break;
+      case "status": av = STATUS_ORDER[a.status] ?? 99; bv = STATUS_ORDER[b.status] ?? 99; return (av - bv) * dir;
+      case "revenue":
+        if (a.revenue == null && b.revenue == null) return 0;
+        if (a.revenue == null) return 1;
+        if (b.revenue == null) return -1;
+        return (a.revenue - b.revenue) * dir;
+      case "carrier": av = a.carrier ?? ""; bv = b.carrier ?? ""; break;
+      case "entered": av = a.enteredDate ?? ""; bv = b.enteredDate ?? ""; break;
+      case "sold":
+        if (!a.soldDate && !b.soldDate) return 0;
+        if (!a.soldDate) return 1;
+        if (!b.soldDate) return -1;
+        av = a.soldDate; bv = b.soldDate; break;
+      default: return 0;
+    }
+    return av < bv ? -1 * dir : av > bv ? 1 * dir : 0;
+  });
 
   const f = (key: keyof LeadForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -438,13 +471,23 @@ export default function LeadsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/40">
-                      <th className="text-left px-4 py-3 font-medium">Name</th>
-                      <th className="text-left px-4 py-3 font-medium">Source</th>
-                      <th className="text-left px-4 py-3 font-medium">Status</th>
-                      <th className="text-left px-4 py-3 font-medium">Revenue</th>
-                      <th className="text-left px-4 py-3 font-medium">Carrier</th>
-                      <th className="text-left px-4 py-3 font-medium">Entered</th>
-                      <th className="text-left px-4 py-3 font-medium">Sold</th>
+                      {([ ["name","Name"], ["source","Source"], ["status","Status"], ["revenue","Revenue"], ["carrier","Carrier"], ["entered","Entered"], ["sold","Sold"] ] as [string,string][]).map(([col, label]) => (
+                        <th key={col} className="text-left px-4 py-3 font-medium">
+                          <button
+                            onClick={() => handleSort(col)}
+                            className="flex items-center gap-1 hover:text-foreground text-foreground/80 transition-colors group"
+                          >
+                            {label}
+                            {sortCol === col ? (
+                              sortDir === "asc"
+                                ? <ChevronUp className="w-3.5 h-3.5 text-foreground" />
+                                : <ChevronDown className="w-3.5 h-3.5 text-foreground" />
+                            ) : (
+                              <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+                            )}
+                          </button>
+                        </th>
+                      ))}
                       <th className="px-4 py-3" />
                     </tr>
                   </thead>
