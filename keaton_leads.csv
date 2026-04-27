@@ -1,0 +1,33 @@
+firstName,lastName,leadSource,status,enteredDate,soldDate,salesType,commissionType,carrier,revenue,costPerLead,notes
+Reiner,Gruebel,Medicare Agents Hub,sold,2026-01-15,2026-01-20,New Sale,Medsupp,Blue Cross of Idaho,220,86.9,Effective: 2/1/2026
+Jenneal,Hansen,Medicare Agents Hub,sold,2026-01-29,2026-01-30,New Sale,MAPD,Humana,318.08,86.9,Effective: 2/1/2026
+Richard,Hansen,Medicare Agents Hub,sold,2026-01-29,2026-01-30,New Sale,MAPD,Humana,318.08,86.9,Effective: 2/1/2026
+Danny,,Medicare Agents Hub,in_comm,2026-01-10,,,,,,86.9,
+Juliene,Larsen,*Referral,sold,2026-03-03,2026-03-06,New Sale,MAPD,Humana,260.25,0,Brett is representative. Effective: 4/1/2026
+Ina,Pate,*Referral,sold,2026-01-12,2026-01-16,New Sale,C-SNP,Humana,318.08,0,Add Tracy as rep. HRA: $50.00. Effective: 2/1/2026
+Dana,Paulino,*Current Client,sold,2026-03-05,2026-03-05,Plan Change,MAPD,Humana,260.25,0,Effective: 4/1/2026
+William,Paulino,*Current Client,sold,2026-03-05,2026-03-05,Plan Change,C-SNP,Humana,260.25,0,Goes by Bill. HRA: $50.00. Effective: 4/1/2026
+Lawrence,Rincover,*Current Client,sold,2026-01-13,2026-01-13,Plan Change,C-SNP,Humana,318.08,0,Goes by Larry. HRA: $50.00. Effective: 2/1/2026
+Dolly,Bedal,*Current Client,sold,2026-01-16,2026-01-16,Plan Change,MAPD,Saint Alphonsus HP,318.08,0,HRA: $125.00. Effective: 2/1/2026
+Sheri,Howe,*Referral,sold,2025-12-04,2026-01-20,New Sale,MAPD,Saint Alphonsus HP,318.08,0,HRA: $125.00. Effective: 2/1/2026
+Lional,Parkinson,*Referral,sold,2025-11-17,2026-01-28,New Sale,MAPD,Saint Alphonsus HP,694,0,HRA: $125.00. Effective: 2/1/2026
+Laurie,,Medicare Agents Hub,in_comm,2026-02-23,,,,,,86.9,
+Gerry,Gilbert,Medicare Agents Hub,in_comm,2026-02-25,,,,,,86.9,
+Jake,Perala,*Current Client,sold,2026-03-10,2026-03-10,Plan Change,FIDE-SNP,UnitedHealthcare,260.25,0,Effective: 4/1/2026
+Peter,Saul,QuoteWizard,in_comm,2026-03-03,,,,,,50,
+Holly,Hasegawa,QuoteWizard,in_comm,2026-03-04,,,,,,50,
+Luisa,Ruano,*Referral,sold,2026-02-11,2026-02-12,New Sale,FIDE-SNP,UnitedHealthcare,289.17,0,Blanca Jason is mother. HRA: $50.00. Effective: 3/1/2026
+Karen,,Medicare Agents Hub,appt_set,2026-03-10,,,,,,86.9,
+Harvey,Casebeer,Online Lookup,appt_set,2026-03-11,,,,,,0,Goes by Lee
+Thomas,Dicus,QuoteWizard,in_comm,2026-03-13,,,,,,50,
+Kevin,Brown,Online Lookup,appt_set,2026-03-20,,,,,,7,
+Edwin,Johnson,QuoteWizard,in_comm,2026-03-23,,,,,,50,
+LaRayna,Adams,*Current Client,sold,2026-03-25,2026-03-25,Plan Change,FIDE-SNP,UnitedHealthcare,260.25,0,Effective: 4/1/2026
+Lynne,Austin,*Referral,sold,2026-03-25,2026-04-02,New Sale,MAPD,Humana,694,0,Effective: 7/1/2026
+Gus,Fitzpatrick,*Referral,in_comm,2026-03-25,,,,,,0,
+Willie,English Jr,*Referral,sold,2026-04-03,2026-04-06,New Sale,MA-Only,Saint Alphonsus HP,649,0,HRA: $125.00. Effective: 5/1/2026. Owning agent: Chad
+Earle,Keenan Jr,*Current Client,sold,2026-04-06,2026-04-07,Plan Change,C-SNP,Humana,231.33,0,HRA: $50.00. Effective: 5/1/2026
+Mr.,Torres,Medicare Agents Hub,in_comm,2026-04-06,,,,,,86.9,
+Ken,Rhoades,Medicare Agents Hub,follow_up,2026-04-11,,,,,,86.9,
+Mrs.,Rhoades,Medicare Agents Hub,follow_up,2026-04-11,,,,,,86.9,
+Laura,Brubaker,QuoteWizard,in_comm,2026-04-13,,,,,,50,
