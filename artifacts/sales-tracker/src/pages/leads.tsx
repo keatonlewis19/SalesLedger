@@ -18,6 +18,7 @@ import {
   getGetMetricsQueryKey,
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
+import { LeadImportDialog } from "@/components/lead-import-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,7 +42,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAgencyUser } from "@/hooks/useAgencyUser";
-import { Plus, Trash2, Pencil, ChevronDown, Settings2, ArrowLeft, DollarSign } from "lucide-react";
+import { Plus, Trash2, Pencil, ChevronDown, Settings2, ArrowLeft, DollarSign, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -144,6 +145,7 @@ export default function LeadsPage() {
   const deletePayment = useDeleteLeadSourcePayment();
 
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editLead, setEditLead] = useState<any | null>(null);
   const [form, setForm] = useState<LeadForm>(emptyForm());
 
@@ -387,6 +389,9 @@ export default function LeadsPage() {
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => { resetSourceForm(); setSourceOpen(true); }}>
               <Settings2 className="w-4 h-4 mr-1" /> Lead Sources
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+              <Upload className="w-4 h-4 mr-1" /> Upload CSV
             </Button>
             <Button size="sm" onClick={openAdd}>
               <Plus className="w-4 h-4 mr-1" /> Add Lead
@@ -732,6 +737,8 @@ export default function LeadsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <LeadImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </Layout>
   );
 }

@@ -339,6 +339,32 @@ export type DeleteLeadSourcePayment200 = {
   success?: boolean;
 };
 
+export type ImportLeadsBodyLeadsItem = {
+  firstName: string;
+  lastName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  leadSource?: string | null;
+  status?: string;
+  enteredDate: string;
+  soldDate?: string | null;
+  salesType?: string | null;
+  commissionType?: string | null;
+  carrier?: string | null;
+  revenue?: number | null;
+  costPerLead?: number | null;
+  notes?: string | null;
+};
+
+export type ImportLeadsBody = {
+  leads: ImportLeadsBodyLeadsItem[];
+};
+
+export type ImportLeads200 = {
+  imported: number;
+  errors: string[];
+};
+
 export type CreateLeadBody = {
   firstName: string;
   lastName?: string;

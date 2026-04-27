@@ -522,6 +522,35 @@ export const DeleteLeadSourcePaymentResponse = zod.object({
 });
 
 /**
+ * @summary Bulk import leads from CSV data
+ */
+export const ImportLeadsBody = zod.object({
+  leads: zod.array(
+    zod.object({
+      firstName: zod.string(),
+      lastName: zod.string().nullish(),
+      phone: zod.string().nullish(),
+      email: zod.string().nullish(),
+      leadSource: zod.string().nullish(),
+      status: zod.string().optional(),
+      enteredDate: zod.string(),
+      soldDate: zod.string().nullish(),
+      salesType: zod.string().nullish(),
+      commissionType: zod.string().nullish(),
+      carrier: zod.string().nullish(),
+      revenue: zod.number().nullish(),
+      costPerLead: zod.number().nullish(),
+      notes: zod.string().nullish(),
+    }),
+  ),
+});
+
+export const ImportLeadsResponse = zod.object({
+  imported: zod.number(),
+  errors: zod.array(zod.string()),
+});
+
+/**
  * @summary List leads (own for agents, all for admins)
  */
 export const ListLeadsResponseItem = zod.object({

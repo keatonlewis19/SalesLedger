@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, leadsTable, leadSourcesTable, salesTable, agencyUsersTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../middlewares/auth";
 import { getWeekStartForDate } from "../lib/scheduler";
 import { z } from "zod";
@@ -106,6 +106,90 @@ router.post("/leads", requireAuth, async (req: AuthRequest, res): Promise<void> 
     .returning();
 
   res.status(201).json(lead);
+});
+
+// Bulk import endpoint — must be before /:id routes
+router.post("/leads/import", requireAuth, async (req: AuthRequest, res): Promise<void> => {
+  const { userId } = req;
+  const rows = req.body?.leads;
+  if (!Array.isArray(rows) || rows.length === 0) {
+    res.status(400).json({ error: "No leads provided" });
+    return;
+  }
+
+  const VALID_STATUSES = ["new", "in_comm", "appt_set", "follow_up", "sold", "lost"];
+  const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+  const today = new Date().toISOString().slice(0, 10);
+
+  let imported = 0;
+  const errors: string[] = [];
+
+  // Cache of source name -> id for this request
+  const sourceCache = new Map<string, number>();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const label = `Row ${i + 1} (${row.firstName ?? "?"})`;
+
+    if (!row.firstName?.trim()) {
+      errors.push(`${label}: First name is required`);
+      continue;
+    }
+
+    // Resolve lead source
+    let leadSourceId: number | null = null;
+    const srcName = row.leadSource?.trim();
+    if (srcName) {
+      if (sourceCache.has(srcName)) {
+        leadSourceId = sourceCache.get(srcName)!;
+      } else {
+        let [src] = await db
+          .select()
+          .from(leadSourcesTable)
+          .where(and(eq(leadSourcesTable.userId, userId!), eq(leadSourcesTable.name, srcName)));
+        if (!src) {
+          [src] = await db.insert(leadSourcesTable).values({
+            userId: userId!,
+            name: srcName,
+            isPaid: false,
+            costPerLead: 0,
+            totalInvested: 0,
+          }).returning();
+        }
+        sourceCache.set(srcName, src.id);
+        leadSourceId = src.id;
+      }
+    }
+
+    const status = VALID_STATUSES.includes(row.status) ? row.status : "new";
+    const enteredDate = dateRe.test(row.enteredDate ?? "") ? row.enteredDate : today;
+    const soldDate = dateRe.test(row.soldDate ?? "") ? row.soldDate : null;
+
+    try {
+      await db.insert(leadsTable).values({
+        userId: userId!,
+        firstName: row.firstName.trim(),
+        lastName: row.lastName?.trim() || null,
+        phone: row.phone?.trim() || null,
+        email: row.email?.trim() || null,
+        leadSourceId,
+        status,
+        revenue: row.revenue != null && !isNaN(Number(row.revenue)) ? Number(row.revenue) : null,
+        carrier: row.carrier?.trim() || null,
+        salesType: row.salesType?.trim() || null,
+        commissionType: row.commissionType?.trim() || null,
+        costPerLead: row.costPerLead != null && !isNaN(Number(row.costPerLead)) ? Number(row.costPerLead) : null,
+        notes: row.notes?.trim() || null,
+        enteredDate,
+        soldDate,
+      });
+      imported++;
+    } catch (e: any) {
+      errors.push(`${label}: ${e.message}`);
+    }
+  }
+
+  res.json({ imported, errors });
 });
 
 router.patch("/leads/:id", requireAuth, async (req: AuthRequest, res): Promise<void> => {

@@ -583,6 +583,85 @@ paths:
                   success:
                     type: boolean
 
+  /leads/import:
+    post:
+      operationId: importLeads
+      tags: [leads]
+      summary: Bulk import leads from CSV data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                leads:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                        nullable: true
+                      phone:
+                        type: string
+                        nullable: true
+                      email:
+                        type: string
+                        nullable: true
+                      leadSource:
+                        type: string
+                        nullable: true
+                      status:
+                        type: string
+                      enteredDate:
+                        type: string
+                      soldDate:
+                        type: string
+                        nullable: true
+                      salesType:
+                        type: string
+                        nullable: true
+                      commissionType:
+                        type: string
+                        nullable: true
+                      carrier:
+                        type: string
+                        nullable: true
+                      revenue:
+                        type: number
+                        nullable: true
+                      costPerLead:
+                        type: number
+                        nullable: true
+                      notes:
+                        type: string
+                        nullable: true
+                    required:
+                      - firstName
+                      - enteredDate
+              required:
+                - leads
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - imported
+                  - errors
+
   /leads:
     get:
       operationId: listLeads
