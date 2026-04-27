@@ -45,7 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="md:hidden border-b bg-card px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {logoUrl ? (
-            <img src={logoUrl} alt={brandName} className="h-7 w-auto object-contain" />
+            <img src={logoUrl} alt={brandName} className="h-9 w-auto object-contain max-w-[160px]" />
           ) : (
             <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
               <TrendingUp className="w-4 h-4 text-primary-foreground" />
@@ -71,9 +71,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Desktop Sidebar */}
       <div className="hidden md:flex w-64 flex-col text-slate-100" style={{ backgroundColor: "var(--panel-bg, #0f172a)" }}>
-        <div className="h-16 flex items-center px-5 border-b border-white/10">
+        <div className="h-16 flex items-center px-4 border-b border-white/10">
           {logoUrl ? (
-            <img src={logoUrl} alt={brandName} className="h-9 w-auto object-contain max-w-[192px]" />
+            <img src={logoUrl} alt={brandName} className="h-[45px] w-auto object-contain max-w-[220px]" />
           ) : (
             <div className="flex items-center gap-3">
               <div
