@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
-import { useGetSales, useGetUsersMe } from "@workspace/api-client-react";
+import { useGetSales, useGetMe } from "@workspace/api-client-react";
 
 interface StatCardProps {
   label: string;
@@ -93,7 +93,7 @@ export default function DashboardScreen() {
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
 
-  const { data: me, isLoading: meLoading } = useGetUsersMe();
+  const { data: me, isLoading: meLoading } = useGetMe();
   const {
     data: salesData,
     isLoading: salesLoading,
