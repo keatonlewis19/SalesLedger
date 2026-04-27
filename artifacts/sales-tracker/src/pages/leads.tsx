@@ -33,6 +33,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -143,6 +153,8 @@ export default function LeadsPage() {
   const deleteSource = useDeleteLeadSource();
   const createPayment = useCreateLeadSourcePayment();
   const deletePayment = useDeleteLeadSourcePayment();
+
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: "lead" | "source"; id: number; message: string } | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -262,7 +274,10 @@ export default function LeadsPage() {
   };
 
   const handleDelete = (id: number) => {
-    if (!confirm("Delete this lead? This will also remove any linked sale entry.")) return;
+    setDeleteConfirm({ type: "lead", id, message: "Delete this lead? This will also remove any linked sale entry." });
+  };
+
+  const execDeleteLead = (id: number) => {
     deleteLead.mutate(
       { id },
       {
@@ -366,7 +381,10 @@ export default function LeadsPage() {
   };
 
   const handleDeleteSource = (id: number) => {
-    if (!confirm("Delete this lead source?")) return;
+    setDeleteConfirm({ type: "source", id, message: "Delete this lead source? Any associated leads will also be removed." });
+  };
+
+  const execDeleteSource = (id: number) => {
     deleteSource.mutate(
       { id },
       {
@@ -782,6 +800,29 @@ export default function LeadsPage() {
       </Dialog>
 
       <LeadImportDialog open={importOpen} onOpenChange={setImportOpen} />
+
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>{deleteConfirm?.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!deleteConfirm) return;
+                if (deleteConfirm.type === "lead") execDeleteLead(deleteConfirm.id);
+                else execDeleteSource(deleteConfirm.id);
+                setDeleteConfirm(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
