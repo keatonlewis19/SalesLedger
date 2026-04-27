@@ -9,6 +9,8 @@ const router: IRouter = Router();
 
 const VALID_STATUSES = ["new", "in_comm", "appt_set", "follow_up", "sold", "lost"] as const;
 
+const VALID_LOBS = ["medicare", "aca", "ancillary", "life", "annuity"] as const;
+
 const LeadBody = z.object({
   firstName: z.string().min(1),
   lastName: z.string().optional(),
@@ -21,6 +23,8 @@ const LeadBody = z.object({
   salesType: z.string().optional().nullable(),
   commissionType: z.string().optional().nullable(),
   costPerLead: z.number().nonnegative().optional().nullable(),
+  lineOfBusiness: z.enum(VALID_LOBS).optional(),
+  ancillaryType: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   enteredDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   soldDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
@@ -84,6 +88,7 @@ router.post("/leads", requireAuth, async (req: AuthRequest, res): Promise<void> 
   }
 
   const data = parsed.data;
+  const lob = data.lineOfBusiness ?? "medicare";
   const [lead] = await db
     .insert(leadsTable)
     .values({
@@ -93,12 +98,14 @@ router.post("/leads", requireAuth, async (req: AuthRequest, res): Promise<void> 
       phone: data.phone,
       email: data.email,
       leadSourceId: data.leadSourceId ?? null,
-      status: data.status ?? "new",
+      status: lob === "medicare" ? (data.status ?? "new") : "sold",
       revenue: data.revenue ?? null,
       carrier: data.carrier ?? null,
       salesType: data.salesType ?? null,
       commissionType: data.commissionType ?? null,
       costPerLead: data.costPerLead ?? null,
+      lineOfBusiness: lob,
+      ancillaryType: data.ancillaryType ?? null,
       notes: data.notes ?? null,
       enteredDate: data.enteredDate,
       soldDate: data.soldDate ?? null,
@@ -166,6 +173,7 @@ router.post("/leads/import", requireAuth, async (req: AuthRequest, res): Promise
     const soldDate = dateRe.test(row.soldDate ?? "") ? row.soldDate : null;
 
     try {
+      const rowLob = VALID_LOBS.includes(row.lineOfBusiness) ? row.lineOfBusiness : "medicare";
       await db.insert(leadsTable).values({
         userId: userId!,
         firstName: row.firstName.trim(),
@@ -179,6 +187,8 @@ router.post("/leads/import", requireAuth, async (req: AuthRequest, res): Promise
         salesType: row.salesType?.trim() || null,
         commissionType: row.commissionType?.trim() || null,
         costPerLead: row.costPerLead != null && !isNaN(Number(row.costPerLead)) ? Number(row.costPerLead) : null,
+        lineOfBusiness: rowLob,
+        ancillaryType: row.ancillaryType?.trim() || null,
         notes: row.notes?.trim() || null,
         enteredDate,
         soldDate,
@@ -234,6 +244,8 @@ router.patch("/leads/:id", requireAuth, async (req: AuthRequest, res): Promise<v
     ...(data.salesType !== undefined && { salesType: data.salesType }),
     ...(data.commissionType !== undefined && { commissionType: data.commissionType }),
     ...(data.costPerLead !== undefined && { costPerLead: data.costPerLead }),
+    ...(data.lineOfBusiness !== undefined && { lineOfBusiness: data.lineOfBusiness }),
+    ...(data.ancillaryType !== undefined && { ancillaryType: data.ancillaryType }),
     ...(data.notes !== undefined && { notes: data.notes }),
     ...(data.enteredDate !== undefined && { enteredDate: data.enteredDate }),
     soldDate,

@@ -74,6 +74,45 @@ const STATUSES = [
 
 type LeadStatus = typeof STATUSES[number]["value"];
 
+const LOB_TABS = [
+  { value: "medicare", label: "Medicare" },
+  { value: "aca", label: "ACA / Individual Health" },
+  { value: "ancillary", label: "Ancillary" },
+  { value: "life", label: "Life Insurance" },
+  { value: "annuity", label: "Annuities" },
+] as const;
+
+type LobValue = typeof LOB_TABS[number]["value"];
+
+const ANCILLARY_TYPES = [
+  "Dental",
+  "Vision",
+  "DVH",
+  "Hospital Indemnity",
+  "Accident",
+  "Critical Illness",
+] as const;
+
+type LobSaleForm = {
+  firstName: string;
+  lastName: string;
+  carrier: string;
+  revenue: string;
+  soldDate: string;
+  ancillaryType: string;
+  notes: string;
+};
+
+const emptyLobSaleForm = (): LobSaleForm => ({
+  firstName: "",
+  lastName: "",
+  carrier: "",
+  revenue: "",
+  soldDate: today,
+  ancillaryType: "",
+  notes: "",
+});
+
 function StatusBadge({ status }: { status: string }) {
   const found = STATUSES.find((s) => s.value === status);
   return (
@@ -154,12 +193,18 @@ export default function LeadsPage() {
   const createPayment = useCreateLeadSourcePayment();
   const deletePayment = useDeleteLeadSourcePayment();
 
+  const [activeLob, setActiveLob] = useState<LobValue>("medicare");
+
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "lead" | "source"; id: number; message: string } | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editLead, setEditLead] = useState<any | null>(null);
   const [form, setForm] = useState<LeadForm>(emptyForm());
+
+  const [lobSaleOpen, setLobSaleOpen] = useState(false);
+  const [lobSaleEditId, setLobSaleEditId] = useState<number | null>(null);
+  const [lobSaleForm, setLobSaleForm] = useState<LobSaleForm>(emptyLobSaleForm());
 
   const [sourceOpen, setSourceOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<any | null>(null);
@@ -280,6 +325,70 @@ export default function LeadsPage() {
         onError: () => toast({ title: "Failed to update status", variant: "destructive" }),
       },
     );
+  };
+
+  const openLobSaleAdd = () => {
+    setLobSaleEditId(null);
+    setLobSaleForm(emptyLobSaleForm());
+    setLobSaleOpen(true);
+  };
+
+  const openLobSaleEdit = (lead: any) => {
+    setLobSaleEditId(lead.id);
+    setLobSaleForm({
+      firstName: lead.firstName ?? "",
+      lastName: lead.lastName ?? "",
+      carrier: lead.carrier ?? "",
+      revenue: lead.revenue != null ? String(lead.revenue) : "",
+      soldDate: lead.soldDate ?? today,
+      ancillaryType: lead.ancillaryType ?? "",
+      notes: lead.notes ?? "",
+    });
+    setLobSaleOpen(true);
+  };
+
+  const handleSaveLobSale = () => {
+    if (!lobSaleForm.firstName.trim()) {
+      toast({ title: "First name is required", variant: "destructive" });
+      return;
+    }
+    const payload = {
+      firstName: lobSaleForm.firstName,
+      lastName: lobSaleForm.lastName || undefined,
+      carrier: lobSaleForm.carrier || null,
+      revenue: lobSaleForm.revenue ? parseFloat(lobSaleForm.revenue) : null,
+      soldDate: lobSaleForm.soldDate || today,
+      enteredDate: lobSaleForm.soldDate || today,
+      status: "sold" as const,
+      lineOfBusiness: activeLob,
+      ancillaryType: lobSaleForm.ancillaryType || null,
+      notes: lobSaleForm.notes || null,
+    };
+    if (lobSaleEditId != null) {
+      updateLead.mutate(
+        { id: lobSaleEditId, data: payload },
+        {
+          onSuccess: () => {
+            toast({ title: "Sale updated" });
+            invalidate();
+            setLobSaleOpen(false);
+          },
+          onError: () => toast({ title: "Failed to update sale", variant: "destructive" }),
+        },
+      );
+    } else {
+      createLead.mutate(
+        { data: payload },
+        {
+          onSuccess: () => {
+            toast({ title: "Sale recorded" });
+            invalidate();
+            setLobSaleOpen(false);
+          },
+          onError: () => toast({ title: "Failed to record sale", variant: "destructive" }),
+        },
+      );
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -408,7 +517,8 @@ export default function LeadsPage() {
 
   const STATUS_ORDER: Record<string, number> = { new: 0, in_comm: 1, appt_set: 2, follow_up: 3, sold: 4, lost: 5 };
 
-  const baseFiltered = filterStatuses.size === 0 ? leads : leads.filter((l: any) => filterStatuses.has(l.status));
+  const lobLeads = (leads as any[]).filter((l) => (l.lineOfBusiness ?? "medicare") === activeLob);
+  const baseFiltered = filterStatuses.size === 0 ? lobLeads : lobLeads.filter((l: any) => filterStatuses.has(l.status));
 
   const filtered = [...baseFiltered].sort((a: any, b: any) => {
     const dir = sortDir === "asc" ? 1 : -1;
@@ -443,143 +553,249 @@ export default function LeadsPage() {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Leads</h1>
-            <p className="text-muted-foreground text-sm">Track your leads through the sales pipeline</p>
+            <h1 className="text-2xl font-bold text-foreground">Leads & Sales</h1>
+            <p className="text-muted-foreground text-sm">
+              {activeLob === "medicare"
+                ? "Track leads through the Medicare sales pipeline"
+                : `Record ${LOB_TABS.find((t) => t.value === activeLob)?.label} sales as they happen`}
+            </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => { resetSourceForm(); setSourceOpen(true); }}>
-              <Settings2 className="w-4 h-4 mr-1" /> Lead Sources
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
-              <Upload className="w-4 h-4 mr-1" /> Upload CSV
-            </Button>
-            <Button size="sm" onClick={openAdd}>
-              <Plus className="w-4 h-4 mr-1" /> Add Lead
-            </Button>
+            {activeLob === "medicare" && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => { resetSourceForm(); setSourceOpen(true); }}>
+                  <Settings2 className="w-4 h-4 mr-1" /> Lead Sources
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+                  <Upload className="w-4 h-4 mr-1" /> Upload CSV
+                </Button>
+                <Button size="sm" onClick={openAdd}>
+                  <Plus className="w-4 h-4 mr-1" /> Add Lead
+                </Button>
+              </>
+            )}
+            {activeLob !== "medicare" && (
+              <Button size="sm" onClick={openLobSaleAdd}>
+                <Plus className="w-4 h-4 mr-1" /> Record Sale
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Status filter */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setFilterStatuses(new Set())}
-            className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-              filterStatuses.size === 0
-                ? "bg-foreground text-background border-foreground"
-                : "border-border text-muted-foreground hover:border-foreground/40")}
-          >
-            All ({leads.length})
-          </button>
-          {STATUSES.map((s) => {
-            const count = leads.filter((l: any) => l.status === s.value).length;
-            const active = filterStatuses.has(s.value);
-            return (
-              <button
-                key={s.value}
-                onClick={() => toggleFilterStatus(s.value)}
-                className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                  active
-                    ? "bg-foreground text-background border-foreground"
-                    : "border-border text-muted-foreground hover:border-foreground/40")}
-              >
-                {s.label} ({count})
-              </button>
-            );
-          })}
+        {/* LOB Tabs */}
+        <div className="flex gap-1 border-b border-border overflow-x-auto">
+          {LOB_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => { setActiveLob(tab.value); setFilterStatuses(new Set()); }}
+              className={cn(
+                "px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors",
+                activeLob === tab.value
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+              )}
+            >
+              {tab.label}
+              <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {(leads as any[]).filter((l) => (l.lineOfBusiness ?? "medicare") === tab.value).length}
+              </span>
+            </button>
+          ))}
         </div>
 
-        {/* Leads table */}
-        <Card>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-6 space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="py-16 text-center text-muted-foreground">
-                <p className="text-lg font-medium mb-1">No leads found</p>
-                <p className="text-sm">Click "Add Lead" to get started.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40">
-                      {([ ["name","Name"], ["source","Source"], ["status","Status"], ["revenue","Revenue"], ["carrier","Carrier"], ["entered","Entered"], ["sold","Sold"] ] as [string,string][]).map(([col, label]) => (
-                        <th key={col} className="text-left px-4 py-3 font-medium">
-                          <button
-                            onClick={() => handleSort(col)}
-                            className="flex items-center gap-1 hover:text-foreground text-foreground/80 transition-colors group"
-                          >
-                            {label}
-                            {sortCol === col ? (
-                              sortDir === "asc"
-                                ? <ChevronUp className="w-3.5 h-3.5 text-foreground" />
-                                : <ChevronDown className="w-3.5 h-3.5 text-foreground" />
-                            ) : (
-                              <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
-                            )}
-                          </button>
-                        </th>
-                      ))}
-                      <th className="px-4 py-3" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((lead: any) => (
-                      <tr key={lead.id} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="px-4 py-3 font-medium">
-                          {lead.firstName} {lead.lastName ?? ""}
-                          {lead.phone && <div className="text-xs text-muted-foreground">{lead.phone}</div>}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {lead.leadSource?.name ?? "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button className="flex items-center gap-1 group">
-                                <StatusBadge status={lead.status} />
-                                <ChevronDown className="w-3 h-3 text-muted-foreground group-hover:text-foreground transition-colors" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              {STATUSES.map((s) => (
-                                <DropdownMenuItem
-                                  key={s.value}
-                                  onClick={() => handleStatusChange(lead, s.value)}
-                                  className={cn(lead.status === s.value && "font-semibold")}
-                                >
-                                  {s.label}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                        <td className="px-4 py-3">
-                          {lead.revenue != null ? `$${lead.revenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{lead.carrier ?? "—"}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{lead.enteredDate}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{lead.soldDate ?? "—"}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1 justify-end">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(lead)}>
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(lead.id)}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </td>
+        {/* Medicare: Status filter pills */}
+        {activeLob === "medicare" && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFilterStatuses(new Set())}
+              className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                filterStatuses.size === 0
+                  ? "bg-foreground text-background border-foreground"
+                  : "border-border text-muted-foreground hover:border-foreground/40")}
+            >
+              All ({lobLeads.length})
+            </button>
+            {STATUSES.map((s) => {
+              const count = lobLeads.filter((l: any) => l.status === s.value).length;
+              const active = filterStatuses.has(s.value);
+              return (
+                <button
+                  key={s.value}
+                  onClick={() => toggleFilterStatus(s.value)}
+                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                    active
+                      ? "bg-foreground text-background border-foreground"
+                      : "border-border text-muted-foreground hover:border-foreground/40")}
+                >
+                  {s.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Medicare: Full pipeline leads table */}
+        {activeLob === "medicare" && (
+          <Card>
+            <CardContent className="p-0">
+              {isLoading ? (
+                <div className="p-6 space-y-3">
+                  {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="py-16 text-center text-muted-foreground">
+                  <p className="text-lg font-medium mb-1">No leads found</p>
+                  <p className="text-sm">Click "Add Lead" to get started.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/40">
+                        {([ ["name","Name"], ["source","Source"], ["status","Status"], ["revenue","Revenue"], ["carrier","Carrier"], ["entered","Entered"], ["sold","Sold"] ] as [string,string][]).map(([col, label]) => (
+                          <th key={col} className="text-left px-4 py-3 font-medium">
+                            <button
+                              onClick={() => handleSort(col)}
+                              className="flex items-center gap-1 hover:text-foreground text-foreground/80 transition-colors group"
+                            >
+                              {label}
+                              {sortCol === col ? (
+                                sortDir === "asc"
+                                  ? <ChevronUp className="w-3.5 h-3.5 text-foreground" />
+                                  : <ChevronDown className="w-3.5 h-3.5 text-foreground" />
+                              ) : (
+                                <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+                              )}
+                            </button>
+                          </th>
+                        ))}
+                        <th className="px-4 py-3" />
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    </thead>
+                    <tbody>
+                      {filtered.map((lead: any) => (
+                        <tr key={lead.id} className="border-b last:border-0 hover:bg-muted/20">
+                          <td className="px-4 py-3 font-medium">
+                            {lead.firstName} {lead.lastName ?? ""}
+                            {lead.phone && <div className="text-xs text-muted-foreground">{lead.phone}</div>}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {lead.leadSource?.name ?? "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="flex items-center gap-1 group">
+                                  <StatusBadge status={lead.status} />
+                                  <ChevronDown className="w-3 h-3 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start">
+                                {STATUSES.map((s) => (
+                                  <DropdownMenuItem
+                                    key={s.value}
+                                    onClick={() => handleStatusChange(lead, s.value)}
+                                    className={cn(lead.status === s.value && "font-semibold")}
+                                  >
+                                    {s.label}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                          <td className="px-4 py-3">
+                            {lead.revenue != null ? `$${lead.revenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">{lead.carrier ?? "—"}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{lead.enteredDate}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{lead.soldDate ?? "—"}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-1 justify-end">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(lead)}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(lead.id)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Non-Medicare: Simple sales log */}
+        {activeLob !== "medicare" && (
+          <Card>
+            <CardContent className="p-0">
+              {isLoading ? (
+                <div className="p-6 space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
+                </div>
+              ) : lobLeads.length === 0 ? (
+                <div className="py-16 text-center text-muted-foreground">
+                  <p className="text-lg font-medium mb-1">No sales recorded yet</p>
+                  <p className="text-sm">Click "Record Sale" to add your first entry.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/40">
+                        <th className="text-left px-4 py-3 font-medium">Client</th>
+                        {activeLob === "ancillary" && <th className="text-left px-4 py-3 font-medium">Type</th>}
+                        <th className="text-left px-4 py-3 font-medium">Carrier</th>
+                        <th className="text-left px-4 py-3 font-medium">Revenue</th>
+                        <th className="text-left px-4 py-3 font-medium">Sale Date</th>
+                        <th className="text-left px-4 py-3 font-medium">Notes</th>
+                        <th className="px-4 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lobLeads.sort((a: any, b: any) => (b.soldDate ?? b.enteredDate) > (a.soldDate ?? a.enteredDate) ? 1 : -1).map((lead: any) => (
+                        <tr key={lead.id} className="border-b last:border-0 hover:bg-muted/20">
+                          <td className="px-4 py-3 font-medium">
+                            {lead.firstName} {lead.lastName ?? ""}
+                          </td>
+                          {activeLob === "ancillary" && (
+                            <td className="px-4 py-3">
+                              {lead.ancillaryType ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700">
+                                  {lead.ancillaryType}
+                                </span>
+                              ) : "—"}
+                            </td>
+                          )}
+                          <td className="px-4 py-3 text-muted-foreground">{lead.carrier ?? "—"}</td>
+                          <td className="px-4 py-3 font-medium text-green-700">
+                            {lead.revenue != null ? `$${lead.revenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">{lead.soldDate ?? lead.enteredDate}</td>
+                          <td className="px-4 py-3 text-muted-foreground max-w-[200px] truncate">{lead.notes ?? "—"}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-1 justify-end">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openLobSaleEdit(lead)}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(lead.id)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Add/Edit Lead Dialog */}
@@ -681,6 +897,98 @@ export default function LeadsPage() {
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={createLead.isPending || updateLead.isPending}>
               {editLead ? "Save Changes" : "Add Lead"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* LOB Sale Add/Edit Dialog */}
+      <Dialog open={lobSaleOpen} onOpenChange={setLobSaleOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {lobSaleEditId != null ? "Edit Sale" : "Record Sale"} — {LOB_TABS.find((t) => t.value === activeLob)?.label}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>First Name *</Label>
+                <Input
+                  value={lobSaleForm.firstName}
+                  onChange={(e) => setLobSaleForm((p) => ({ ...p, firstName: e.target.value }))}
+                  placeholder="Jane"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Last Name</Label>
+                <Input
+                  value={lobSaleForm.lastName}
+                  onChange={(e) => setLobSaleForm((p) => ({ ...p, lastName: e.target.value }))}
+                  placeholder="Doe"
+                />
+              </div>
+            </div>
+            {activeLob === "ancillary" && (
+              <div className="space-y-1">
+                <Label>Insurance Type *</Label>
+                <Select
+                  value={lobSaleForm.ancillaryType || "__none"}
+                  onValueChange={(v) => setLobSaleForm((p) => ({ ...p, ancillaryType: v === "__none" ? "" : v }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select type…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">— Select type —</SelectItem>
+                    {ANCILLARY_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Carrier</Label>
+                <Input
+                  value={lobSaleForm.carrier}
+                  onChange={(e) => setLobSaleForm((p) => ({ ...p, carrier: e.target.value }))}
+                  placeholder="e.g. Aetna"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Revenue ($)</Label>
+                <Input
+                  type="number"
+                  value={lobSaleForm.revenue}
+                  onChange={(e) => setLobSaleForm((p) => ({ ...p, revenue: e.target.value }))}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Sale Date</Label>
+              <Input
+                type="date"
+                value={lobSaleForm.soldDate}
+                onChange={(e) => setLobSaleForm((p) => ({ ...p, soldDate: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Notes</Label>
+              <Textarea
+                value={lobSaleForm.notes}
+                onChange={(e) => setLobSaleForm((p) => ({ ...p, notes: e.target.value }))}
+                rows={2}
+                placeholder="Any additional notes…"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLobSaleOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveLobSale} disabled={createLead.isPending || updateLead.isPending}>
+              {lobSaleEditId != null ? "Save Changes" : "Record Sale"}
             </Button>
           </DialogFooter>
         </DialogContent>

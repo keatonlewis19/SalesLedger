@@ -37,6 +37,69 @@ export interface SaleRow {
   paid?: boolean;
 }
 
+export interface LobSaleRow {
+  clientName: string;
+  carrier: string | null;
+  revenue: number | null;
+  soldDate: string;
+  ancillaryType?: string | null;
+  notes: string | null;
+  agentName?: string | null;
+}
+
+export const LOB_LABELS: Record<string, string> = {
+  aca: "ACA / Individual Health",
+  ancillary: "Ancillary",
+  life: "Life Insurance",
+  annuity: "Annuities",
+};
+
+function buildLobSalesSection(lobLabel: string, sales: LobSaleRow[], headerColor: string): string {
+  const total = sales.reduce((acc, s) => acc + (s.revenue ?? 0), 0);
+  const fmt = (v: number | null) =>
+    v == null ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
+
+  const isAncillary = lobLabel === "Ancillary";
+
+  const rows = sales
+    .map(
+      (s) => `
+      <tr>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;">${s.clientName}</td>
+        ${isAncillary ? `<td style="padding:7px 10px;border-bottom:1px solid #eee;">${s.ancillaryType ?? "—"}</td>` : ""}
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;">${s.carrier ?? "—"}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;">${s.soldDate}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:right;">${fmt(s.revenue)}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;color:#6b7280;">${s.notes ?? ""}</td>
+      </tr>
+    `
+    )
+    .join("");
+
+  return `
+    <div style="margin-bottom:28px;">
+      <div style="background:${headerColor}18;border-left:4px solid ${headerColor};padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:10px;">
+        <span style="font-weight:700;font-size:15px;color:#1a3c5e;">${lobLabel}</span>
+        <span style="margin-left:12px;font-size:13px;color:#6b7280;">${sales.length} sale${sales.length !== 1 ? "s" : ""}</span>
+        <span style="float:right;font-size:13px;font-weight:600;color:#059669;">Total: ${fmt(total)}</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:#f3f4f6;">
+            <th style="padding:7px 10px;text-align:left;font-weight:600;color:#374151;">Client</th>
+            ${isAncillary ? `<th style="padding:7px 10px;text-align:left;font-weight:600;color:#374151;">Type</th>` : ""}
+            <th style="padding:7px 10px;text-align:left;font-weight:600;color:#374151;">Carrier</th>
+            <th style="padding:7px 10px;text-align:left;font-weight:600;color:#374151;">Date</th>
+            <th style="padding:7px 10px;text-align:right;font-weight:600;color:#374151;">Revenue</th>
+            <th style="padding:7px 10px;text-align:left;font-weight:600;color:#374151;">Notes</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
 function formatCurrency(val: number | null): string {
   if (val == null) return "—";
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
@@ -223,7 +286,8 @@ function buildWeeklyReportHtml(
   sales: SaleRow[],
   weekStart: string,
   weekEnd: string,
-  branding: BrandingOptions = {}
+  branding: BrandingOptions = {},
+  lobSalesMap?: Map<string, LobSaleRow[]>
 ): string {
   const color = branding.brandColor ?? "#1a3c5e";
   const name = branding.brandName ?? "Sales Tracker";
@@ -244,6 +308,17 @@ function buildWeeklyReportHtml(
   const agentSections = [...agentGroups.entries()]
     .map(([agent, agentSales]) => buildAgentSection(agent, agentSales, color))
     .join("");
+
+  const lobSections =
+    lobSalesMap && lobSalesMap.size > 0
+      ? `<div style="margin-top:28px;border-top:2px solid #e5e7eb;padding-top:24px;">
+          <h3 style="font-size:16px;font-weight:700;color:#1a3c5e;margin:0 0 18px 0;">Other Lines of Business</h3>
+          ${[...lobSalesMap.entries()]
+            .filter(([, sales]) => sales.length > 0)
+            .map(([lob, sales]) => buildLobSalesSection(LOB_LABELS[lob] ?? lob, sales, color))
+            .join("")}
+        </div>`
+      : "";
 
   const unpaidAlert = totalOwed > 0
     ? `<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:12px 16px;margin-bottom:20px;">
@@ -272,7 +347,9 @@ function buildWeeklyReportHtml(
             <strong>Total Owed:</strong> <span style="color:#92400e;">${formatCurrency(totalOwed)}</span>
           </p>
           ${unpaidAlert}
-          ${agentGroups.size > 0 ? agentSections : "<p style=\"color:#999;\">No sales recorded this week.</p>"}
+          <div style="margin-bottom:8px;"><h3 style="font-size:16px;font-weight:700;color:#1a3c5e;margin:0 0 12px 0;">Medicare</h3>
+          ${agentGroups.size > 0 ? agentSections : "<p style=\"color:#999;\">No Medicare sales recorded this week.</p>"}</div>
+          ${lobSections}
           <p style="color:#999;font-size:12px;margin-top:24px;">This report was automatically generated and sent by ${name}.</p>
         </div>
       </div>
@@ -286,14 +363,16 @@ export async function sendWeeklyReport(
   weekStart: string,
   weekEnd: string,
   recipients: string[] = DEFAULT_RECIPIENTS,
-  branding: BrandingOptions = {}
+  branding: BrandingOptions = {},
+  lobSalesMap?: Map<string, LobSaleRow[]>
 ): Promise<void> {
   const name = branding.brandName ?? "Sales Tracker";
   const subject = `${name} — Weekly Sales Report — Week of ${weekStart}`;
-  const html = buildWeeklyReportHtml(sales, weekStart, weekEnd, branding);
+  const html = buildWeeklyReportHtml(sales, weekStart, weekEnd, branding, lobSalesMap);
   const totalOwed = sales.filter(s => !s.paid).reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0);
-  const text = `Weekly Sales Report for ${weekStart} – ${weekEnd}\n\nTotal Sales: ${sales.length}\nTotal Owed: $${totalOwed.toFixed(2)}`;
-  await sendEmail(subject, html, text, recipients, { weekStart, weekEnd, totalSales: sales.length });
+  const lobCount = lobSalesMap ? [...lobSalesMap.values()].reduce((a, b) => a + b.length, 0) : 0;
+  const text = `Weekly Sales Report for ${weekStart} – ${weekEnd}\n\nMedicare Sales: ${sales.length}\nOther LOB Sales: ${lobCount}\nTotal Owed: $${totalOwed.toFixed(2)}`;
+  await sendEmail(subject, html, text, recipients, { weekStart, weekEnd, totalSales: sales.length + lobCount });
 }
 
 function buildDashboardHtml(

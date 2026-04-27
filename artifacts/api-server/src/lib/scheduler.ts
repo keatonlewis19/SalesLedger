@@ -1,7 +1,7 @@
 import cron from "node-cron";
-import { db, salesTable, weeklyReportsTable, agencyUsersTable } from "@workspace/db";
-import { gte, lte, and, eq, getTableColumns } from "drizzle-orm";
-import { sendWeeklyReport, sendMonthlyReport, sendAnnualReport, type SaleRow } from "./email";
+import { db, salesTable, weeklyReportsTable, agencyUsersTable, leadsTable } from "@workspace/db";
+import { gte, lte, and, eq, getTableColumns, ne } from "drizzle-orm";
+import { sendWeeklyReport, sendMonthlyReport, sendAnnualReport, type SaleRow, type LobSaleRow, LOB_LABELS } from "./email";
 import { logger } from "./logger";
 
 /**
@@ -96,6 +96,47 @@ function toSaleRows(
   }));
 }
 
+async function queryNonMedicareLobs(
+  periodStart: string,
+  periodEnd: string
+): Promise<Map<string, LobSaleRow[]>> {
+  const rows = await db
+    .select({
+      ...getTableColumns(leadsTable),
+      agentName: agencyUsersTable.fullName,
+    })
+    .from(leadsTable)
+    .leftJoin(agencyUsersTable, eq(leadsTable.userId, agencyUsersTable.clerkUserId))
+    .where(
+      and(
+        ne(leadsTable.lineOfBusiness, "medicare"),
+        eq(leadsTable.status, "sold"),
+        gte(leadsTable.soldDate!, periodStart),
+        lte(leadsTable.soldDate!, periodEnd)
+      )
+    );
+
+  const map = new Map<string, LobSaleRow[]>();
+  for (const key of Object.keys(LOB_LABELS)) map.set(key, []);
+
+  for (const r of rows) {
+    const lob = r.lineOfBusiness ?? "aca";
+    if (!map.has(lob)) map.set(lob, []);
+    const clientName = [r.firstName, r.lastName].filter(Boolean).join(" ");
+    map.get(lob)!.push({
+      clientName,
+      carrier: r.carrier ?? null,
+      revenue: r.revenue ?? null,
+      soldDate: r.soldDate ?? periodEnd,
+      ancillaryType: r.ancillaryType ?? null,
+      notes: r.notes ?? null,
+      agentName: r.agentName ?? null,
+    });
+  }
+
+  return map;
+}
+
 export async function runWeeklyReport(): Promise<{ reportId: number; totalSales: number }> {
   const { weekStart, weekEnd } = getCurrentWeekBounds();
 
@@ -136,7 +177,8 @@ export async function runWeeklyReport(): Promise<{ reportId: number; totalSales:
     logoUrl,
   };
 
-  await sendWeeklyReport(saleRows, weekStart, weekEnd, recipients, branding);
+  const lobSalesMap = await queryNonMedicareLobs(weekStart, weekEnd);
+  await sendWeeklyReport(saleRows, weekStart, weekEnd, recipients, branding, lobSalesMap);
 
   const [report] = await db
     .insert(weeklyReportsTable)

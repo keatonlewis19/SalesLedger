@@ -636,6 +636,12 @@ paths:
                       costPerLead:
                         type: number
                         nullable: true
+                      lineOfBusiness:
+                        type: string
+                        enum: [medicare, aca, ancillary, life, annuity]
+                      ancillaryType:
+                        type: string
+                        nullable: true
                       notes:
                         type: string
                         nullable: true
@@ -715,6 +721,12 @@ paths:
                 costPerLead:
                   type: number
                   nullable: true
+                lineOfBusiness:
+                  type: string
+                  enum: [medicare, aca, ancillary, life, annuity]
+                ancillaryType:
+                  type: string
+                  nullable: true
                 notes:
                   type: string
                   nullable: true
@@ -780,6 +792,12 @@ paths:
                   nullable: true
                 costPerLead:
                   type: number
+                  nullable: true
+                lineOfBusiness:
+                  type: string
+                  enum: [medicare, aca, ancillary, life, annuity]
+                ancillaryType:
+                  type: string
                   nullable: true
                 notes:
                   type: string
@@ -1324,6 +1342,14 @@ components:
         costPerLead:
           type: number
           nullable: true
+        lineOfBusiness:
+          type: string
+          enum: [medicare, aca, ancillary, life, annuity]
+          description: "Line of business for this lead/sale"
+        ancillaryType:
+          type: string
+          nullable: true
+          description: "Ancillary insurance type (only used when lineOfBusiness=ancillary)"
         notes:
           type: string
           nullable: true
@@ -1345,6 +1371,7 @@ components:
         - firstName
         - status
         - enteredDate
+        - lineOfBusiness
 
     MetricsSummary:
       type: object

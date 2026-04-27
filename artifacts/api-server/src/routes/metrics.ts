@@ -22,9 +22,8 @@ router.get("/metrics", requireAuth, async (req: AuthRequest, res): Promise<void>
 
   const allLeads = rows.map((r) => ({ ...r.leads, leadSource: r.lead_sources }));
 
-  // Medicare plan type pattern — includes open leads (null commissionType) so pipeline is tracked
-  const MEDICARE_CT = /mapd|medicare|med[\s.-]?supp|medigap|pdp|dsnp|csnp|\bsnp\b|\bma\b/i;
-  const leads = allLeads.filter((l) => !l.commissionType || MEDICARE_CT.test(l.commissionType));
+  // Filter to Medicare LOB only (lineOfBusiness defaults to "medicare" for all existing/new Medicare leads)
+  const leads = allLeads.filter((l) => !l.lineOfBusiness || l.lineOfBusiness === "medicare");
 
   const today = new Date().toISOString().slice(0, 10);
 

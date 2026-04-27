@@ -114,6 +114,8 @@ export const leadsTable = pgTable("leads", {
   salesType: varchar("sales_type", { length: 255 }),
   commissionType: varchar("commission_type", { length: 255 }),
   costPerLead: doublePrecision("cost_per_lead"),
+  lineOfBusiness: varchar("line_of_business", { length: 50 }).notNull().default("medicare"),
+  ancillaryType: varchar("ancillary_type", { length: 100 }),
   notes: text("notes"),
   enteredDate: text("entered_date").notNull(),
   soldDate: text("sold_date"),

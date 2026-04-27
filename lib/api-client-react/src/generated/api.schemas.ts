@@ -261,6 +261,20 @@ export const LeadStatus = {
   lost: "lost",
 } as const;
 
+/**
+ * Line of business for this lead/sale
+ */
+export type LeadLineOfBusiness =
+  (typeof LeadLineOfBusiness)[keyof typeof LeadLineOfBusiness];
+
+export const LeadLineOfBusiness = {
+  medicare: "medicare",
+  aca: "aca",
+  ancillary: "ancillary",
+  life: "life",
+  annuity: "annuity",
+} as const;
+
 export interface Lead {
   id: number;
   userId: string;
@@ -276,6 +290,10 @@ export interface Lead {
   salesType?: string | null;
   commissionType?: string | null;
   costPerLead?: number | null;
+  /** Line of business for this lead/sale */
+  lineOfBusiness: LeadLineOfBusiness;
+  /** Ancillary insurance type (only used when lineOfBusiness=ancillary) */
+  ancillaryType?: string | null;
   notes?: string | null;
   enteredDate: string;
   soldDate?: string | null;
@@ -349,6 +367,17 @@ export type DeleteLeadSourcePayment200 = {
   success?: boolean;
 };
 
+export type ImportLeadsBodyLeadsItemLineOfBusiness =
+  (typeof ImportLeadsBodyLeadsItemLineOfBusiness)[keyof typeof ImportLeadsBodyLeadsItemLineOfBusiness];
+
+export const ImportLeadsBodyLeadsItemLineOfBusiness = {
+  medicare: "medicare",
+  aca: "aca",
+  ancillary: "ancillary",
+  life: "life",
+  annuity: "annuity",
+} as const;
+
 export type ImportLeadsBodyLeadsItem = {
   firstName: string;
   lastName?: string | null;
@@ -363,6 +392,8 @@ export type ImportLeadsBodyLeadsItem = {
   carrier?: string | null;
   revenue?: number | null;
   costPerLead?: number | null;
+  lineOfBusiness?: ImportLeadsBodyLeadsItemLineOfBusiness;
+  ancillaryType?: string | null;
   notes?: string | null;
 };
 
@@ -374,6 +405,17 @@ export type ImportLeads200 = {
   imported: number;
   errors: string[];
 };
+
+export type CreateLeadBodyLineOfBusiness =
+  (typeof CreateLeadBodyLineOfBusiness)[keyof typeof CreateLeadBodyLineOfBusiness];
+
+export const CreateLeadBodyLineOfBusiness = {
+  medicare: "medicare",
+  aca: "aca",
+  ancillary: "ancillary",
+  life: "life",
+  annuity: "annuity",
+} as const;
 
 export type CreateLeadBody = {
   firstName: string;
@@ -387,6 +429,8 @@ export type CreateLeadBody = {
   salesType?: string | null;
   commissionType?: string | null;
   costPerLead?: number | null;
+  lineOfBusiness?: CreateLeadBodyLineOfBusiness;
+  ancillaryType?: string | null;
   notes?: string | null;
   enteredDate: string;
   soldDate?: string | null;
@@ -404,6 +448,17 @@ export const UpdateLeadBodyStatus = {
   lost: "lost",
 } as const;
 
+export type UpdateLeadBodyLineOfBusiness =
+  (typeof UpdateLeadBodyLineOfBusiness)[keyof typeof UpdateLeadBodyLineOfBusiness];
+
+export const UpdateLeadBodyLineOfBusiness = {
+  medicare: "medicare",
+  aca: "aca",
+  ancillary: "ancillary",
+  life: "life",
+  annuity: "annuity",
+} as const;
+
 export type UpdateLeadBody = {
   firstName?: string;
   lastName?: string;
@@ -416,6 +471,8 @@ export type UpdateLeadBody = {
   salesType?: string | null;
   commissionType?: string | null;
   costPerLead?: number | null;
+  lineOfBusiness?: UpdateLeadBodyLineOfBusiness;
+  ancillaryType?: string | null;
   notes?: string | null;
   enteredDate?: string;
   soldDate?: string | null;

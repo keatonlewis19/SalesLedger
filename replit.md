@@ -28,10 +28,13 @@ pnpm workspace monorepo using TypeScript. Multi-tenant agency management platfor
 
 ### Database Tables
 - `lead_sources` — App-wide lead sources with name, costPerLead, isPaid flag
-- `leads` — Individual lead tracking per agent with: firstName, lastName, phone, email, leadSourceId, status (new/in_comm/appt_set/follow_up/sold/lost), revenue, carrier, salesType, commissionType, costPerLead override, notes, enteredDate, soldDate, linkedSaleId
+- `leads` — Individual lead tracking per agent with: firstName, lastName, phone, email, leadSourceId, status (new/in_comm/appt_set/follow_up/sold/lost), revenue, carrier, salesType, commissionType, costPerLead override, **lineOfBusiness** (medicare|aca|ancillary|life|annuity, default "medicare"), **ancillaryType** (Dental/Vision/DVH/Hospital Indemnity/Accident/Critical Illness), notes, enteredDate, soldDate, linkedSaleId
+
+### Lines of Business (LOB)
+The Leads page has 5 tabs: Medicare (full pipeline), ACA/Individual Health, Ancillary, Life Insurance, Annuities. Non-Medicare LOBs are simple "sales as they happen" entries (status auto-set to "sold"). Ancillary includes an insurance type dropdown. Weekly reports automatically include sections for each LOB that has sales that week.
 
 ### Auto-sync
-When a lead status changes to "sold", the API automatically creates a corresponding entry in the `sales` table (weekly report), linking it via `linkedSaleId`. When a lead is un-sold or deleted, the linked sale is removed.
+When a Medicare lead status changes to "sold", the API automatically creates a corresponding entry in the `sales` table (weekly report), linking it via `linkedSaleId`. When a lead is un-sold or deleted, the linked sale is removed. Non-Medicare LOBs are tracked directly in the `leads` table (queried by `lineOfBusiness` and `status=sold`).
 
 ### API Routes
 - `GET/POST /api/lead-sources` — list/create (create: admin only)

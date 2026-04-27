@@ -549,6 +549,10 @@ export const ImportLeadsBody = zod.object({
       carrier: zod.string().nullish(),
       revenue: zod.number().nullish(),
       costPerLead: zod.number().nullish(),
+      lineOfBusiness: zod
+        .enum(["medicare", "aca", "ancillary", "life", "annuity"])
+        .optional(),
+      ancillaryType: zod.string().nullish(),
       notes: zod.string().nullish(),
     }),
   ),
@@ -589,6 +593,15 @@ export const ListLeadsResponseItem = zod.object({
   salesType: zod.string().nullish(),
   commissionType: zod.string().nullish(),
   costPerLead: zod.number().nullish(),
+  lineOfBusiness: zod
+    .enum(["medicare", "aca", "ancillary", "life", "annuity"])
+    .describe("Line of business for this lead\/sale"),
+  ancillaryType: zod
+    .string()
+    .nullish()
+    .describe(
+      "Ancillary insurance type (only used when lineOfBusiness=ancillary)",
+    ),
   notes: zod.string().nullish(),
   enteredDate: zod.string(),
   soldDate: zod.string().nullish(),
@@ -613,6 +626,10 @@ export const CreateLeadBody = zod.object({
   salesType: zod.string().nullish(),
   commissionType: zod.string().nullish(),
   costPerLead: zod.number().nullish(),
+  lineOfBusiness: zod
+    .enum(["medicare", "aca", "ancillary", "life", "annuity"])
+    .optional(),
+  ancillaryType: zod.string().nullish(),
   notes: zod.string().nullish(),
   enteredDate: zod.string(),
   soldDate: zod.string().nullish(),
@@ -639,6 +656,10 @@ export const UpdateLeadBody = zod.object({
   salesType: zod.string().nullish(),
   commissionType: zod.string().nullish(),
   costPerLead: zod.number().nullish(),
+  lineOfBusiness: zod
+    .enum(["medicare", "aca", "ancillary", "life", "annuity"])
+    .optional(),
+  ancillaryType: zod.string().nullish(),
   notes: zod.string().nullish(),
   enteredDate: zod.string().optional(),
   soldDate: zod.string().nullish(),
@@ -671,6 +692,15 @@ export const UpdateLeadResponse = zod.object({
   salesType: zod.string().nullish(),
   commissionType: zod.string().nullish(),
   costPerLead: zod.number().nullish(),
+  lineOfBusiness: zod
+    .enum(["medicare", "aca", "ancillary", "life", "annuity"])
+    .describe("Line of business for this lead\/sale"),
+  ancillaryType: zod
+    .string()
+    .nullish()
+    .describe(
+      "Ancillary insurance type (only used when lineOfBusiness=ancillary)",
+    ),
   notes: zod.string().nullish(),
   enteredDate: zod.string(),
   soldDate: zod.string().nullish(),
