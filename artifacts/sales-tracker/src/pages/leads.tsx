@@ -182,7 +182,16 @@ export default function LeadsPage() {
     },
   );
 
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
+
+  const toggleFilterStatus = (val: string) => {
+    setFilterStatuses((prev) => {
+      const next = new Set(prev);
+      if (next.has(val)) next.delete(val);
+      else next.add(val);
+      return next;
+    });
+  };
   const [sortCol, setSortCol] = useState<string>("entered");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -399,7 +408,7 @@ export default function LeadsPage() {
 
   const STATUS_ORDER: Record<string, number> = { new: 0, in_comm: 1, appt_set: 2, follow_up: 3, sold: 4, lost: 5 };
 
-  const baseFiltered = filterStatus === "all" ? leads : leads.filter((l: any) => l.status === filterStatus);
+  const baseFiltered = filterStatuses.size === 0 ? leads : leads.filter((l: any) => filterStatuses.has(l.status));
 
   const filtered = [...baseFiltered].sort((a: any, b: any) => {
     const dir = sortDir === "asc" ? 1 : -1;
@@ -453,18 +462,25 @@ export default function LeadsPage() {
         {/* Status filter */}
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setFilterStatus("all")}
-            className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-colors", filterStatus === "all" ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground hover:border-foreground/40")}
+            onClick={() => setFilterStatuses(new Set())}
+            className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+              filterStatuses.size === 0
+                ? "bg-foreground text-background border-foreground"
+                : "border-border text-muted-foreground hover:border-foreground/40")}
           >
             All ({leads.length})
           </button>
           {STATUSES.map((s) => {
             const count = leads.filter((l: any) => l.status === s.value).length;
+            const active = filterStatuses.has(s.value);
             return (
               <button
                 key={s.value}
-                onClick={() => setFilterStatus(s.value)}
-                className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-colors", filterStatus === s.value ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground hover:border-foreground/40")}
+                onClick={() => toggleFilterStatus(s.value)}
+                className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                  active
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-border text-muted-foreground hover:border-foreground/40")}
               >
                 {s.label} ({count})
               </button>
