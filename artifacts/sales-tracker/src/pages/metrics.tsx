@@ -190,8 +190,8 @@ export default function MetricsPage() {
     <Layout>
       <div className="p-6 space-y-8 max-w-7xl mx-auto">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Business Analytics</h1>
-          <p className="text-muted-foreground text-sm">Medicare business performance dashboard</p>
+          <h1 className="text-2xl font-bold text-foreground">Medicare Analytics</h1>
+          <p className="text-muted-foreground text-sm">Medicare business performance — all metrics reflect Medicare leads only</p>
         </div>
 
         {/* Business Performance KPIs */}
