@@ -44,19 +44,9 @@ async function enrichSources(sources: typeof leadSourcesTable.$inferSelect[]) {
   });
 }
 
-// Each agent sees only their own sources
-router.get("/lead-sources", requireAuth, async (req: AuthRequest, res): Promise<void> => {
-  const { userId, agencyUser } = req;
-  const isAdmin = agencyUser?.role === "admin";
-
-  const sources = isAdmin
-    ? await db.select().from(leadSourcesTable).orderBy(leadSourcesTable.name)
-    : await db
-        .select()
-        .from(leadSourcesTable)
-        .where(eq(leadSourcesTable.userId, userId!))
-        .orderBy(leadSourcesTable.name);
-
+// All authenticated agents see all agency-wide sources
+router.get("/lead-sources", requireAuth, async (_req, res): Promise<void> => {
+  const sources = await db.select().from(leadSourcesTable).orderBy(leadSourcesTable.name);
   res.json(await enrichSources(sources));
 });
 

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, leadsTable, leadSourcesTable, salesTable, agencyUsersTable } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../middlewares/auth";
 import { getWeekStartForDate } from "../lib/scheduler";
 import { z } from "zod";
@@ -153,7 +153,7 @@ router.post("/leads/import", requireAuth, async (req: AuthRequest, res): Promise
         let [src] = await db
           .select()
           .from(leadSourcesTable)
-          .where(and(eq(leadSourcesTable.userId, userId!), eq(leadSourcesTable.name, srcName)));
+          .where(eq(leadSourcesTable.name, srcName));
         if (!src) {
           [src] = await db.insert(leadSourcesTable).values({
             userId: userId!,
