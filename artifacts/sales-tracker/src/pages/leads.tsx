@@ -562,6 +562,11 @@ export default function LeadsPage() {
 
   const STATUS_ORDER: Record<string, number> = { new: 0, in_comm: 1, appt_set: 2, follow_up: 3, sold: 4, lost: 5 };
 
+  const agentNameMap = Object.fromEntries(
+    (agencyUsers as any[]).map((u) => [u.clerkUserId, u.fullName || u.email])
+  );
+  const showAgentCol = isAdmin && selectedAgent === "__all";
+
   const lobLeads = (leads as any[])
     .filter((l) => (l.lineOfBusiness ?? "medicare") === activeLob)
     .filter((l) => !isAdmin || selectedAgent === "__all" || l.userId === selectedAgent);
@@ -586,6 +591,7 @@ export default function LeadsPage() {
         if (!a.soldDate) return 1;
         if (!b.soldDate) return -1;
         av = a.soldDate; bv = b.soldDate; break;
+      case "agent": av = agentNameMap[a.userId] ?? ""; bv = agentNameMap[b.userId] ?? ""; break;
       default: return 0;
     }
     return av < bv ? -1 * dir : av > bv ? 1 * dir : 0;
@@ -719,7 +725,7 @@ export default function LeadsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-muted/40">
-                        {([ ["name","Name"], ["source","Source"], ["status","Status"], ["revenue","Revenue"], ["carrier","Carrier"], ["entered","Entered"], ["sold","Sold"] ] as [string,string][]).map(([col, label]) => (
+                        {([ ["name","Name"], ["source","Source"], ["status","Status"], ["revenue","Revenue"], ["carrier","Carrier"], ["entered","Entered"], ["sold","Sold"], ...(showAgentCol ? [["agent","Agent"]] : []) ] as [string,string][]).map(([col, label]) => (
                           <th key={col} className="text-left px-4 py-3 font-medium">
                             <button
                               onClick={() => handleSort(col)}
@@ -776,6 +782,11 @@ export default function LeadsPage() {
                           <td className="px-4 py-3 text-muted-foreground">{lead.carrier ?? "—"}</td>
                           <td className="px-4 py-3 text-muted-foreground">{lead.enteredDate}</td>
                           <td className="px-4 py-3 text-muted-foreground">{lead.soldDate ?? "—"}</td>
+                          {showAgentCol && (
+                            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                              {agentNameMap[lead.userId] ?? "—"}
+                            </td>
+                          )}
                           <td className="px-4 py-3">
                             <div className="flex gap-1 justify-end">
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(lead)}>
@@ -815,6 +826,7 @@ export default function LeadsPage() {
                     <thead>
                       <tr className="border-b bg-muted/40">
                         <th className="text-left px-4 py-3 font-medium">Client</th>
+                        {showAgentCol && <th className="text-left px-4 py-3 font-medium">Agent</th>}
                         {activeLob === "ancillary" && <th className="text-left px-4 py-3 font-medium">Type</th>}
                         <th className="text-left px-4 py-3 font-medium">Carrier</th>
                         <th className="text-left px-4 py-3 font-medium">Revenue</th>
@@ -829,6 +841,11 @@ export default function LeadsPage() {
                           <td className="px-4 py-3 font-medium">
                             {lead.firstName} {lead.lastName ?? ""}
                           </td>
+                          {showAgentCol && (
+                            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                              {agentNameMap[lead.userId] ?? "—"}
+                            </td>
+                          )}
                           {activeLob === "ancillary" && (
                             <td className="px-4 py-3">
                               {lead.ancillaryType ? (
