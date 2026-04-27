@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
-import { useGetSales, useGetMe } from "@workspace/api-client-react";
+import { useListSales, useGetMe } from "@workspace/api-client-react";
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat("en-US", {
@@ -133,7 +133,7 @@ export default function HistoryScreen() {
     isLoading,
     refetch,
     isRefetching,
-  } = useGetSales();
+  } = useListSales();
 
   const allMySales = salesData
     ? salesData.filter((s) => (me ? s.agent_id === me.id : true))

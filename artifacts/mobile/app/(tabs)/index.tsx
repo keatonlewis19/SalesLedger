@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
-import { useGetSales, useGetMe } from "@workspace/api-client-react";
+import { useListSales, useGetMe } from "@workspace/api-client-react";
 
 interface StatCardProps {
   label: string;
@@ -99,7 +99,7 @@ export default function DashboardScreen() {
     isLoading: salesLoading,
     refetch,
     isRefetching,
-  } = useGetSales();
+  } = useListSales();
 
   const sales = salesData ?? [];
   const mySales = me ? sales.filter((s) => s.agent_id === me.id) : sales;
