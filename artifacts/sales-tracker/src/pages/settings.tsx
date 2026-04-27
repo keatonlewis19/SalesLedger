@@ -98,6 +98,10 @@ export default function Settings() {
   const [brandName, setBrandName] = useState("CRM Group Insurance");
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+
+  type CarrierEntry = { id: string; name: string; color: string };
+  const [carrierList, setCarrierList] = useState<CarrierEntry[]>([]);
+  const [savingCarriers, setSavingCarriers] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -166,6 +170,16 @@ export default function Settings() {
       if (settings.logoPath) {
         setLogoPath(settings.logoPath);
         setLogoPreviewUrl(`/api/storage${settings.logoPath}`);
+      }
+      const cc = (settings as any).carrierColors as Record<string, string> | null | undefined;
+      if (cc && typeof cc === "object") {
+        setCarrierList(
+          Object.entries(cc).map(([name, color]) => ({
+            id: crypto.randomUUID(),
+            name,
+            color: color || "#6366f1",
+          }))
+        );
       }
       setInitialized(true);
     }
@@ -705,6 +719,107 @@ export default function Settings() {
             </div>
           )}
         </form>
+
+        {/* Carrier Colors — outside the main form */}
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Carrier Colors</CardTitle>
+              <CardDescription>
+                Assign colors to insurance carriers. These are used for charts and table highlights throughout the app.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {carrierList.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {carrierList.map((entry) => (
+                    <div key={entry.id} className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={entry.color}
+                        onChange={(e) =>
+                          setCarrierList((prev) =>
+                            prev.map((c) => c.id === entry.id ? { ...c, color: e.target.value } : c)
+                          )
+                        }
+                        className="w-10 h-10 rounded cursor-pointer border border-input bg-transparent p-0.5 shrink-0"
+                        title="Pick color"
+                      />
+                      <Input
+                        value={entry.name}
+                        placeholder="Carrier name"
+                        onChange={(e) =>
+                          setCarrierList((prev) =>
+                            prev.map((c) => c.id === entry.id ? { ...c, name: e.target.value } : c)
+                          )
+                        }
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive shrink-0"
+                        onClick={() => setCarrierList((prev) => prev.filter((c) => c.id !== entry.id))}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {carrierList.length === 0 && (
+                <p className="text-sm text-muted-foreground">No carriers added yet.</p>
+              )}
+              <div className="flex items-center gap-3 flex-wrap">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() =>
+                    setCarrierList((prev) => [
+                      ...prev,
+                      { id: crypto.randomUUID(), name: "", color: "#6366f1" },
+                    ])
+                  }
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Carrier
+                </Button>
+                <Button
+                  type="button"
+                  className="gap-2"
+                  disabled={savingCarriers}
+                  onClick={() => {
+                    const carrierColors: Record<string, string> = {};
+                    for (const entry of carrierList) {
+                      const name = entry.name.trim();
+                      if (name) carrierColors[name] = entry.color;
+                    }
+                    setSavingCarriers(true);
+                    updateSettings.mutate(
+                      { data: { carrierColors } as any },
+                      {
+                        onSuccess: () => {
+                          toast({ title: "Carrier colors saved" });
+                          queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+                          setSavingCarriers(false);
+                        },
+                        onError: () => {
+                          toast({ title: "Failed to save", variant: "destructive" });
+                          setSavingCarriers(false);
+                        },
+                      }
+                    );
+                  }}
+                >
+                  <Save className="w-4 h-4" />
+                  {savingCarriers ? "Saving..." : "Save Carrier Colors"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Commission Table — outside the main form */}
         <Card>

@@ -26,6 +26,11 @@ export interface CommissionTableRow {
  */
 export type AppSettingsCommissionRates = { [key: string]: number };
 
+/**
+ * Map of carrier name to hex color code
+ */
+export type AppSettingsCarrierColors = { [key: string]: string } | null;
+
 export interface AppSettings {
   /** 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat */
   reportDayOfWeek: number;
@@ -58,9 +63,13 @@ export interface AppSettings {
    * @nullable
    */
   brandName: string | null;
+  /** Map of carrier name to hex color code */
+  carrierColors?: AppSettingsCarrierColors;
 }
 
 export type UpdateSettingsBodyCommissionRates = { [key: string]: number };
+
+export type UpdateSettingsBodyCarrierColors = { [key: string]: string } | null;
 
 export interface UpdateSettingsBody {
   reportDayOfWeek?: number;
@@ -77,6 +86,7 @@ export interface UpdateSettingsBody {
   panelColor?: string | null;
   /** @nullable */
   brandName?: string | null;
+  carrierColors?: UpdateSettingsBodyCarrierColors;
 }
 
 export interface UploadUrlRequest {

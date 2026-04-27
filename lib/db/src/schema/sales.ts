@@ -72,6 +72,7 @@ export const appSettingsTable = pgTable("app_settings", {
   brandColor: text("brand_color").default("#0d9488"),
   panelColor: text("panel_color").default("#0f172a"),
   brandName: text("brand_name").default("CRM Group Insurance"),
+  carrierColors: jsonb("carrier_colors").$type<Record<string, string>>(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 

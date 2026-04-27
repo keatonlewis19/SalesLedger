@@ -21,7 +21,7 @@ pnpm workspace monorepo using TypeScript. Multi-tenant agency management platfor
 
 ## Artifacts
 
-- **sales-tracker** (`/`) — React + Vite frontend (Clerk auth, role-based UI). Pages: Dashboard, History, Leads, Metrics, Team (admin), Settings
+- **sales-tracker** (`/`) — React + Vite frontend (Clerk auth, role-based UI). Pages: Dashboard, History, Leads, Metrics (charts + sortable tables), Team (admin), Settings (carrier colors, branding, FMV, commission table)
 - **api-server** (`/api`) — Express 5 backend (Clerk middleware, admin/agent routes)
 
 ## Lead Pipeline & Metrics System

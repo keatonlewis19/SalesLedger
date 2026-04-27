@@ -919,6 +919,12 @@ components:
         brandName:
           type: ["string", "null"]
           description: "Agency name shown in the app"
+        carrierColors:
+          type: object
+          additionalProperties:
+            type: string
+          description: "Map of carrier name to hex color code"
+          nullable: true
       required:
         - reportDayOfWeek
         - reportHour
@@ -961,6 +967,11 @@ components:
           type: ["string", "null"]
         brandName:
           type: ["string", "null"]
+        carrierColors:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
 
     UploadUrlRequest:
       type: object

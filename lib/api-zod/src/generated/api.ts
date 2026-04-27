@@ -331,6 +331,10 @@ export const GetSettingsResponse = zod.object({
     .nullable()
     .describe("Hex color string for the sidebar panel background"),
   brandName: zod.string().nullable().describe("Agency name shown in the app"),
+  carrierColors: zod
+    .record(zod.string(), zod.string())
+    .nullish()
+    .describe("Map of carrier name to hex color code"),
 });
 
 /**
@@ -356,6 +360,7 @@ export const UpdateSettingsBody = zod.object({
   brandColor: zod.string().nullish(),
   panelColor: zod.string().nullish(),
   brandName: zod.string().nullish(),
+  carrierColors: zod.record(zod.string(), zod.string()).nullish(),
 });
 
 export const UpdateSettingsResponse = zod.object({
@@ -392,6 +397,10 @@ export const UpdateSettingsResponse = zod.object({
     .nullable()
     .describe("Hex color string for the sidebar panel background"),
   brandName: zod.string().nullable().describe("Agency name shown in the app"),
+  carrierColors: zod
+    .record(zod.string(), zod.string())
+    .nullish()
+    .describe("Map of carrier name to hex color code"),
 });
 
 /**

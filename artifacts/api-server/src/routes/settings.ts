@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS = {
   brandColor: "#0d9488",
   panelColor: "#0f172a",
   brandName: "CRM Group Insurance",
+  carrierColors: {} as Record<string, string>,
 };
 
 const COMMISSION_TABLE_TEMPLATE: CommissionTableRow[] = [
@@ -53,6 +54,7 @@ async function getOrCreateSettings() {
       brandColor: r.brandColor ?? "#0d9488",
       panelColor: r.panelColor ?? "#0f172a",
       brandName: r.brandName ?? "CRM Group Insurance",
+      carrierColors: (r.carrierColors as Record<string, string>) ?? {},
     };
   }
 
@@ -92,6 +94,7 @@ router.patch("/settings", requireAuth, requireAdmin, async (req, res): Promise<v
     brandColor: (updated.brandColor ?? "#0d9488") as string,
     panelColor: (updated.panelColor ?? "#0f172a") as string,
     brandName: (updated.brandName ?? "CRM Group Insurance") as string,
+    carrierColors: (updated.carrierColors ?? {}) as Record<string, string>,
   };
 
   const rows = await db.select().from(appSettingsTable).limit(1);
