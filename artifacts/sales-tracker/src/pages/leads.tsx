@@ -1000,19 +1000,9 @@ export default function LeadsPage() {
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="revenue">Annual Premium ($)</Label>
-                <Input id="revenue" type="number" value={form.revenue} onChange={f("revenue")} placeholder="0.00" min="0" step="0.01" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="carrier">Carrier</Label>
-                <CarrierSelect
-                  value={form.carrier}
-                  onChange={(v) => setForm((p) => ({ ...p, carrier: v }))}
-                  carriers={carrierOptions}
-                />
-              </div>
+            <div className="space-y-1">
+              <Label htmlFor="revenue">Annual Premium ($)</Label>
+              <Input id="revenue" type="number" value={form.revenue} onChange={f("revenue")} placeholder="0.00" min="0" step="0.01" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">

@@ -533,16 +533,6 @@ export default function LeadsScreen() {
                 keyboardType="number-pad"
               />
 
-              <Text style={s.label}>Carrier</Text>
-              <TextInput
-                style={s.input}
-                placeholder="e.g. Humana"
-                placeholderTextColor={colors.mutedForeground}
-                value={form.carrier}
-                onChangeText={field("carrier")}
-                autoCapitalize="words"
-              />
-
               <Text style={s.label}>Status</Text>
               <View style={s.statusPicker}>
                 {STATUSES.map((st) => {
