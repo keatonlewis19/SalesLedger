@@ -39,6 +39,8 @@ import type {
   LeadSourcePayment,
   ListSalesParams,
   MarkSalePaidBody,
+  RemoveUser200,
+  RemoveUser400,
   SaleEntry,
   SendReportResponse,
   UpdateLeadBody,
@@ -713,6 +715,90 @@ export const useInviteAgent = <
   TContext
 > => {
   return useMutation(getInviteAgentMutationOptions(options));
+};
+
+/**
+ * @summary Remove a team member (admin only)
+ */
+export const getRemoveUserUrl = (id: string) => {
+  return `/api/users/${id}`;
+};
+
+export const removeUser = async (
+  id: string,
+  options?: RequestInit,
+): Promise<RemoveUser200> => {
+  return customFetch<RemoveUser200>(getRemoveUserUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getRemoveUserMutationOptions = <
+  TError = ErrorType<RemoveUser400>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeUser>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeUser>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["removeUser"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeUser>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return removeUser(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RemoveUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof removeUser>>
+>;
+
+export type RemoveUserMutationError = ErrorType<RemoveUser400>;
+
+/**
+ * @summary Remove a team member (admin only)
+ */
+export const useRemoveUser = <
+  TError = ErrorType<RemoveUser400>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeUser>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof removeUser>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getRemoveUserMutationOptions(options));
 };
 
 /**

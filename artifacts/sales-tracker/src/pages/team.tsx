@@ -4,6 +4,7 @@ import {
   useListAgencyUsers,
   useInviteAgent,
   useUpdateUserRole,
+  useRemoveUser,
   getListAgencyUsersQueryKey,
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
@@ -26,22 +27,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Mail, Shield, User } from "lucide-react";
+import { UserPlus, Mail, Shield, User, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useAgencyUser } from "@/hooks/useAgencyUser";
+import { useUser } from "@clerk/react";
 import { Redirect } from "wouter";
 
 export default function TeamPage() {
   const { isAdmin, isLoading: roleLoading } = useAgencyUser();
+  const { user: clerkUser } = useUser();
   const { data: users, isLoading } = useListAgencyUsers({ query: { enabled: isAdmin } });
   const inviteAgent = useInviteAgent();
   const updateUserRole = useUpdateUserRole();
+  const removeUser = useRemoveUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"agent" | "admin">("agent");
+  const [removeTarget, setRemoveTarget] = useState<{ clerkUserId: string; name: string } | null>(null);
 
   if (!roleLoading && !isAdmin) {
     return <Redirect to="/dashboard" />;
@@ -81,6 +96,28 @@ export default function TeamPage() {
         },
         onError: () => {
           toast({ title: "Failed to update role", variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  const handleRemoveConfirm = () => {
+    if (!removeTarget) return;
+    removeUser.mutate(
+      { id: removeTarget.clerkUserId },
+      {
+        onSuccess: () => {
+          toast({ title: `${removeTarget.name} has been removed from the agency.` });
+          queryClient.invalidateQueries({ queryKey: getListAgencyUsersQueryKey() });
+          setRemoveTarget(null);
+        },
+        onError: (err: any) => {
+          toast({
+            title: "Failed to remove team member",
+            description: err?.data?.error || "Please try again.",
+            variant: "destructive",
+          });
+          setRemoveTarget(null);
         },
       }
     );
@@ -227,18 +264,36 @@ export default function TeamPage() {
                         Joined {format(new Date(user.createdAt), "MMM d, yyyy")}
                       </div>
                     </div>
-                    <Select
-                      value={user.role}
-                      onValueChange={(v) => handleRoleChange(user.clerkUserId, v)}
-                    >
-                      <SelectTrigger className="w-28 h-8 text-xs shrink-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="agent">Agent</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Select
+                        value={user.role}
+                        onValueChange={(v) => handleRoleChange(user.clerkUserId, v)}
+                        disabled={user.clerkUserId === clerkUser?.id}
+                      >
+                        <SelectTrigger className="w-28 h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="agent">Agent</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        disabled={user.clerkUserId === clerkUser?.id}
+                        onClick={() =>
+                          setRemoveTarget({
+                            clerkUserId: user.clerkUserId,
+                            name: user.fullName || user.email || "this member",
+                          })
+                        }
+                        title={user.clerkUserId === clerkUser?.id ? "You cannot remove yourself" : "Remove member"}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -246,6 +301,27 @@ export default function TeamPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={!!removeTarget} onOpenChange={(open) => { if (!open) setRemoveTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove team member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove <strong>{removeTarget?.name}</strong> from the agency and revoke their access. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleRemoveConfirm}
+              disabled={removeUser.isPending}
+            >
+              {removeUser.isPending ? "Removing…" : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

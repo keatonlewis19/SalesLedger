@@ -339,6 +339,14 @@ export type InviteAgent200 = {
   message: string;
 };
 
+export type RemoveUser200 = {
+  message: string;
+};
+
+export type RemoveUser400 = {
+  error?: string;
+};
+
 export type UpdateUserRoleBody = {
   role: string;
 };

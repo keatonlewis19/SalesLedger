@@ -159,6 +159,17 @@ export const InviteAgentResponse = zod.object({
 });
 
 /**
+ * @summary Remove a team member (admin only)
+ */
+export const RemoveUserParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const RemoveUserResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
  * @summary Update a user's role (admin only)
  */
 export const UpdateUserRoleParams = zod.object({

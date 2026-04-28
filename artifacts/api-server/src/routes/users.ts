@@ -71,6 +71,33 @@ router.patch("/users/me", requireAuth, async (req: AuthRequest, res): Promise<vo
   res.json(normalizeUser(updated));
 });
 
+router.delete("/users/:id", requireAuth, requireAdmin, async (req: AuthRequest, res): Promise<void> => {
+  const clerkUserId = req.params.id;
+
+  if (clerkUserId === req.userId) {
+    res.status(400).json({ error: "You cannot remove yourself from the agency." });
+    return;
+  }
+
+  const [removed] = await db
+    .delete(agencyUsersTable)
+    .where(eq(agencyUsersTable.clerkUserId, clerkUserId))
+    .returning();
+
+  if (!removed) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  try {
+    await clerkClient.users.deleteUser(clerkUserId);
+  } catch {
+    // Clerk deletion is best-effort; DB record is already removed
+  }
+
+  res.json({ message: "User removed successfully" });
+});
+
 router.patch("/users/:id/role", requireAuth, requireAdmin, async (req: AuthRequest, res): Promise<void> => {
   const clerkUserId = req.params.id;
   const { role } = req.body as { role: string };

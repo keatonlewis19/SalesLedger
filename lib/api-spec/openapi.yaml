@@ -201,6 +201,39 @@ paths:
                 required:
                   - message
 
+  /users/{id}:
+    delete:
+      operationId: removeUser
+      tags: [users]
+      summary: Remove a team member (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        "400":
+          description: Cannot remove yourself
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
   /users/{id}/role:
     patch:
       operationId: updateUserRole
