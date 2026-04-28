@@ -459,6 +459,12 @@ export const ListLeadSourcesResponse = zod.array(ListLeadSourcesResponseItem);
 export const CreateLeadSourceBody = zod.object({
   name: zod.string(),
   isPaid: zod.boolean().optional(),
+  costPerLead: zod
+    .number()
+    .optional()
+    .describe(
+      "Default cost per lead for this source (used as fallback when no per-lead cost is set)",
+    ),
 });
 
 /**
@@ -471,6 +477,10 @@ export const UpdateLeadSourceParams = zod.object({
 export const UpdateLeadSourceBody = zod.object({
   name: zod.string().optional(),
   isPaid: zod.boolean().optional(),
+  costPerLead: zod
+    .number()
+    .optional()
+    .describe("Default cost per lead for this source"),
 });
 
 export const UpdateLeadSourceResponse = zod.object({

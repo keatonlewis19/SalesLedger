@@ -9,6 +9,7 @@ const router: IRouter = Router();
 const LeadSourceBody = z.object({
   name: z.string().min(1),
   isPaid: z.boolean().optional(),
+  costPerLead: z.number().min(0).optional(),
 });
 
 // Enrich sources with computed totalInvested and costPerLead
@@ -39,7 +40,11 @@ async function enrichSources(sources: typeof leadSourcesTable.$inferSelect[]) {
   return sources.map((src) => {
     const totalInvested = paymentMap.get(src.id) ?? 0;
     const leadCount = leadCountMap.get(src.id) ?? 0;
-    const costPerLead = leadCount > 0 ? totalInvested / leadCount : 0;
+    // When payments exist, compute cost per lead from payment total.
+    // Otherwise fall back to the stored default cost per lead on the source.
+    const costPerLead = totalInvested > 0 && leadCount > 0
+      ? totalInvested / leadCount
+      : (src.costPerLead ?? 0);
     return { ...src, totalInvested, costPerLead, leadCount };
   });
 }
@@ -62,7 +67,7 @@ router.post("/lead-sources", requireAuth, async (req: AuthRequest, res): Promise
     .values({
       userId: req.userId!,
       name: parsed.data.name,
-      costPerLead: 0,
+      costPerLead: parsed.data.costPerLead ?? 0,
       totalInvested: 0,
       isPaid: parsed.data.isPaid ?? false,
     })

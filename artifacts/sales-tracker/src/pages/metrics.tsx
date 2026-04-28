@@ -60,9 +60,9 @@ function KpiCard({ label, value, sub, valueColor }: { label: string; value: stri
   return (
     <Card>
       <CardContent className="pt-5 pb-4">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
-        <p className={cn("text-2xl font-bold", valueColor ?? "text-foreground")}>{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+        <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 leading-tight">{label}</p>
+        <p className={cn("text-lg sm:text-2xl font-bold break-all leading-tight", valueColor ?? "text-foreground")}>{value}</p>
+        {sub && <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">{sub}</p>}
       </CardContent>
     </Card>
   );

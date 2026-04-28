@@ -474,6 +474,9 @@ paths:
                   type: string
                 isPaid:
                   type: boolean
+                costPerLead:
+                  type: number
+                  description: Default cost per lead for this source (used as fallback when no per-lead cost is set)
               required:
                 - name
       responses:
@@ -506,6 +509,9 @@ paths:
                   type: string
                 isPaid:
                   type: boolean
+                costPerLead:
+                  type: number
+                  description: Default cost per lead for this source
       responses:
         "200":
           description: Updated lead source

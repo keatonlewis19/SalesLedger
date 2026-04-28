@@ -390,11 +390,15 @@ export type UpdateUserRoleBody = {
 export type CreateLeadSourceBody = {
   name: string;
   isPaid?: boolean;
+  /** Default cost per lead for this source (used as fallback when no per-lead cost is set) */
+  costPerLead?: number;
 };
 
 export type UpdateLeadSourceBody = {
   name?: string;
   isPaid?: boolean;
+  /** Default cost per lead for this source */
+  costPerLead?: number;
 };
 
 export type DeleteLeadSource200 = {

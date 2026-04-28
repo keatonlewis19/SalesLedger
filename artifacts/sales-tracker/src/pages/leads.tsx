@@ -286,6 +286,7 @@ export default function LeadsPage() {
   const [editingSource, setEditingSource] = useState<any | null>(null);
   const [sourceName, setSourceName] = useState("");
   const [sourceIsPaid, setSourceIsPaid] = useState(false);
+  const [sourceCostPerLead, setSourceCostPerLead] = useState("");
 
   // Payments sub-view — null = show sources list, set = show payments for that source
   const [paymentsSource, setPaymentsSource] = useState<any | null>(null);
@@ -499,12 +500,14 @@ export default function LeadsPage() {
     setEditingSource(null);
     setSourceName("");
     setSourceIsPaid(false);
+    setSourceCostPerLead("");
   };
 
   const openEditSource = (src: any) => {
     setEditingSource(src);
     setSourceName(src.name ?? "");
     setSourceIsPaid(src.isPaid ?? false);
+    setSourceCostPerLead(src.costPerLead != null && src.costPerLead > 0 ? String(src.costPerLead) : "");
     setPaymentsSource(null);
   };
 
@@ -518,7 +521,12 @@ export default function LeadsPage() {
 
   const handleSaveSource = () => {
     if (!sourceName.trim()) return;
-    const payload = { name: sourceName.trim(), isPaid: sourceIsPaid };
+    const cplVal = sourceCostPerLead.trim() ? parseFloat(sourceCostPerLead) : undefined;
+    const payload = {
+      name: sourceName.trim(),
+      isPaid: sourceIsPaid,
+      ...(sourceIsPaid && cplVal != null && !isNaN(cplVal) ? { costPerLead: cplVal } : {}),
+    };
     if (editingSource) {
       updateSource.mutate(
         { id: editingSource.id, data: payload },
@@ -1379,10 +1387,24 @@ export default function LeadsPage() {
                 <div className="space-y-1">
                   <Label>Paid Source?</Label>
                   <div className="flex items-center gap-2 pt-1">
-                    <Switch checked={sourceIsPaid} onCheckedChange={setSourceIsPaid} />
+                    <Switch checked={sourceIsPaid} onCheckedChange={(v) => { setSourceIsPaid(v); if (!v) setSourceCostPerLead(""); }} />
                     <span className="text-sm text-muted-foreground">{sourceIsPaid ? "Yes" : "No"}</span>
                   </div>
                 </div>
+                {sourceIsPaid && (
+                  <div className="space-y-1">
+                    <Label>Default Cost / Lead ($)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={sourceCostPerLead}
+                      onChange={(e) => setSourceCostPerLead(e.target.value)}
+                      placeholder="e.g. 50.00"
+                    />
+                    <p className="text-xs text-muted-foreground">Used for analytics when no per-lead cost is set</p>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Button onClick={handleSaveSource} disabled={createSource.isPending || updateSource.isPending} className="flex-1">
                     {editingSource ? <><Pencil className="w-4 h-4 mr-1" /> Save Changes</> : <><Plus className="w-4 h-4 mr-1" /> Add Source</>}
