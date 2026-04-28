@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAgencyUser } from "@/hooks/useAgencyUser";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, CheckCircle2, Clock } from "lucide-react";
+import { Redirect } from "wouter";
 
 const fmt = (v: number | null | undefined) =>
   v == null ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
@@ -21,7 +22,7 @@ const fmt = (v: number | null | undefined) =>
 type FilterPaid = "all" | "paid" | "unpaid";
 
 export default function AdminSalesPage() {
-  const { isAdmin } = useAgencyUser();
+  const { isAdmin, isLoading: agencyLoading } = useAgencyUser();
   const { data: sales = [], isLoading } = useListSales();
   const markPaid = useMarkSalePaid();
   const queryClient = useQueryClient();
