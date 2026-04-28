@@ -678,20 +678,20 @@ export default function LeadsPage() {
         </div>
 
         {/* LOB Tabs */}
-        <div className="flex gap-1 border-b border-border overflow-x-auto">
+        <div className="flex justify-center gap-1 border-b border-border overflow-x-auto">
           {LOB_TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => { setActiveLob(tab.value); setFilterStatuses(new Set()); }}
               className={cn(
-                "px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors",
+                "px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px transition-colors",
                 activeLob === tab.value
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
               )}
             >
               {tab.label}
-              <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+              <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                 {(leads as any[]).filter((l) => (l.lineOfBusiness ?? "medicare") === tab.value).length}
               </span>
             </button>
