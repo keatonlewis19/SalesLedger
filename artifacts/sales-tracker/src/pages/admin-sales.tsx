@@ -13,7 +13,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAgencyUser } from "@/hooks/useAgencyUser";
 import { useToast } from "@/hooks/use-toast";
-import { Redirect } from "wouter";
 import { DollarSign, CheckCircle2, Clock } from "lucide-react";
 
 const fmt = (v: number | null | undefined) =>
@@ -22,7 +21,7 @@ const fmt = (v: number | null | undefined) =>
 type FilterPaid = "all" | "paid" | "unpaid";
 
 export default function AdminSalesPage() {
-  const { isAdmin, isLoading: agencyLoading } = useAgencyUser();
+  const { isAdmin } = useAgencyUser();
   const { data: sales = [], isLoading } = useListSales();
   const markPaid = useMarkSalePaid();
   const queryClient = useQueryClient();
@@ -89,9 +88,11 @@ export default function AdminSalesPage() {
     <Layout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Sales — Commission Tracker</h1>
+          <h1 className="text-2xl font-bold text-foreground">My Sales</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Check the box once you've paid an agent for a sale.
+            {isAdmin
+              ? "Track commission payments across all agents. Check the box once you've paid an agent."
+              : "Your sales and commission payment status. Paid rows turn green when the agency marks you paid."}
           </p>
         </div>
 
@@ -145,17 +146,19 @@ export default function AdminSalesPage() {
             </SelectContent>
           </Select>
 
-          <Select value={filterAgent} onValueChange={setFilterAgent}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="All agents" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all">All agents</SelectItem>
-              {agents.map((a) => (
-                <SelectItem key={a} value={a}>{a}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {isAdmin && (
+            <Select value={filterAgent} onValueChange={setFilterAgent}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="All agents" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all">All agents</SelectItem>
+                {agents.map((a) => (
+                  <SelectItem key={a} value={a}>{a}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Table */}
@@ -176,7 +179,7 @@ export default function AdminSalesPage() {
                     <tr className="border-b bg-muted/50">
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground w-12">Paid</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Client</th>
-                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Agent</th>
+                      {isAdmin && <th className="px-4 py-3 text-left font-medium text-muted-foreground">Agent</th>}
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Source</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Sold Date</th>
@@ -201,14 +204,14 @@ export default function AdminSalesPage() {
                         <td className="px-4 py-3">
                           <Checkbox
                             checked={sale.paid}
-                            disabled={toggling.has(sale.id)}
-                            onCheckedChange={() => handleToggle(sale.id, sale.paid)}
-                            aria-label={`Mark ${sale.clientName} as ${sale.paid ? "unpaid" : "paid"}`}
+                            disabled={!isAdmin || toggling.has(sale.id)}
+                            onCheckedChange={isAdmin ? () => handleToggle(sale.id, sale.paid) : undefined}
+                            aria-label={sale.paid ? "Commission paid" : "Commission pending"}
                             className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
                           />
                         </td>
                         <td className="px-4 py-3 font-medium text-foreground">{sale.clientName}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{sale.agentName ?? "—"}</td>
+                        {isAdmin && <td className="px-4 py-3 text-muted-foreground">{sale.agentName ?? "—"}</td>}
                         <td className="px-4 py-3">
                           <Badge variant="outline" className="text-xs">{sale.salesType}</Badge>
                         </td>
@@ -229,7 +232,7 @@ export default function AdminSalesPage() {
                   </tbody>
                   <tfoot>
                     <tr className="border-t bg-muted/50 font-semibold">
-                      <td colSpan={8} className="px-4 py-3 text-muted-foreground text-xs">
+                      <td colSpan={isAdmin ? 8 : 7} className="px-4 py-3 text-muted-foreground text-xs">
                         {sorted.filter((s) => s.paid).length} of {sorted.length} paid
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums">{fmt(totalComm)}</td>
