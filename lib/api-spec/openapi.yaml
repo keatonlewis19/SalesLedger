@@ -750,6 +750,23 @@ paths:
                 zip:
                   type: string
                   nullable: true
+                marketplace:
+                  type: string
+                  enum: ["Yes", "No"]
+                  nullable: true
+                householdCount:
+                  type: integer
+                  nullable: true
+                qualified:
+                  type: string
+                  enum: ["Yes", "No"]
+                  nullable: true
+                principal:
+                  type: number
+                  nullable: true
+                faceValue:
+                  type: number
+                  nullable: true
                 status:
                   type: string
                 revenue:
@@ -833,6 +850,23 @@ paths:
                   nullable: true
                 zip:
                   type: string
+                  nullable: true
+                marketplace:
+                  type: string
+                  enum: ["Yes", "No"]
+                  nullable: true
+                householdCount:
+                  type: integer
+                  nullable: true
+                qualified:
+                  type: string
+                  enum: ["Yes", "No"]
+                  nullable: true
+                principal:
+                  type: number
+                  nullable: true
+                faceValue:
+                  type: number
                   nullable: true
                 status:
                   type: string
@@ -1402,6 +1436,23 @@ components:
           nullable: true
         zip:
           type: string
+          nullable: true
+        marketplace:
+          type: string
+          enum: ["Yes", "No"]
+          nullable: true
+        householdCount:
+          type: integer
+          nullable: true
+        qualified:
+          type: string
+          enum: ["Yes", "No"]
+          nullable: true
+        principal:
+          type: number
+          nullable: true
+        faceValue:
+          type: number
           nullable: true
         status:
           type: string

@@ -259,6 +259,24 @@ export const LeadLeadOwnership = {
   "Self-Generated": "Self-Generated",
 } as const;
 
+export type LeadMarketplace =
+  | (typeof LeadMarketplace)[keyof typeof LeadMarketplace]
+  | null;
+
+export const LeadMarketplace = {
+  Yes: "Yes",
+  No: "No",
+} as const;
+
+export type LeadQualified =
+  | (typeof LeadQualified)[keyof typeof LeadQualified]
+  | null;
+
+export const LeadQualified = {
+  Yes: "Yes",
+  No: "No",
+} as const;
+
 export type LeadStatus = (typeof LeadStatus)[keyof typeof LeadStatus];
 
 export const LeadStatus = {
@@ -297,6 +315,11 @@ export interface Lead {
   state?: string | null;
   county?: string | null;
   zip?: string | null;
+  marketplace?: LeadMarketplace;
+  householdCount?: number | null;
+  qualified?: LeadQualified;
+  principal?: number | null;
+  faceValue?: number | null;
   status: LeadStatus;
   revenue?: number | null;
   carrier?: string | null;
@@ -436,6 +459,24 @@ export const CreateLeadBodyLeadOwnership = {
   "Self-Generated": "Self-Generated",
 } as const;
 
+export type CreateLeadBodyMarketplace =
+  | (typeof CreateLeadBodyMarketplace)[keyof typeof CreateLeadBodyMarketplace]
+  | null;
+
+export const CreateLeadBodyMarketplace = {
+  Yes: "Yes",
+  No: "No",
+} as const;
+
+export type CreateLeadBodyQualified =
+  | (typeof CreateLeadBodyQualified)[keyof typeof CreateLeadBodyQualified]
+  | null;
+
+export const CreateLeadBodyQualified = {
+  Yes: "Yes",
+  No: "No",
+} as const;
+
 export type CreateLeadBodyLineOfBusiness =
   (typeof CreateLeadBodyLineOfBusiness)[keyof typeof CreateLeadBodyLineOfBusiness];
 
@@ -457,6 +498,11 @@ export type CreateLeadBody = {
   state?: string | null;
   county?: string | null;
   zip?: string | null;
+  marketplace?: CreateLeadBodyMarketplace;
+  householdCount?: number | null;
+  qualified?: CreateLeadBodyQualified;
+  principal?: number | null;
+  faceValue?: number | null;
   status?: string;
   revenue?: number | null;
   carrier?: string | null;
@@ -477,6 +523,24 @@ export type UpdateLeadBodyLeadOwnership =
 export const UpdateLeadBodyLeadOwnership = {
   Agency_BOB: "Agency BOB",
   "Self-Generated": "Self-Generated",
+} as const;
+
+export type UpdateLeadBodyMarketplace =
+  | (typeof UpdateLeadBodyMarketplace)[keyof typeof UpdateLeadBodyMarketplace]
+  | null;
+
+export const UpdateLeadBodyMarketplace = {
+  Yes: "Yes",
+  No: "No",
+} as const;
+
+export type UpdateLeadBodyQualified =
+  | (typeof UpdateLeadBodyQualified)[keyof typeof UpdateLeadBodyQualified]
+  | null;
+
+export const UpdateLeadBodyQualified = {
+  Yes: "Yes",
+  No: "No",
 } as const;
 
 export type UpdateLeadBodyStatus =
@@ -512,6 +576,11 @@ export type UpdateLeadBody = {
   state?: string | null;
   county?: string | null;
   zip?: string | null;
+  marketplace?: UpdateLeadBodyMarketplace;
+  householdCount?: number | null;
+  qualified?: UpdateLeadBodyQualified;
+  principal?: number | null;
+  faceValue?: number | null;
   status?: UpdateLeadBodyStatus;
   revenue?: number | null;
   carrier?: string | null;

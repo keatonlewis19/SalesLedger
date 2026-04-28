@@ -166,6 +166,7 @@ function StatusBadge({ status }: { status: string }) {
 const today = new Date().toISOString().slice(0, 10);
 
 type LeadForm = {
+  lineOfBusiness: LobValue | "";
   firstName: string;
   lastName: string;
   phone: string;
@@ -176,17 +177,24 @@ type LeadForm = {
   county: string;
   zip: string;
   status: LeadStatus;
-  revenue: string;
-  carrier: string;
-  salesType: string;
-  commissionType: string;
-  costPerLead: string;
   notes: string;
   enteredDate: string;
   soldDate: string;
+  // ACA-specific
+  marketplace: "Yes" | "No" | "";
+  householdCount: string;
+  // Ancillary-specific
+  ancillaryType: string;
+  // Life-specific
+  salesType: string;
+  faceValue: string;
+  // Annuity-specific
+  qualified: "Yes" | "No" | "";
+  principal: string;
 };
 
-const emptyForm = (): LeadForm => ({
+const emptyForm = (lob: LobValue | "" = ""): LeadForm => ({
+  lineOfBusiness: lob,
   firstName: "",
   lastName: "",
   phone: "",
@@ -197,18 +205,21 @@ const emptyForm = (): LeadForm => ({
   county: "",
   zip: "",
   status: "new",
-  revenue: "",
-  carrier: "",
-  salesType: "",
-  commissionType: "",
-  costPerLead: "",
   notes: "",
   enteredDate: today,
   soldDate: "",
+  marketplace: "",
+  householdCount: "",
+  ancillaryType: "",
+  salesType: "",
+  faceValue: "",
+  qualified: "",
+  principal: "",
 });
 
 function formToPayload(f: LeadForm) {
   return {
+    lineOfBusiness: (f.lineOfBusiness || "medicare") as LobValue,
     firstName: f.firstName,
     lastName: f.lastName || undefined,
     phone: f.phone || undefined,
@@ -219,14 +230,20 @@ function formToPayload(f: LeadForm) {
     county: f.county || null,
     zip: f.zip || null,
     status: f.status,
-    revenue: f.revenue ? parseFloat(f.revenue) : null,
-    carrier: f.carrier || null,
-    salesType: f.salesType || null,
-    commissionType: f.commissionType || null,
-    costPerLead: f.costPerLead ? parseFloat(f.costPerLead) : null,
     notes: f.notes || null,
     enteredDate: f.enteredDate,
     soldDate: f.soldDate || null,
+    // ACA
+    marketplace: (f.marketplace || null) as "Yes" | "No" | null,
+    householdCount: f.householdCount ? parseInt(f.householdCount) : null,
+    // Ancillary
+    ancillaryType: f.ancillaryType || null,
+    // Life
+    salesType: f.salesType || null,
+    faceValue: f.faceValue ? parseFloat(f.faceValue) : null,
+    // Annuity
+    qualified: (f.qualified || null) as "Yes" | "No" | null,
+    principal: f.principal ? parseFloat(f.principal) : null,
   };
 }
 
@@ -310,7 +327,7 @@ export default function LeadsPage() {
   };
 
   const openAdd = () => {
-    setForm(emptyForm());
+    setForm(emptyForm(activeLob));
     setEditLead(null);
     setInlineAddingSource(false);
     setInlineSourceName("");
@@ -322,6 +339,7 @@ export default function LeadsPage() {
     setInlineAddingSource(false);
     setInlineSourceName("");
     setForm({
+      lineOfBusiness: (lead.lineOfBusiness ?? "medicare") as LobValue | "",
       firstName: lead.firstName ?? "",
       lastName: lead.lastName ?? "",
       phone: lead.phone ?? "",
@@ -332,14 +350,16 @@ export default function LeadsPage() {
       county: lead.county ?? "",
       zip: lead.zip ?? "",
       status: lead.status as LeadStatus,
-      revenue: lead.revenue != null ? String(lead.revenue) : "",
-      carrier: lead.carrier ?? "",
-      salesType: lead.salesType ?? "",
-      commissionType: lead.commissionType ?? "",
-      costPerLead: lead.costPerLead != null ? String(lead.costPerLead) : "",
       notes: lead.notes ?? "",
       enteredDate: lead.enteredDate ?? today,
       soldDate: lead.soldDate ?? "",
+      marketplace: (lead.marketplace ?? "") as "Yes" | "No" | "",
+      householdCount: lead.householdCount != null ? String(lead.householdCount) : "",
+      ancillaryType: lead.ancillaryType ?? "",
+      salesType: lead.salesType ?? "",
+      faceValue: lead.faceValue != null ? String(lead.faceValue) : "",
+      qualified: (lead.qualified ?? "") as "Yes" | "No" | "",
+      principal: lead.principal != null ? String(lead.principal) : "",
     });
     setAddOpen(true);
   };
@@ -911,173 +931,272 @@ export default function LeadsPage() {
             <DialogTitle>{editLead ? "Edit Lead" : "Add Lead"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input id="firstName" value={form.firstName} onChange={f("firstName")} placeholder="Jane" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input id="lastName" value={form.lastName} onChange={f("lastName")} placeholder="Doe" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" value={form.phone} onChange={f("phone")} placeholder="(555) 000-0000" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" value={form.email} onChange={f("email")} placeholder="jane@example.com" />
-              </div>
-            </div>
+            {/* Product Type selector */}
             <div className="space-y-1">
-              <Label>Lead Ownership</Label>
+              <Label>Product Type *</Label>
               <Select
-                value={form.leadOwnership || "none"}
-                onValueChange={(v) => {
-                  setForm((p) => ({
-                    ...p,
-                    leadOwnership: v === "none" ? "" : v as "Agency BOB" | "Self-Generated",
-                    leadSourceId: v !== "Self-Generated" ? "" : p.leadSourceId,
-                  }));
-                  setInlineAddingSource(false);
-                  setInlineSourceName("");
-                }}
+                value={form.lineOfBusiness || "none"}
+                onValueChange={(v) => setForm((p) => ({ ...p, lineOfBusiness: v === "none" ? "" : v as LobValue }))}
               >
-                <SelectTrigger><SelectValue placeholder="Select ownership…" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select product type…" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">— None —</SelectItem>
-                  <SelectItem value="Agency BOB">Agency BOB</SelectItem>
-                  <SelectItem value="Self-Generated">Self-Generated</SelectItem>
+                  {LOB_TABS.map((tab) => (
+                    <SelectItem key={tab.value} value={tab.value}>{tab.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-            {form.leadOwnership === "Self-Generated" && (
-              <div className="space-y-1">
-                <Label>Lead Source</Label>
-                {inlineAddingSource ? (
-                  <div className="flex gap-2">
-                    <Input
-                      autoFocus
-                      value={inlineSourceName}
-                      onChange={(e) => setInlineSourceName(e.target.value)}
-                      placeholder="New source name…"
-                      onKeyDown={async (e) => {
-                        if (e.key === "Enter" && inlineSourceName.trim()) {
-                          const src = await createSource.mutateAsync({ data: { name: inlineSourceName.trim(), costPerLead: 0, isPaid: false } });
-                          qc.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
-                          setForm((p) => ({ ...p, leadSourceId: String((src as any).id) }));
-                          setInlineAddingSource(false);
-                          setInlineSourceName("");
-                        } else if (e.key === "Escape") {
-                          setInlineAddingSource(false);
-                          setInlineSourceName("");
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={!inlineSourceName.trim() || createSource.isPending}
-                      onClick={async () => {
-                        if (!inlineSourceName.trim()) return;
-                        const src = await createSource.mutateAsync({ data: { name: inlineSourceName.trim(), costPerLead: 0, isPaid: false } });
-                        qc.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
-                        setForm((p) => ({ ...p, leadSourceId: String((src as any).id) }));
-                        setInlineAddingSource(false);
-                        setInlineSourceName("");
-                      }}
-                    >
-                      Add
-                    </Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => { setInlineAddingSource(false); setInlineSourceName(""); }}>
-                      Cancel
-                    </Button>
+
+            {form.lineOfBusiness && (
+              <>
+                {/* Name */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="firstName">First Name *</Label>
+                    <Input id="firstName" value={form.firstName} onChange={f("firstName")} placeholder="Jane" />
                   </div>
-                ) : (
+                  <div className="space-y-1">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input id="lastName" value={form.lastName} onChange={f("lastName")} placeholder="Doe" />
+                  </div>
+                </div>
+
+                {/* Lead Ownership */}
+                <div className="space-y-1">
+                  <Label>Lead Ownership</Label>
                   <Select
-                    value={form.leadSourceId || "none"}
+                    value={form.leadOwnership || "none"}
                     onValueChange={(v) => {
-                      if (v === "__add_new") { setInlineAddingSource(true); return; }
-                      setForm((p) => ({ ...p, leadSourceId: v === "none" ? "" : v }));
+                      setForm((p) => ({
+                        ...p,
+                        leadOwnership: v === "none" ? "" : v as "Agency BOB" | "Self-Generated",
+                        leadSourceId: v !== "Self-Generated" ? "" : p.leadSourceId,
+                      }));
+                      setInlineAddingSource(false);
+                      setInlineSourceName("");
                     }}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select source…" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select ownership…" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">— None —</SelectItem>
-                      {(leadSources as any[]).map((src) => (
-                        <SelectItem key={src.id} value={String(src.id)}>{src.name}</SelectItem>
-                      ))}
-                      <SelectItem value="__add_new">+ Add new source…</SelectItem>
+                      <SelectItem value="Agency BOB">Agency BOB</SelectItem>
+                      <SelectItem value="Self-Generated">Self-Generated</SelectItem>
                     </SelectContent>
                   </Select>
-                )}
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Status</Label>
-                <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v as LeadStatus }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="state">State</Label>
-                <Input id="state" value={form.state} onChange={f("state")} placeholder="FL" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="county">County</Label>
-                <Input id="county" value={form.county} onChange={f("county")} placeholder="Miami-Dade" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="zip">Zip</Label>
-                <Input id="zip" value={form.zip} onChange={f("zip")} placeholder="33101" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="enteredDate">Entered Date *</Label>
-                <Input id="enteredDate" type="date" value={form.enteredDate} onChange={f("enteredDate")} />
-              </div>
-              {(form.status === "sold" || editLead?.soldDate) && (
-                <div className="space-y-1">
-                  <Label htmlFor="soldDate">Sold Date</Label>
-                  <Input id="soldDate" type="date" value={form.soldDate} onChange={f("soldDate")} />
                 </div>
-              )}
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="revenue">Annual Premium ($)</Label>
-              <Input id="revenue" type="number" value={form.revenue} onChange={f("revenue")} placeholder="0.00" min="0" step="0.01" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="salesType">Sales Type</Label>
-                <Input id="salesType" value={form.salesType} onChange={f("salesType")} placeholder="e.g. Medicare Advantage" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="commissionType">Commission Type</Label>
-                <Input id="commissionType" value={form.commissionType} onChange={f("commissionType")} placeholder="e.g. Standard" />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="costPerLead">Cost per Lead Override ($)</Label>
-              <Input id="costPerLead" type="number" value={form.costPerLead} onChange={f("costPerLead")} placeholder="Leave blank to use source default" min="0" step="0.01" />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea id="notes" value={form.notes} onChange={f("notes")} rows={3} placeholder="Any additional notes…" />
-            </div>
+
+                {/* Lead Source (Self-Generated only) */}
+                {form.leadOwnership === "Self-Generated" && (
+                  <div className="space-y-1">
+                    <Label>Lead Source</Label>
+                    {inlineAddingSource ? (
+                      <div className="flex gap-2">
+                        <Input
+                          autoFocus
+                          value={inlineSourceName}
+                          onChange={(e) => setInlineSourceName(e.target.value)}
+                          placeholder="New source name…"
+                          onKeyDown={async (e) => {
+                            if (e.key === "Enter" && inlineSourceName.trim()) {
+                              const src = await createSource.mutateAsync({ data: { name: inlineSourceName.trim(), isPaid: false } });
+                              qc.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
+                              setForm((p) => ({ ...p, leadSourceId: String((src as any).id) }));
+                              setInlineAddingSource(false);
+                              setInlineSourceName("");
+                            } else if (e.key === "Escape") {
+                              setInlineAddingSource(false);
+                              setInlineSourceName("");
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={!inlineSourceName.trim() || createSource.isPending}
+                          onClick={async () => {
+                            if (!inlineSourceName.trim()) return;
+                            const src = await createSource.mutateAsync({ data: { name: inlineSourceName.trim(), isPaid: false } });
+                            qc.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
+                            setForm((p) => ({ ...p, leadSourceId: String((src as any).id) }));
+                            setInlineAddingSource(false);
+                            setInlineSourceName("");
+                          }}
+                        >
+                          Add
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => { setInlineAddingSource(false); setInlineSourceName(""); }}>
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <Select
+                        value={form.leadSourceId || "none"}
+                        onValueChange={(v) => {
+                          if (v === "__add_new") { setInlineAddingSource(true); return; }
+                          setForm((p) => ({ ...p, leadSourceId: v === "none" ? "" : v }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select source…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">— None —</SelectItem>
+                          {(leadSources as any[]).map((src) => (
+                            <SelectItem key={src.id} value={String(src.id)}>{src.name}</SelectItem>
+                          ))}
+                          <SelectItem value="__add_new">+ Add new source…</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
+
+                {/* ACA: Marketplace + Household Count */}
+                {form.lineOfBusiness === "aca" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label>Marketplace</Label>
+                      <Select
+                        value={form.marketplace || "none"}
+                        onValueChange={(v) => setForm((p) => ({ ...p, marketplace: v === "none" ? "" : v as "Yes" | "No" }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">— None —</SelectItem>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="householdCount">Household Count</Label>
+                      <Input id="householdCount" type="number" value={form.householdCount} onChange={f("householdCount")} placeholder="e.g. 3" min="1" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Ancillary: Product Type */}
+                {form.lineOfBusiness === "ancillary" && (
+                  <div className="space-y-1">
+                    <Label>Product Type</Label>
+                    <Select
+                      value={form.ancillaryType || "none"}
+                      onValueChange={(v) => setForm((p) => ({ ...p, ancillaryType: v === "none" ? "" : v }))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select product type…" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— None —</SelectItem>
+                        <SelectItem value="Dental">Dental</SelectItem>
+                        <SelectItem value="Vision">Vision</SelectItem>
+                        <SelectItem value="DVH">DVH</SelectItem>
+                        <SelectItem value="Hospital Indemnity">Hospital Indemnity</SelectItem>
+                        <SelectItem value="Accident">Accident</SelectItem>
+                        <SelectItem value="Critical Illness">Critical Illness</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Life: Product Type + Face Value */}
+                {form.lineOfBusiness === "life" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label>Product Type</Label>
+                      <Select
+                        value={form.salesType || "none"}
+                        onValueChange={(v) => setForm((p) => ({ ...p, salesType: v === "none" ? "" : v }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select type…" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">— None —</SelectItem>
+                          <SelectItem value="Term">Term</SelectItem>
+                          <SelectItem value="Whole Life">Whole Life</SelectItem>
+                          <SelectItem value="Final Expense">Final Expense</SelectItem>
+                          <SelectItem value="UL">UL</SelectItem>
+                          <SelectItem value="GUL">GUL</SelectItem>
+                          <SelectItem value="IUL">IUL</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="faceValue">Face Value ($)</Label>
+                      <Input id="faceValue" type="number" value={form.faceValue} onChange={f("faceValue")} placeholder="0.00" min="0" step="0.01" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Annuity: Qualified + Principal */}
+                {form.lineOfBusiness === "annuity" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label>Qualified</Label>
+                      <Select
+                        value={form.qualified || "none"}
+                        onValueChange={(v) => setForm((p) => ({ ...p, qualified: v === "none" ? "" : v as "Yes" | "No" }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">— None —</SelectItem>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="principal">Principal ($)</Label>
+                      <Input id="principal" type="number" value={form.principal} onChange={f("principal")} placeholder="0.00" min="0" step="0.01" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input id="phone" value={form.phone} onChange={f("phone")} placeholder="(555) 000-0000" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" value={form.email} onChange={f("email")} placeholder="jane@example.com" />
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="state">State</Label>
+                    <Input id="state" value={form.state} onChange={f("state")} placeholder="FL" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="county">County</Label>
+                    <Input id="county" value={form.county} onChange={f("county")} placeholder="Miami-Dade" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="zip">Zip</Label>
+                    <Input id="zip" value={form.zip} onChange={f("zip")} placeholder="33101" />
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="space-y-1">
+                  <Label>Status</Label>
+                  <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v as LeadStatus }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-1">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea id="notes" value={form.notes} onChange={f("notes")} rows={3} placeholder="Any additional notes…" />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
