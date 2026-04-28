@@ -12,6 +12,7 @@ import TeamPage from "@/pages/team";
 import LandingPage from "@/pages/landing";
 import LeadsPage from "@/pages/leads";
 import MetricsPage from "@/pages/metrics";
+import AdminSalesPage from "@/pages/admin-sales";
 import { BrandingProvider } from "@/contexts/branding";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -205,6 +206,7 @@ function ClerkProviderWithRoutes() {
               <Route path="/metrics" component={() => <ProtectedRoute component={MetricsPage} />} />
               <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
               <Route path="/team" component={() => <ProtectedRoute component={TeamPage} />} />
+              <Route path="/admin-sales" component={() => <ProtectedRoute component={AdminSalesPage} />} />
               <Route component={NotFound} />
             </Switch>
             <Toaster />

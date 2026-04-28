@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, History, Settings, Users, TrendingUp, LogOut, ChevronDown, Target, BarChart2 } from "lucide-react";
+import { LayoutDashboard, History, Settings, Users, TrendingUp, LogOut, ChevronDown, Target, BarChart2, ClipboardList } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAgencyUser } from "@/hooks/useAgencyUser";
 import { useClerk, useUser } from "@clerk/react";
@@ -26,6 +26,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: "Past Reports", href: "/history", icon: History, adminOnly: false },
     { name: "Leads", href: "/leads", icon: Target, adminOnly: false },
     { name: "Medicare Analytics", href: "/metrics", icon: BarChart2, adminOnly: false },
+    { name: "Sales", href: "/admin-sales", icon: ClipboardList, adminOnly: true },
     { name: "Team", href: "/team", icon: Users, adminOnly: true },
     { name: "Settings", href: "/settings", icon: Settings, adminOnly: false },
   ].filter((item) => !item.adminOnly || isAdmin);
