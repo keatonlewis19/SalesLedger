@@ -7,6 +7,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import Constants from "expo-constants";
 import { Redirect, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
@@ -20,16 +21,26 @@ import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 // Point the shared API client at the correct domain for this environment.
-// This must be called outside any component so it runs before any hook.
-if (process.env.EXPO_PUBLIC_DOMAIN) {
-  setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+// apiDomain is baked in at build time via app.config.js → extra.apiDomain,
+// which reads EXPO_PUBLIC_DOMAIN (prod EAS) or REPLIT_DEV_DOMAIN (local dev).
+const _apiDomain: string =
+  Constants.expoConfig?.extra?.apiDomain ||
+  process.env.EXPO_PUBLIC_DOMAIN ||
+  "";
+if (_apiDomain) {
+  setBaseUrl(`https://${_apiDomain}`);
 }
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+// Read the Clerk publishable key baked in at build time via app.config.js extra.
+// Falls back to the EXPO_PUBLIC_* env var so local dev still works.
+const publishableKey: string =
+  Constants.expoConfig?.extra?.clerkPublishableKey ||
+  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+  "";
 
 // Wire the Clerk session token into every API request made by the generated
 // React Query hooks. The getter is called lazily before each request.
