@@ -170,7 +170,11 @@ type LeadForm = {
   lastName: string;
   phone: string;
   email: string;
+  leadOwnership: "Agency BOB" | "Self-Generated" | "";
   leadSourceId: string;
+  state: string;
+  county: string;
+  zip: string;
   status: LeadStatus;
   revenue: string;
   carrier: string;
@@ -187,7 +191,11 @@ const emptyForm = (): LeadForm => ({
   lastName: "",
   phone: "",
   email: "",
+  leadOwnership: "",
   leadSourceId: "",
+  state: "",
+  county: "",
+  zip: "",
   status: "new",
   revenue: "",
   carrier: "",
@@ -205,7 +213,11 @@ function formToPayload(f: LeadForm) {
     lastName: f.lastName || undefined,
     phone: f.phone || undefined,
     email: f.email || undefined,
+    leadOwnership: (f.leadOwnership || null) as "Agency BOB" | "Self-Generated" | null,
     leadSourceId: f.leadSourceId ? parseInt(f.leadSourceId) : null,
+    state: f.state || null,
+    county: f.county || null,
+    zip: f.zip || null,
     status: f.status,
     revenue: f.revenue ? parseFloat(f.revenue) : null,
     carrier: f.carrier || null,
@@ -308,7 +320,11 @@ export default function LeadsPage() {
       lastName: lead.lastName ?? "",
       phone: lead.phone ?? "",
       email: lead.email ?? "",
+      leadOwnership: (lead.leadOwnership ?? "") as "Agency BOB" | "Self-Generated" | "",
       leadSourceId: lead.leadSourceId != null ? String(lead.leadSourceId) : "",
+      state: lead.state ?? "",
+      county: lead.county ?? "",
+      zip: lead.zip ?? "",
       status: lead.status as LeadStatus,
       revenue: lead.revenue != null ? String(lead.revenue) : "",
       carrier: lead.carrier ?? "",
@@ -911,19 +927,41 @@ export default function LeadsPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Lead Source</Label>
-                <Select value={form.leadSourceId || "none"} onValueChange={(v) => setForm((p) => ({ ...p, leadSourceId: v === "none" ? "" : v }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select source…" />
-                  </SelectTrigger>
+                <Label>Lead Ownership</Label>
+                <Select
+                  value={form.leadOwnership || "none"}
+                  onValueChange={(v) => setForm((p) => ({
+                    ...p,
+                    leadOwnership: v === "none" ? "" : v as "Agency BOB" | "Self-Generated",
+                    leadSourceId: v !== "Self-Generated" ? "" : p.leadSourceId,
+                  }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select ownership…" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {(leadSources as any[]).map((src) => (
-                      <SelectItem key={src.id} value={String(src.id)}>{src.name}</SelectItem>
-                    ))}
+                    <SelectItem value="none">— None —</SelectItem>
+                    <SelectItem value="Agency BOB">Agency BOB</SelectItem>
+                    <SelectItem value="Self-Generated">Self-Generated</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {form.leadOwnership === "Self-Generated" && (
+                <div className="space-y-1">
+                  <Label>Lead Source</Label>
+                  <Select value={form.leadSourceId || "none"} onValueChange={(v) => setForm((p) => ({ ...p, leadSourceId: v === "none" ? "" : v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select source…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {(leadSources as any[]).map((src) => (
+                        <SelectItem key={src.id} value={String(src.id)}>{src.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Status</Label>
                 <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v as LeadStatus }))}>
@@ -934,6 +972,20 @@ export default function LeadsPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="state">State</Label>
+                <Input id="state" value={form.state} onChange={f("state")} placeholder="FL" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="county">County</Label>
+                <Input id="county" value={form.county} onChange={f("county")} placeholder="Miami-Dade" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="zip">Zip</Label>
+                <Input id="zip" value={form.zip} onChange={f("zip")} placeholder="33101" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

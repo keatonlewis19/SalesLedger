@@ -734,8 +734,21 @@ paths:
                   type: string
                 email:
                   type: string
+                leadOwnership:
+                  type: string
+                  enum: ["Agency BOB", "Self-Generated"]
+                  nullable: true
                 leadSourceId:
                   type: integer
+                  nullable: true
+                state:
+                  type: string
+                  nullable: true
+                county:
+                  type: string
+                  nullable: true
+                zip:
+                  type: string
                   nullable: true
                 status:
                   type: string
@@ -805,8 +818,21 @@ paths:
                   type: string
                 email:
                   type: string
+                leadOwnership:
+                  type: string
+                  enum: ["Agency BOB", "Self-Generated"]
+                  nullable: true
                 leadSourceId:
                   type: integer
+                  nullable: true
+                state:
+                  type: string
+                  nullable: true
+                county:
+                  type: string
+                  nullable: true
+                zip:
+                  type: string
                   nullable: true
                 status:
                   type: string
@@ -1358,11 +1384,24 @@ components:
         email:
           type: string
           nullable: true
+        leadOwnership:
+          type: string
+          enum: ["Agency BOB", "Self-Generated"]
+          nullable: true
         leadSourceId:
           type: integer
           nullable: true
         leadSource:
           $ref: "#/components/schemas/LeadSource"
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        county:
+          type: string
+          nullable: true
+        zip:
+          type: string
           nullable: true
         status:
           type: string

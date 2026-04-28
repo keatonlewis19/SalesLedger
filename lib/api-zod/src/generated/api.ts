@@ -584,6 +584,7 @@ export const ListLeadsResponseItem = zod.object({
   lastName: zod.string().nullish(),
   phone: zod.string().nullish(),
   email: zod.string().nullish(),
+  leadOwnership: zod.enum(["Agency BOB", "Self-Generated"]).nullish(),
   leadSourceId: zod.number().nullish(),
   leadSource: zod
     .object({
@@ -598,6 +599,9 @@ export const ListLeadsResponseItem = zod.object({
       updatedAt: zod.string().optional(),
     })
     .nullish(),
+  state: zod.string().nullish(),
+  county: zod.string().nullish(),
+  zip: zod.string().nullish(),
   status: zod.enum(["new", "in_comm", "appt_set", "follow_up", "sold", "lost"]),
   revenue: zod.number().nullish(),
   carrier: zod.string().nullish(),
@@ -630,7 +634,11 @@ export const CreateLeadBody = zod.object({
   lastName: zod.string().optional(),
   phone: zod.string().optional(),
   email: zod.string().optional(),
+  leadOwnership: zod.enum(["Agency BOB", "Self-Generated"]).nullish(),
   leadSourceId: zod.number().nullish(),
+  state: zod.string().nullish(),
+  county: zod.string().nullish(),
+  zip: zod.string().nullish(),
   status: zod.string().optional(),
   revenue: zod.number().nullish(),
   carrier: zod.string().nullish(),
@@ -658,7 +666,11 @@ export const UpdateLeadBody = zod.object({
   lastName: zod.string().optional(),
   phone: zod.string().optional(),
   email: zod.string().optional(),
+  leadOwnership: zod.enum(["Agency BOB", "Self-Generated"]).nullish(),
   leadSourceId: zod.number().nullish(),
+  state: zod.string().nullish(),
+  county: zod.string().nullish(),
+  zip: zod.string().nullish(),
   status: zod
     .enum(["new", "in_comm", "appt_set", "follow_up", "sold", "lost"])
     .optional(),
@@ -683,6 +695,7 @@ export const UpdateLeadResponse = zod.object({
   lastName: zod.string().nullish(),
   phone: zod.string().nullish(),
   email: zod.string().nullish(),
+  leadOwnership: zod.enum(["Agency BOB", "Self-Generated"]).nullish(),
   leadSourceId: zod.number().nullish(),
   leadSource: zod
     .object({
@@ -697,6 +710,9 @@ export const UpdateLeadResponse = zod.object({
       updatedAt: zod.string().optional(),
     })
     .nullish(),
+  state: zod.string().nullish(),
+  county: zod.string().nullish(),
+  zip: zod.string().nullish(),
   status: zod.enum(["new", "in_comm", "appt_set", "follow_up", "sold", "lost"]),
   revenue: zod.number().nullish(),
   carrier: zod.string().nullish(),

@@ -250,6 +250,15 @@ export interface LeadSourcePayment {
   createdAt?: string;
 }
 
+export type LeadLeadOwnership =
+  | (typeof LeadLeadOwnership)[keyof typeof LeadLeadOwnership]
+  | null;
+
+export const LeadLeadOwnership = {
+  Agency_BOB: "Agency BOB",
+  "Self-Generated": "Self-Generated",
+} as const;
+
 export type LeadStatus = (typeof LeadStatus)[keyof typeof LeadStatus];
 
 export const LeadStatus = {
@@ -282,8 +291,12 @@ export interface Lead {
   lastName?: string | null;
   phone?: string | null;
   email?: string | null;
+  leadOwnership?: LeadLeadOwnership;
   leadSourceId?: number | null;
   leadSource?: LeadSource | null;
+  state?: string | null;
+  county?: string | null;
+  zip?: string | null;
   status: LeadStatus;
   revenue?: number | null;
   carrier?: string | null;
@@ -414,6 +427,15 @@ export type ImportLeads200 = {
   errors: string[];
 };
 
+export type CreateLeadBodyLeadOwnership =
+  | (typeof CreateLeadBodyLeadOwnership)[keyof typeof CreateLeadBodyLeadOwnership]
+  | null;
+
+export const CreateLeadBodyLeadOwnership = {
+  Agency_BOB: "Agency BOB",
+  "Self-Generated": "Self-Generated",
+} as const;
+
 export type CreateLeadBodyLineOfBusiness =
   (typeof CreateLeadBodyLineOfBusiness)[keyof typeof CreateLeadBodyLineOfBusiness];
 
@@ -430,7 +452,11 @@ export type CreateLeadBody = {
   lastName?: string;
   phone?: string;
   email?: string;
+  leadOwnership?: CreateLeadBodyLeadOwnership;
   leadSourceId?: number | null;
+  state?: string | null;
+  county?: string | null;
+  zip?: string | null;
   status?: string;
   revenue?: number | null;
   carrier?: string | null;
@@ -443,6 +469,15 @@ export type CreateLeadBody = {
   enteredDate: string;
   soldDate?: string | null;
 };
+
+export type UpdateLeadBodyLeadOwnership =
+  | (typeof UpdateLeadBodyLeadOwnership)[keyof typeof UpdateLeadBodyLeadOwnership]
+  | null;
+
+export const UpdateLeadBodyLeadOwnership = {
+  Agency_BOB: "Agency BOB",
+  "Self-Generated": "Self-Generated",
+} as const;
 
 export type UpdateLeadBodyStatus =
   (typeof UpdateLeadBodyStatus)[keyof typeof UpdateLeadBodyStatus];
@@ -472,7 +507,11 @@ export type UpdateLeadBody = {
   lastName?: string;
   phone?: string;
   email?: string;
+  leadOwnership?: UpdateLeadBodyLeadOwnership;
   leadSourceId?: number | null;
+  state?: string | null;
+  county?: string | null;
+  zip?: string | null;
   status?: UpdateLeadBodyStatus;
   revenue?: number | null;
   carrier?: string | null;

@@ -45,6 +45,11 @@ interface AddLeadForm {
   firstName: string;
   lastName: string;
   phone: string;
+  email: string;
+  leadOwnership: "Agency BOB" | "Self-Generated" | "";
+  state: string;
+  county: string;
+  zip: string;
   carrier: string;
   status: string;
   notes: string;
@@ -55,6 +60,11 @@ const emptyForm = (): AddLeadForm => ({
   firstName: "",
   lastName: "",
   phone: "",
+  email: "",
+  leadOwnership: "",
+  state: "",
+  county: "",
+  zip: "",
   carrier: "",
   status: "new",
   notes: "",
@@ -100,6 +110,11 @@ export default function LeadsScreen() {
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim() || undefined,
           phone: form.phone.trim() || undefined,
+          email: form.email.trim() || undefined,
+          leadOwnership: (form.leadOwnership || null) as "Agency BOB" | "Self-Generated" | null | undefined,
+          state: form.state.trim() || null,
+          county: form.county.trim() || null,
+          zip: form.zip.trim() || null,
           carrier: form.carrier.trim() || undefined,
           status: form.status,
           notes: form.notes.trim() || undefined,
@@ -450,6 +465,72 @@ export default function LeadsScreen() {
                 value={form.phone}
                 onChangeText={field("phone")}
                 keyboardType="phone-pad"
+              />
+
+              <Text style={s.label}>Email</Text>
+              <TextInput
+                style={s.input}
+                placeholder="jane@example.com"
+                placeholderTextColor={colors.mutedForeground}
+                value={form.email}
+                onChangeText={field("email")}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+
+              <Text style={s.label}>Lead Ownership</Text>
+              <View style={[s.statusPicker, { marginBottom: 12 }]}>
+                {(["Agency BOB", "Self-Generated"] as const).map((opt) => {
+                  const active = form.leadOwnership === opt;
+                  return (
+                    <TouchableOpacity
+                      key={opt}
+                      style={[s.badge, {
+                        backgroundColor: active ? colors.primary : colors.card,
+                        borderWidth: 1,
+                        borderColor: active ? colors.primary : colors.border,
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                      }]}
+                      onPress={() => setForm((p) => ({ ...p, leadOwnership: active ? "" : opt }))}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[s.badgeText, { color: active ? "#fff" : colors.mutedForeground }]}>
+                        {opt}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={s.label}>State</Text>
+              <TextInput
+                style={s.input}
+                placeholder="FL"
+                placeholderTextColor={colors.mutedForeground}
+                value={form.state}
+                onChangeText={field("state")}
+                autoCapitalize="characters"
+              />
+
+              <Text style={s.label}>County</Text>
+              <TextInput
+                style={s.input}
+                placeholder="Miami-Dade"
+                placeholderTextColor={colors.mutedForeground}
+                value={form.county}
+                onChangeText={field("county")}
+                autoCapitalize="words"
+              />
+
+              <Text style={s.label}>Zip</Text>
+              <TextInput
+                style={s.input}
+                placeholder="33101"
+                placeholderTextColor={colors.mutedForeground}
+                value={form.zip}
+                onChangeText={field("zip")}
+                keyboardType="number-pad"
               />
 
               <Text style={s.label}>Carrier</Text>
