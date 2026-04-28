@@ -1262,8 +1262,6 @@ components:
           type: ["string", "null"]
         hra:
           type: ["number", "null"]
-        annualPremium:
-          type: ["number", "null"]
         estimatedCommission:
           type: ["number", "null"]
         comments:
@@ -1295,7 +1293,6 @@ components:
         - commissionType
         - leadSource
         - hra
-        - annualPremium
         - estimatedCommission
         - comments
         - paid
@@ -1321,8 +1318,6 @@ components:
         leadSource:
           type: ["string", "null"]
         hra:
-          type: ["number", "null"]
-        annualPremium:
           type: ["number", "null"]
         estimatedCommission:
           type: ["number", "null"]
@@ -1360,8 +1355,6 @@ components:
         leadSource:
           type: ["string", "null"]
         hra:
-          type: ["number", "null"]
-        annualPremium:
           type: ["number", "null"]
         estimatedCommission:
           type: ["number", "null"]

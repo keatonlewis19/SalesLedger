@@ -26,7 +26,7 @@ function parseId(raw: string | string[]): number {
   return parseInt(str, 10);
 }
 
-function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; owningAgent?: string | null; salesSource?: string | null; effectiveDate?: string | null; leadSource?: string | null; hra?: number | null; annualPremium?: number | null; estimatedCommission: number | null | undefined; notes: string | null | undefined; userId?: string | null; paid?: boolean; [key: string]: unknown }) {
+function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; owningAgent?: string | null; salesSource?: string | null; effectiveDate?: string | null; leadSource?: string | null; hra?: number | null; estimatedCommission: number | null | undefined; notes: string | null | undefined; userId?: string | null; paid?: boolean; [key: string]: unknown }) {
   const { notes, ...rest } = s;
   return {
     ...rest,
@@ -36,7 +36,6 @@ function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; 
     effectiveDate: s.effectiveDate ?? null,
     leadSource: s.leadSource ?? null,
     hra: s.hra ?? null,
-    annualPremium: s.annualPremium ?? null,
     estimatedCommission: s.estimatedCommission ?? null,
     comments: notes ?? null,
     paid: s.paid ?? false,
@@ -109,7 +108,6 @@ router.post("/sales", requireAuth, async (req: AuthRequest, res): Promise<void> 
       commissionType: data.commissionType,
       leadSource: data.leadSource ?? undefined,
       hra: data.hra ?? undefined,
-      annualPremium: data.annualPremium ?? undefined,
       estimatedCommission: data.estimatedCommission ?? undefined,
       notes: data.comments ?? undefined,
       lineOfBusiness: data.lineOfBusiness ?? "medicare",
@@ -251,7 +249,6 @@ router.patch("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<v
   if (updateData.commissionType !== undefined) updateFields.commissionType = updateData.commissionType;
   if (updateData.leadSource !== undefined) updateFields.leadSource = updateData.leadSource;
   if (updateData.hra !== undefined) updateFields.hra = updateData.hra;
-  if (updateData.annualPremium !== undefined) updateFields.annualPremium = updateData.annualPremium;
   if (updateData.estimatedCommission !== undefined) updateFields.estimatedCommission = updateData.estimatedCommission;
   if (updateData.comments !== undefined) updateFields.notes = updateData.comments;
   if (updateData.lineOfBusiness !== undefined) updateFields.lineOfBusiness = updateData.lineOfBusiness;

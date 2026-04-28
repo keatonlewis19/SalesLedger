@@ -15,11 +15,28 @@ import { useAgencyUser } from "@/hooks/useAgencyUser";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, CheckCircle2, Clock } from "lucide-react";
 import { Redirect } from "wouter";
+import { cn } from "@/lib/utils";
 
 const fmt = (v: number | null | undefined) =>
   v == null ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
 
 type FilterPaid = "all" | "paid" | "unpaid";
+
+const LOB_LABELS: Record<string, string> = {
+  medicare: "Medicare",
+  aca: "ACA",
+  ancillary: "Ancillary",
+  life: "Life",
+  annuity: "Annuity",
+};
+
+const LOB_COLORS: Record<string, string> = {
+  medicare: "bg-teal-50 text-teal-700 border-teal-200",
+  aca: "bg-blue-50 text-blue-700 border-blue-200",
+  ancillary: "bg-purple-50 text-purple-700 border-purple-200",
+  life: "bg-orange-50 text-orange-700 border-orange-200",
+  annuity: "bg-green-50 text-green-700 border-green-200",
+};
 
 export default function AdminSalesPage() {
   const { isAdmin, isLoading: agencyLoading } = useAgencyUser();
@@ -84,6 +101,9 @@ export default function AdminSalesPage() {
       }
     );
   };
+
+  // Extra columns: Product, Carrier, Metal Tier → +3
+  const baseColSpan = isAdmin ? 11 : 10;
 
   return (
     <Layout>
@@ -181,7 +201,10 @@ export default function AdminSalesPage() {
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground w-12">Paid</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Client</th>
                       {isAdmin && <th className="px-4 py-3 text-left font-medium text-muted-foreground">Agent</th>}
-                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Sale Type</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Product</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Carrier</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Metal Tier</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Source</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Sold Date</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Commission Type</th>
@@ -191,49 +214,61 @@ export default function AdminSalesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sorted.map((sale, i) => (
-                      <tr
-                        key={sale.id}
-                        className={`border-b transition-colors ${
-                          sale.paid
-                            ? "bg-green-50/60 dark:bg-green-950/20"
-                            : i % 2 === 0
-                            ? "bg-background"
-                            : "bg-muted/20"
-                        } hover:bg-muted/40`}
-                      >
-                        <td className="px-4 py-3">
-                          <Checkbox
-                            checked={sale.paid}
-                            disabled={!isAdmin || toggling.has(sale.id)}
-                            onCheckedChange={isAdmin ? () => handleToggle(sale.id, sale.paid) : undefined}
-                            aria-label={sale.paid ? "Commission paid" : "Commission pending"}
-                            className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-                          />
-                        </td>
-                        <td className="px-4 py-3 font-medium text-foreground">{sale.clientName}</td>
-                        {isAdmin && <td className="px-4 py-3 text-muted-foreground">{sale.agentName ?? "—"}</td>}
-                        <td className="px-4 py-3">
-                          <Badge variant="outline" className="text-xs">{sale.salesType}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{sale.salesSource ?? "—"}</td>
-                        <td className="px-4 py-3 text-muted-foreground tabular-nums">{sale.soldDate}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{sale.commissionType}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                          {sale.hra != null ? fmt(sale.hra) : "None"}
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums font-medium text-foreground">
-                          {fmt(sale.estimatedCommission)}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground max-w-[200px] truncate" title={sale.comments ?? ""}>
-                          {sale.comments ?? ""}
-                        </td>
-                      </tr>
-                    ))}
+                    {sorted.map((sale, i) => {
+                      const lob = sale.lineOfBusiness ?? "medicare";
+                      const carrier = sale.carrier;
+                      const metalTier = sale.metalTier;
+                      return (
+                        <tr
+                          key={sale.id}
+                          className={`border-b transition-colors ${
+                            sale.paid
+                              ? "bg-green-50/60 dark:bg-green-950/20"
+                              : i % 2 === 0
+                              ? "bg-background"
+                              : "bg-muted/20"
+                          } hover:bg-muted/40`}
+                        >
+                          <td className="px-4 py-3">
+                            <Checkbox
+                              checked={sale.paid}
+                              disabled={!isAdmin || toggling.has(sale.id)}
+                              onCheckedChange={isAdmin ? () => handleToggle(sale.id, sale.paid) : undefined}
+                              aria-label={sale.paid ? "Commission paid" : "Commission pending"}
+                              className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                            />
+                          </td>
+                          <td className="px-4 py-3 font-medium text-foreground">{sale.clientName}</td>
+                          {isAdmin && <td className="px-4 py-3 text-muted-foreground">{sale.agentName ?? "—"}</td>}
+                          <td className="px-4 py-3">
+                            <Badge variant="outline" className="text-xs">{sale.salesType}</Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border", LOB_COLORS[lob] ?? LOB_COLORS.medicare)}>
+                              {LOB_LABELS[lob] ?? lob}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">{carrier || "—"}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{metalTier || "—"}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{sale.salesSource ?? "—"}</td>
+                          <td className="px-4 py-3 text-muted-foreground tabular-nums">{sale.soldDate}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{sale.commissionType}</td>
+                          <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                            {sale.hra != null ? fmt(sale.hra) : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums font-medium text-foreground">
+                            {fmt(sale.estimatedCommission)}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground max-w-[200px] truncate" title={sale.comments ?? ""}>
+                            {sale.comments || "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                   <tfoot>
                     <tr className="border-t bg-muted/50 font-semibold">
-                      <td colSpan={isAdmin ? 8 : 7} className="px-4 py-3 text-muted-foreground text-xs">
+                      <td colSpan={baseColSpan} className="px-4 py-3 text-muted-foreground text-xs">
                         {sorted.filter((s) => s.paid).length} of {sorted.length} paid
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums">{fmt(totalComm)}</td>

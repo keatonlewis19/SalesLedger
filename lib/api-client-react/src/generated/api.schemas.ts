@@ -141,8 +141,6 @@ export interface SaleEntry {
   /** @nullable */
   hra: number | null;
   /** @nullable */
-  annualPremium: number | null;
-  /** @nullable */
   estimatedCommission: number | null;
   /** @nullable */
   comments: string | null;
@@ -183,8 +181,6 @@ export interface CreateSaleBody {
   /** @nullable */
   hra?: number | null;
   /** @nullable */
-  annualPremium?: number | null;
-  /** @nullable */
   estimatedCommission?: number | null;
   /** @nullable */
   comments?: string | null;
@@ -220,8 +216,6 @@ export interface UpdateSaleBody {
   leadSource?: string | null;
   /** @nullable */
   hra?: number | null;
-  /** @nullable */
-  annualPremium?: number | null;
   /** @nullable */
   estimatedCommission?: number | null;
   /** @nullable */
