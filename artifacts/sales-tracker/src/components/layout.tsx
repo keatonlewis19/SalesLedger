@@ -43,7 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const agencyShortName = brandName.split(" ").slice(0, 2).join(" ");
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col md:flex-row">
+    <div className="h-[100dvh] bg-background flex flex-col md:flex-row overflow-hidden">
       {/* Mobile Nav */}
       <div className="md:hidden border-b bg-card px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -73,7 +73,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-64 flex-col text-slate-100" style={{ backgroundColor: "var(--panel-bg, #0f172a)" }}>
+      <div className="hidden md:flex w-64 flex-col text-slate-100 h-full overflow-hidden" style={{ backgroundColor: "var(--panel-bg, #0f172a)" }}>
         <div className="h-16 flex items-center px-4 border-b border-white/10">
           {logoUrl ? (
             <img src={logoUrl} alt={brandName} className="h-[45px] w-auto object-contain max-w-[220px]" />
@@ -184,7 +184,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 w-full min-w-0 p-4 md:p-8 overflow-x-auto">
+      <main className="flex-1 w-full min-w-0 p-4 md:p-8 overflow-y-auto overflow-x-auto">
         {children}
       </main>
     </div>
