@@ -22,6 +22,8 @@ import {
   useListLeads,
   useCreateLead,
   useUpdateLead,
+  useListLeadSources,
+  useCreateLeadSource,
 } from "@workspace/api-client-react";
 
 const STATUSES = [
@@ -47,6 +49,7 @@ interface AddLeadForm {
   phone: string;
   email: string;
   leadOwnership: "Agency BOB" | "Self-Generated" | "";
+  leadSourceId: string;
   state: string;
   county: string;
   zip: string;
@@ -62,6 +65,7 @@ const emptyForm = (): AddLeadForm => ({
   phone: "",
   email: "",
   leadOwnership: "",
+  leadSourceId: "",
   state: "",
   county: "",
   zip: "",
@@ -80,10 +84,15 @@ export default function LeadsScreen() {
   const { data: leadsData, isLoading, refetch, isRefetching } = useListLeads();
   const { mutateAsync: createLead } = useCreateLead();
   const { mutateAsync: updateLead } = useUpdateLead();
+  const { data: leadSourcesData = [], refetch: refetchSources } = useListLeadSources();
+  const { mutateAsync: createLeadSource } = useCreateLeadSource();
 
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<AddLeadForm>(emptyForm());
   const [submitting, setSubmitting] = useState(false);
+  const [showSourcePicker, setShowSourcePicker] = useState(false);
+  const [addingNewSource, setAddingNewSource] = useState(false);
+  const [newSourceName, setNewSourceName] = useState("");
   const [statusPickLead, setStatusPickLead] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
@@ -112,6 +121,7 @@ export default function LeadsScreen() {
           phone: form.phone.trim() || undefined,
           email: form.email.trim() || undefined,
           leadOwnership: (form.leadOwnership || null) as "Agency BOB" | "Self-Generated" | null | undefined,
+          leadSourceId: form.leadSourceId ? parseInt(form.leadSourceId) : null,
           state: form.state.trim() || null,
           county: form.county.trim() || null,
           zip: form.zip.trim() || null,
@@ -492,7 +502,11 @@ export default function LeadsScreen() {
                         paddingHorizontal: 12,
                         paddingVertical: 6,
                       }]}
-                      onPress={() => setForm((p) => ({ ...p, leadOwnership: active ? "" : opt }))}
+                      onPress={() => {
+                        const newOwnership = active ? "" : opt;
+                        setForm((p) => ({ ...p, leadOwnership: newOwnership, leadSourceId: newOwnership === "Self-Generated" ? p.leadSourceId : "" }));
+                        if (newOwnership !== "Self-Generated") { setAddingNewSource(false); setNewSourceName(""); }
+                      }}
                       activeOpacity={0.75}
                     >
                       <Text style={[s.badgeText, { color: active ? "#fff" : colors.mutedForeground }]}>
@@ -502,6 +516,63 @@ export default function LeadsScreen() {
                   );
                 })}
               </View>
+
+              {form.leadOwnership === "Self-Generated" && (
+                <>
+                  <Text style={s.label}>Lead Source</Text>
+                  {addingNewSource ? (
+                    <View style={{ marginBottom: 12 }}>
+                      <TextInput
+                        style={[s.input, { marginBottom: 6 }]}
+                        placeholder="New source name…"
+                        placeholderTextColor={colors.mutedForeground}
+                        value={newSourceName}
+                        onChangeText={setNewSourceName}
+                        autoFocus
+                      />
+                      <View style={{ flexDirection: "row", gap: 8 }}>
+                        <TouchableOpacity
+                          style={[s.badge, { backgroundColor: colors.primary, borderWidth: 0, paddingHorizontal: 16, paddingVertical: 8, flex: 1, justifyContent: "center", alignItems: "center" }]}
+                          onPress={async () => {
+                            if (!newSourceName.trim()) return;
+                            try {
+                              const src = await createLeadSource({ data: { name: newSourceName.trim(), costPerLead: 0, isPaid: false } }) as any;
+                              await refetchSources();
+                              setForm((p) => ({ ...p, leadSourceId: String(src.id) }));
+                              setAddingNewSource(false);
+                              setNewSourceName("");
+                            } catch (e: any) {
+                              Alert.alert("Error", e?.message ?? "Failed to create source");
+                            }
+                          }}
+                        >
+                          <Text style={{ color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 14 }}>Add</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[s.badge, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 16, paddingVertical: 8, flex: 1, justifyContent: "center", alignItems: "center" }]}
+                          onPress={() => { setAddingNewSource(false); setNewSourceName(""); }}
+                        >
+                          <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_500Medium", fontSize: 14 }}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={{ marginBottom: 12 }}>
+                      <TouchableOpacity
+                        style={[s.input, { justifyContent: "center" }]}
+                        onPress={() => setShowSourcePicker(true)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={{ color: form.leadSourceId ? colors.foreground : colors.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 15 }}>
+                          {form.leadSourceId
+                            ? (leadSourcesData as any[]).find((s: any) => String(s.id) === form.leadSourceId)?.name ?? "Select source…"
+                            : "Select source…"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </>
+              )}
 
               <Text style={s.label}>State</Text>
               <TextInput
@@ -582,6 +653,46 @@ export default function LeadsScreen() {
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Lead Source picker */}
+      <Modal
+        visible={showSourcePicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowSourcePicker(false)}
+      >
+        <TouchableOpacity style={s.statusModal} activeOpacity={1} onPress={() => setShowSourcePicker(false)}>
+          <View style={[s.statusSheet, { maxHeight: "70%" }]}>
+            <Text style={s.statusSheetTitle}>Lead Source</Text>
+            <ScrollView>
+              <TouchableOpacity
+                style={s.statusOption}
+                onPress={() => { setForm((p) => ({ ...p, leadSourceId: "" })); setShowSourcePicker(false); }}
+                activeOpacity={0.75}
+              >
+                <Text style={[s.statusOptionText, { color: colors.mutedForeground }]}>— None —</Text>
+              </TouchableOpacity>
+              {(leadSourcesData as any[]).map((src: any) => (
+                <TouchableOpacity
+                  key={src.id}
+                  style={s.statusOption}
+                  onPress={() => { setForm((p) => ({ ...p, leadSourceId: String(src.id) })); setShowSourcePicker(false); }}
+                  activeOpacity={0.75}
+                >
+                  <Text style={s.statusOptionText}>{src.name}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={[s.statusOption, { borderTopWidth: 1, borderTopColor: colors.border }]}
+                onPress={() => { setShowSourcePicker(false); setAddingNewSource(true); }}
+                activeOpacity={0.75}
+              >
+                <Text style={[s.statusOptionText, { color: colors.primary }]}>+ Add new source…</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
       </Modal>
 
       {/* Status change picker */}

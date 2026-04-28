@@ -258,6 +258,8 @@ export default function LeadsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [editLead, setEditLead] = useState<any | null>(null);
   const [form, setForm] = useState<LeadForm>(emptyForm());
+  const [inlineAddingSource, setInlineAddingSource] = useState(false);
+  const [inlineSourceName, setInlineSourceName] = useState("");
 
   const [lobSaleOpen, setLobSaleOpen] = useState(false);
   const [lobSaleEditId, setLobSaleEditId] = useState<number | null>(null);
@@ -310,11 +312,15 @@ export default function LeadsPage() {
   const openAdd = () => {
     setForm(emptyForm());
     setEditLead(null);
+    setInlineAddingSource(false);
+    setInlineSourceName("");
     setAddOpen(true);
   };
 
   const openEdit = (lead: any) => {
     setEditLead(lead);
+    setInlineAddingSource(false);
+    setInlineSourceName("");
     setForm({
       firstName: lead.firstName ?? "",
       lastName: lead.lastName ?? "",
@@ -925,42 +931,92 @@ export default function LeadsPage() {
                 <Input id="email" value={form.email} onChange={f("email")} placeholder="jane@example.com" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Lead Ownership</Label>
-                <Select
-                  value={form.leadOwnership || "none"}
-                  onValueChange={(v) => setForm((p) => ({
+            <div className="space-y-1">
+              <Label>Lead Ownership</Label>
+              <Select
+                value={form.leadOwnership || "none"}
+                onValueChange={(v) => {
+                  setForm((p) => ({
                     ...p,
                     leadOwnership: v === "none" ? "" : v as "Agency BOB" | "Self-Generated",
                     leadSourceId: v !== "Self-Generated" ? "" : p.leadSourceId,
-                  }))}
-                >
-                  <SelectTrigger><SelectValue placeholder="Select ownership…" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">— None —</SelectItem>
-                    <SelectItem value="Agency BOB">Agency BOB</SelectItem>
-                    <SelectItem value="Self-Generated">Self-Generated</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {form.leadOwnership === "Self-Generated" && (
-                <div className="space-y-1">
-                  <Label>Lead Source</Label>
-                  <Select value={form.leadSourceId || "none"} onValueChange={(v) => setForm((p) => ({ ...p, leadSourceId: v === "none" ? "" : v }))}>
+                  }));
+                  setInlineAddingSource(false);
+                  setInlineSourceName("");
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select ownership…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  <SelectItem value="Agency BOB">Agency BOB</SelectItem>
+                  <SelectItem value="Self-Generated">Self-Generated</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {form.leadOwnership === "Self-Generated" && (
+              <div className="space-y-1">
+                <Label>Lead Source</Label>
+                {inlineAddingSource ? (
+                  <div className="flex gap-2">
+                    <Input
+                      autoFocus
+                      value={inlineSourceName}
+                      onChange={(e) => setInlineSourceName(e.target.value)}
+                      placeholder="New source name…"
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter" && inlineSourceName.trim()) {
+                          const src = await createSource.mutateAsync({ data: { name: inlineSourceName.trim(), costPerLead: 0, isPaid: false } });
+                          qc.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
+                          setForm((p) => ({ ...p, leadSourceId: String((src as any).id) }));
+                          setInlineAddingSource(false);
+                          setInlineSourceName("");
+                        } else if (e.key === "Escape") {
+                          setInlineAddingSource(false);
+                          setInlineSourceName("");
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={!inlineSourceName.trim() || createSource.isPending}
+                      onClick={async () => {
+                        if (!inlineSourceName.trim()) return;
+                        const src = await createSource.mutateAsync({ data: { name: inlineSourceName.trim(), costPerLead: 0, isPaid: false } });
+                        qc.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
+                        setForm((p) => ({ ...p, leadSourceId: String((src as any).id) }));
+                        setInlineAddingSource(false);
+                        setInlineSourceName("");
+                      }}
+                    >
+                      Add
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => { setInlineAddingSource(false); setInlineSourceName(""); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <Select
+                    value={form.leadSourceId || "none"}
+                    onValueChange={(v) => {
+                      if (v === "__add_new") { setInlineAddingSource(true); return; }
+                      setForm((p) => ({ ...p, leadSourceId: v === "none" ? "" : v }));
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select source…" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="none">— None —</SelectItem>
                       {(leadSources as any[]).map((src) => (
                         <SelectItem key={src.id} value={String(src.id)}>{src.name}</SelectItem>
                       ))}
+                      <SelectItem value="__add_new">+ Add new source…</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Status</Label>
