@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, History, Settings, Users, TrendingUp, LogOut, ChevronDown, Target, BarChart2, ClipboardList } from "lucide-react";
+import { LayoutDashboard, History, Settings, Users, TrendingUp, LogOut, ChevronDown, Target, BarChart2, ClipboardList, ShieldCheck, UserRound } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAgencyUser } from "@/hooks/useAgencyUser";
+import { useViewMode } from "@/contexts/view-mode";
 import { useClerk, useUser } from "@clerk/react";
 import {
   DropdownMenu,
@@ -16,7 +17,8 @@ import { useBranding } from "@/contexts/branding";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { isAdmin } = useAgencyUser();
+  const { isAdmin, isActualAdmin } = useAgencyUser();
+  const { viewMode, toggleViewMode, isViewingAsAgent } = useViewMode();
   const { signOut } = useClerk();
   const { user } = useUser();
   const { brandName, brandColor, logoUrl } = useBranding();
@@ -112,6 +114,35 @@ export function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
+        {/* View Mode Toggle — admin only */}
+        {isActualAdmin && (
+          <div className="px-3 pb-2">
+            <button
+              onClick={toggleViewMode}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors border"
+              style={
+                isViewingAsAgent
+                  ? { background: "rgba(251,191,36,0.15)", borderColor: "rgba(251,191,36,0.4)", color: "#fbbf24" }
+                  : { background: "rgba(255,255,255,0.07)", borderColor: "rgba(255,255,255,0.15)", color: "#94a3b8" }
+              }
+            >
+              {isViewingAsAgent ? (
+                <>
+                  <UserRound className="w-3.5 h-3.5 shrink-0" />
+                  <span className="flex-1 text-left">Viewing as Agent</span>
+                  <span className="text-[10px] opacity-70">switch</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                  <span className="flex-1 text-left">Viewing as Admin</span>
+                  <span className="text-[10px] opacity-70">switch</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
         {/* User Profile Footer */}
         <div className="px-3 py-4 border-t border-white/10">
           <DropdownMenu>
@@ -128,7 +159,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     variant="outline"
                     className="text-[10px] px-1.5 py-0 h-4 border-0 font-normal mt-0.5 bg-white/10 text-slate-300"
                   >
-                    {isAdmin ? "Admin" : "Agent"}
+                    {isActualAdmin
+                      ? isViewingAsAgent
+                        ? "Admin → Agent view"
+                        : "Admin"
+                      : "Agent"}
                   </Badge>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />

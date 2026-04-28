@@ -14,6 +14,7 @@ import LeadsPage from "@/pages/leads";
 import MetricsPage from "@/pages/metrics";
 import AdminSalesPage from "@/pages/admin-sales";
 import { BrandingProvider } from "@/contexts/branding";
+import { ViewModeProvider } from "@/contexts/view-mode";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
@@ -195,6 +196,7 @@ function ClerkProviderWithRoutes() {
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
         <BrandingProvider>
+          <ViewModeProvider>
           <TooltipProvider>
             <Switch>
               <Route path="/" component={HomeRedirect} />
@@ -211,6 +213,7 @@ function ClerkProviderWithRoutes() {
             </Switch>
             <Toaster />
           </TooltipProvider>
+          </ViewModeProvider>
         </BrandingProvider>
       </QueryClientProvider>
     </ClerkProvider>
