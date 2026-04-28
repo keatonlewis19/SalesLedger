@@ -44,12 +44,14 @@ router.get("/metrics", requireAuth, async (req: AuthRequest, res): Promise<void>
   const paidLeads = leads.filter((l) => l.leadSource?.isPaid);
   const paidSold = paidLeads.filter((l) => l.status === "sold");
   const paidRevenue = paidSold.reduce((sum, l) => sum + (l.revenue ?? 0), 0);
+  // Use per-lead override if explicitly set (non-null); otherwise fall back to source default
   const totalPaidCost = paidLeads.reduce(
-    (sum, l) => sum + (l.costPerLead ?? l.leadSource?.costPerLead ?? 0),
+    (sum, l) => sum + (l.costPerLead != null ? l.costPerLead : (l.leadSource?.costPerLead ?? 0)),
     0,
   );
   const paidSalesCount = paidSold.length;
-  const cpa = paidSalesCount > 0 ? totalPaidCost / paidSalesCount : 0;
+  // CPA = total marketing spend / number of acquired (sold) customers; null when no paid leads exist
+  const cpa = paidLeads.length === 0 ? null : paidSalesCount > 0 ? totalPaidCost / paidSalesCount : null;
   const marketingRoi =
     totalPaidCost > 0 ? ((paidRevenue - totalPaidCost) / totalPaidCost) * 100 : null;
 
@@ -106,11 +108,14 @@ router.get("/metrics", requireAuth, async (req: AuthRequest, res): Promise<void>
     const srcLeads = src.leads;
     const srcSold = srcLeads.filter((l) => l.status === "sold");
     const srcRevenue = srcSold.reduce((sum, l) => sum + (l.revenue ?? 0), 0);
+    // Use per-lead override first; fall back to source default cost per lead
     const totalCost = srcLeads.reduce(
-      (sum, l) => sum + (l.costPerLead ?? src.costPerLead),
+      (sum, l) => sum + (l.costPerLead != null ? l.costPerLead : src.costPerLead),
       0,
     );
     const srcSalesCount = srcSold.length;
+    // Average cost per lead = total spend for this source / total leads from this source
+    const avgCostPerLead = srcLeads.length > 0 ? totalCost / srcLeads.length : 0;
     const srcCpa = srcSalesCount > 0 ? totalCost / srcSalesCount : null;
     const srcRoi = totalCost > 0 ? ((srcRevenue - totalCost) / totalCost) * 100 : null;
 
@@ -121,7 +126,8 @@ router.get("/metrics", requireAuth, async (req: AuthRequest, res): Promise<void>
       leads: srcLeads.length,
       sales: srcSalesCount,
       revenue: srcRevenue,
-      costPerLead: src.isPaid ? src.costPerLead : null,
+      // Show actual avg cost per lead computed from lead records (not just source default)
+      costPerLead: src.isPaid ? avgCostPerLead : null,
       cpa: src.isPaid ? srcCpa : null,
       roi: src.isPaid ? srcRoi : null,
     };

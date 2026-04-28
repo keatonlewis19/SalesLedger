@@ -250,9 +250,9 @@ export default function MetricsPage() {
             <KpiCard label="Paid Marketing Revenue" value={fmtMoney(s?.paidMarketingRevenue ?? 0) ?? "—"} />
             <KpiCard
               label="Cost per Acquisition"
-              value={s?.costPerAcquisition ? fmtMoney(s.costPerAcquisition) : "—"}
+              value={s?.costPerAcquisition != null ? fmtMoney(s.costPerAcquisition) : "—"}
               valueColor={cpaColor(s?.costPerAcquisition, s?.avgRevenuePerSale)}
-              sub={s?.costPerAcquisition && s?.avgRevenuePerSale
+              sub={s?.costPerAcquisition != null && s?.avgRevenuePerSale
                 ? s.costPerAcquisition > s.avgRevenuePerSale
                   ? "⚠ CPA exceeds avg sale"
                   : s.costPerAcquisition >= s.avgRevenuePerSale * 0.7
