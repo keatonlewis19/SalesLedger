@@ -720,7 +720,7 @@ export default function LeadsPage() {
 
         {/* Medicare: Status filter pills */}
         {activeLob === "medicare" && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             <button
               onClick={() => setFilterStatuses(new Set())}
               className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
