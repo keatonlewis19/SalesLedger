@@ -41,6 +41,9 @@ export const ListSalesResponseItem = zod.object({
   annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
   comments: zod.string().nullable(),
+  lineOfBusiness: zod.string().nullish(),
+  carrier: zod.string().nullish(),
+  metalTier: zod.string().nullish(),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
@@ -63,6 +66,11 @@ export const CreateSaleBody = zod.object({
   annualPremium: zod.number().nullish(),
   estimatedCommission: zod.number().nullish(),
   comments: zod.string().nullish(),
+  lineOfBusiness: zod
+    .enum(["medicare", "aca", "ancillary", "life", "annuity"])
+    .nullish(),
+  carrier: zod.string().nullish(),
+  metalTier: zod.string().nullish(),
 });
 
 /**
@@ -92,6 +100,9 @@ export const MarkSalePaidResponse = zod.object({
   annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
   comments: zod.string().nullable(),
+  lineOfBusiness: zod.string().nullish(),
+  carrier: zod.string().nullish(),
+  metalTier: zod.string().nullish(),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
@@ -213,6 +224,9 @@ export const GetSaleResponse = zod.object({
   annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
   comments: zod.string().nullable(),
+  lineOfBusiness: zod.string().nullish(),
+  carrier: zod.string().nullish(),
+  metalTier: zod.string().nullish(),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
@@ -238,6 +252,11 @@ export const UpdateSaleBody = zod.object({
   annualPremium: zod.number().nullish(),
   estimatedCommission: zod.number().nullish(),
   comments: zod.string().nullish(),
+  lineOfBusiness: zod
+    .enum(["medicare", "aca", "ancillary", "life", "annuity"])
+    .nullish(),
+  carrier: zod.string().nullish(),
+  metalTier: zod.string().nullish(),
 });
 
 export const UpdateSaleResponse = zod.object({
@@ -256,6 +275,9 @@ export const UpdateSaleResponse = zod.object({
   annualPremium: zod.number().nullable(),
   estimatedCommission: zod.number().nullable(),
   comments: zod.string().nullable(),
+  lineOfBusiness: zod.string().nullish(),
+  carrier: zod.string().nullish(),
+  metalTier: zod.string().nullish(),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),

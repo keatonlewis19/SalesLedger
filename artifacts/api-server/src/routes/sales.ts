@@ -112,6 +112,9 @@ router.post("/sales", requireAuth, async (req: AuthRequest, res): Promise<void> 
       annualPremium: data.annualPremium ?? undefined,
       estimatedCommission: data.estimatedCommission ?? undefined,
       notes: data.comments ?? undefined,
+      lineOfBusiness: data.lineOfBusiness ?? "medicare",
+      carrier: data.carrier ?? undefined,
+      metalTier: data.metalTier ?? undefined,
       weekStart,
     })
     .returning();
@@ -251,6 +254,9 @@ router.patch("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<v
   if (updateData.annualPremium !== undefined) updateFields.annualPremium = updateData.annualPremium;
   if (updateData.estimatedCommission !== undefined) updateFields.estimatedCommission = updateData.estimatedCommission;
   if (updateData.comments !== undefined) updateFields.notes = updateData.comments;
+  if (updateData.lineOfBusiness !== undefined) updateFields.lineOfBusiness = updateData.lineOfBusiness;
+  if (updateData.carrier !== undefined) updateFields.carrier = updateData.carrier;
+  if (updateData.metalTier !== undefined) updateFields.metalTier = updateData.metalTier;
 
   if (updateData.soldDate !== undefined) {
     updateFields.soldDate = updateData.soldDate;

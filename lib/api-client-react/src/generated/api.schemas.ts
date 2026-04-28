@@ -146,11 +146,28 @@ export interface SaleEntry {
   estimatedCommission: number | null;
   /** @nullable */
   comments: string | null;
+  lineOfBusiness?: string | null;
+  /** @nullable */
+  carrier?: string | null;
+  /** @nullable */
+  metalTier?: string | null;
   paid: boolean;
   weekStart: string;
   createdAt: string;
   updatedAt: string;
 }
+
+export type CreateSaleBodyLineOfBusiness =
+  | (typeof CreateSaleBodyLineOfBusiness)[keyof typeof CreateSaleBodyLineOfBusiness]
+  | null;
+
+export const CreateSaleBodyLineOfBusiness = {
+  medicare: "medicare",
+  aca: "aca",
+  ancillary: "ancillary",
+  life: "life",
+  annuity: "annuity",
+} as const;
 
 export interface CreateSaleBody {
   clientName: string;
@@ -171,7 +188,24 @@ export interface CreateSaleBody {
   estimatedCommission?: number | null;
   /** @nullable */
   comments?: string | null;
+  lineOfBusiness?: CreateSaleBodyLineOfBusiness;
+  /** @nullable */
+  carrier?: string | null;
+  /** @nullable */
+  metalTier?: string | null;
 }
+
+export type UpdateSaleBodyLineOfBusiness =
+  | (typeof UpdateSaleBodyLineOfBusiness)[keyof typeof UpdateSaleBodyLineOfBusiness]
+  | null;
+
+export const UpdateSaleBodyLineOfBusiness = {
+  medicare: "medicare",
+  aca: "aca",
+  ancillary: "ancillary",
+  life: "life",
+  annuity: "annuity",
+} as const;
 
 export interface UpdateSaleBody {
   clientName?: string;
@@ -192,6 +226,11 @@ export interface UpdateSaleBody {
   estimatedCommission?: number | null;
   /** @nullable */
   comments?: string | null;
+  lineOfBusiness?: UpdateSaleBodyLineOfBusiness;
+  /** @nullable */
+  carrier?: string | null;
+  /** @nullable */
+  metalTier?: string | null;
 }
 
 export type WeekSummaryByOwningAgentItem = {

@@ -1268,6 +1268,13 @@ components:
           type: ["number", "null"]
         comments:
           type: ["string", "null"]
+        lineOfBusiness:
+          type: string
+          nullable: true
+        carrier:
+          type: ["string", "null"]
+        metalTier:
+          type: ["string", "null"]
         paid:
           type: boolean
         weekStart:
@@ -1321,6 +1328,14 @@ components:
           type: ["number", "null"]
         comments:
           type: ["string", "null"]
+        lineOfBusiness:
+          type: string
+          enum: [medicare, aca, ancillary, life, annuity]
+          nullable: true
+        carrier:
+          type: ["string", "null"]
+        metalTier:
+          type: ["string", "null"]
       required:
         - clientName
         - salesType
@@ -1351,6 +1366,14 @@ components:
         estimatedCommission:
           type: ["number", "null"]
         comments:
+          type: ["string", "null"]
+        lineOfBusiness:
+          type: string
+          enum: [medicare, aca, ancillary, life, annuity]
+          nullable: true
+        carrier:
+          type: ["string", "null"]
+        metalTier:
           type: ["string", "null"]
 
     WeekSummary:

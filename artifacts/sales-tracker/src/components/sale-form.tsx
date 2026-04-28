@@ -35,10 +35,25 @@ import { useToast } from "@/hooks/use-toast";
 
 const COMMISSION_TYPES = ["Initial", "Renewal", "Prorated Renewal", "Monthly Renewal"] as const;
 
+const METAL_TIERS = ["Catastrophic", "Bronze", "Silver", "Gold", "Platinum", "Non-Qualified"] as const;
+
+const LOB_OPTIONS = [
+  { value: "medicare", label: "Medicare" },
+  { value: "aca", label: "ACA / Individual Health" },
+  { value: "ancillary", label: "Ancillary" },
+  { value: "life", label: "Life Insurance" },
+  { value: "annuity", label: "Annuities" },
+] as const;
+
+type LobValue = "medicare" | "aca" | "ancillary" | "life" | "annuity";
+
 const formSchema = z.object({
+  lineOfBusiness: z.string().min(1),
   clientName: z.string().min(1, "Client name is required"),
   salesSource: z.string().optional(),
   leadSource: z.string().optional(),
+  carrier: z.string().optional(),
+  metalTier: z.string().optional(),
   salesType: z.string().min(1, "Sales type is required"),
   soldDate: z.string().min(1, "Sold date is required"),
   effectiveDate: z.string().optional(),
@@ -71,12 +86,20 @@ export function SaleForm({
   const updateSale = useUpdateSale();
   const { data: settings } = useGetSettings();
 
+  // Derive carrier list from settings.carrierColors
+  const carrierNames: string[] = settings
+    ? Object.keys((settings as any).carrierColors ?? {}).sort()
+    : [];
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      lineOfBusiness: "medicare",
       clientName: "",
       salesSource: "",
       leadSource: "",
+      carrier: "",
+      metalTier: "",
       salesType: "",
       soldDate: format(new Date(), "yyyy-MM-dd"),
       effectiveDate: "",
@@ -90,9 +113,12 @@ export function SaleForm({
   useEffect(() => {
     if (open && sale) {
       form.reset({
+        lineOfBusiness: (sale as any).lineOfBusiness || "medicare",
         clientName: sale.clientName,
         salesSource: sale.salesSource || "",
         leadSource: sale.leadSource || "",
+        carrier: (sale as any).carrier || "",
+        metalTier: (sale as any).metalTier || "",
         salesType: sale.salesType,
         soldDate: sale.soldDate.split("T")[0],
         effectiveDate: sale.effectiveDate?.split("T")[0] || "",
@@ -103,9 +129,12 @@ export function SaleForm({
       });
     } else if (open && !sale) {
       form.reset({
+        lineOfBusiness: "medicare",
         clientName: "",
         salesSource: "",
         leadSource: "",
+        carrier: "",
+        metalTier: "",
         salesType: "",
         soldDate: format(new Date(), "yyyy-MM-dd"),
         effectiveDate: "",
@@ -121,9 +150,17 @@ export function SaleForm({
   const watchedSalesSource = form.watch("salesSource");
   const watchedSalesType = form.watch("salesType");
   const watchedEffectiveDate = form.watch("effectiveDate");
+  const watchedLob = (form.watch("lineOfBusiness") as LobValue) || "medicare";
+
+  const isMedicare = watchedLob === "medicare";
+  const showCarrier = !isMedicare;
+  const showMetalTier = watchedLob === "aca";
 
   useEffect(() => {
     if (!settings || !watchedCommissionType) return;
+
+    // Only auto-calculate for Medicare
+    if (watchedLob !== "medicare") return;
 
     // 1. Commission table override (exact match on all 3 dims)
     const table = settings.commissionTable as Array<{ salesSource: string; salesType: string; commissionType: string; estimatedCommission: number | null }> | null | undefined;
@@ -158,10 +195,9 @@ export function SaleForm({
       commission = monthlyRate;
     } else if (watchedCommissionType === "Prorated Renewal") {
       if (watchedEffectiveDate) {
-        // Parse the date in local time to avoid UTC offset shifting the month
         const [, monthStr] = watchedEffectiveDate.split("-");
-        const month = parseInt(monthStr, 10); // 1–12
-        const monthsRemaining = 13 - month;   // Jun=7, Jul=6, etc.
+        const month = parseInt(monthStr, 10);
+        const monthsRemaining = 13 - month;
         commission = monthlyRate * monthsRemaining;
       }
     }
@@ -169,7 +205,7 @@ export function SaleForm({
     if (commission != null) {
       form.setValue("estimatedCommission", commission.toFixed(2));
     }
-  }, [watchedCommissionType, watchedSalesSource, watchedSalesType, watchedEffectiveDate, settings, form]);
+  }, [watchedCommissionType, watchedSalesSource, watchedSalesType, watchedEffectiveDate, watchedLob, settings, form]);
 
   const onSubmit = (data: FormValues) => {
     const formattedData = {
@@ -183,6 +219,9 @@ export function SaleForm({
       estimatedCommission: data.estimatedCommission ? parseFloat(data.estimatedCommission) : null,
       hra: data.hra ? parseFloat(data.hra) : null,
       comments: data.comments || null,
+      lineOfBusiness: data.lineOfBusiness || "medicare",
+      carrier: data.carrier || null,
+      metalTier: data.metalTier || null,
     };
 
     if (sale) {
@@ -221,13 +260,38 @@ export function SaleForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{sale ? "Edit Sale" : "Add New Sale"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
 
+            {/* Product Type */}
+            <FormField
+              control={form.control}
+              name="lineOfBusiness"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Product Type</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select product type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {LOB_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Client */}
             <FormField
               control={form.control}
               name="clientName"
@@ -242,6 +306,7 @@ export function SaleForm({
               )}
             />
 
+            {/* Sales Source */}
             <FormField
               control={form.control}
               name="salesSource"
@@ -264,6 +329,7 @@ export function SaleForm({
               )}
             />
 
+            {/* Lead Source */}
             <FormField
               control={form.control}
               name="leadSource"
@@ -278,6 +344,63 @@ export function SaleForm({
               )}
             />
 
+            {/* Carrier — non-Medicare only */}
+            {showCarrier && (
+              <FormField
+                control={form.control}
+                name="carrier"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Carrier</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select carrier" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {carrierNames.length > 0 ? (
+                          carrierNames.map((name) => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="" disabled>No carriers configured in Settings</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Metal Tier — ACA only */}
+            {showMetalTier && (
+              <FormField
+                control={form.control}
+                name="metalTier"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Metal Tier</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select metal tier" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {METAL_TIERS.map((t) => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Sales Type */}
             <FormField
               control={form.control}
               name="salesType"
@@ -365,9 +488,9 @@ export function SaleForm({
                       <Input
                         type="number"
                         step="0.01"
-                        placeholder="Auto-calculated"
-                        readOnly
-                        className="bg-muted cursor-not-allowed text-muted-foreground"
+                        placeholder={isMedicare ? "Auto-calculated" : "0.00"}
+                        readOnly={isMedicare}
+                        className={isMedicare ? "bg-muted cursor-not-allowed text-muted-foreground" : ""}
                         {...field}
                       />
                     </FormControl>
@@ -376,19 +499,21 @@ export function SaleForm({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="hra"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>HRA ($)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" placeholder="None if blank" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {isMedicare && (
+                <FormField
+                  control={form.control}
+                  name="hra"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>HRA ($)</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="None if blank" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             <FormField
