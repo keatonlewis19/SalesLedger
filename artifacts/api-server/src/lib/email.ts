@@ -290,14 +290,40 @@ function buildAgentSection(agentLabel: string, sales: SaleRow[], headerColor: st
   `;
 }
 
+const CONTACT_TYPE_LABELS: Record<string, string> = {
+  outbound: "Outbound",
+  inbound: "Inbound",
+  voicemail: "Voicemail",
+  text: "Text",
+  email: "Email",
+  text_message: "Text",
+  no_answer: "No Answer",
+  contacted: "Contacted",
+};
+
+const CONTACT_TYPE_COLORS: Record<string, string> = {
+  outbound: "#2563eb",
+  inbound: "#16a34a",
+  voicemail: "#d97706",
+  text: "#7c3aed",
+  email: "#0891b2",
+  text_message: "#7c3aed",
+  no_answer: "#6b7280",
+  contacted: "#16a34a",
+};
+
 function buildCallLogsSection(callLogs: CallLogRow[]): string {
   if (callLogs.length === 0) return "";
 
   const counts: Record<string, number> = { contacted: 0, voicemail: 0, text_message: 0, no_answer: 0 };
   for (const l of callLogs) {
-    if (l.contactType in counts) counts[l.contactType]++;
+    const ct = l.contactType;
+    if (ct === "inbound" || ct === "outbound" || ct === "contacted") counts.contacted++;
+    else if (ct === "voicemail") counts.voicemail++;
+    else if (ct === "text" || ct === "text_message") counts.text_message++;
+    else if (ct === "no_answer") counts.no_answer++;
   }
-  const contactRate = callLogs.length > 0 ? Math.round((counts.contacted / callLogs.length) * 100) : 0;
+  const contactRate = callLogs.length > 0 ? Math.round(((counts.contacted) / callLogs.length) * 100) : 0;
 
   const agentGroups = new Map<string, CallLogRow[]>();
   for (const l of callLogs) {
@@ -306,41 +332,46 @@ function buildCallLogsSection(callLogs: CallLogRow[]): string {
     agentGroups.get(key)!.push(l);
   }
 
-  const agentRows = [...agentGroups.entries()].map(([agent, logs]) => {
-    const ac: Record<string, number> = { contacted: 0, voicemail: 0, text_message: 0, no_answer: 0 };
-    for (const l of logs) { if (l.contactType in ac) ac[l.contactType]++; }
-    const rate = logs.length > 0 ? Math.round((ac.contacted / logs.length) * 100) : 0;
-    return `<tr>
-      <td style="padding:6px 10px;border-bottom:1px solid #eee;">${agent}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;">${logs.length}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;color:#16a34a;">${ac.contacted}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;color:#d97706;">${ac.voicemail}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;color:#3b82f6;">${ac.text_message}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;color:#6b7280;">${ac.no_answer}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;">${rate}%</td>
-    </tr>`;
+  const agentSections = [...agentGroups.entries()].map(([agent, logs]) => {
+    const detailRows = logs.map((l) => {
+      const color = CONTACT_TYPE_COLORS[l.contactType] ?? "#6b7280";
+      const label = CONTACT_TYPE_LABELS[l.contactType] ?? l.contactType;
+      return `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #f3f4f6;font-weight:500;">${l.clientName}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f3f4f6;">
+          <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:${color}18;color:${color};">${label}</span>
+        </td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:12px;">${l.callDate}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:12px;">${l.notes ?? ""}</td>
+      </tr>`;
+    }).join("");
+
+    return `
+      <div style="margin-top:16px;">
+        <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #e5e7eb;">
+          ${agent} &mdash; ${logs.length} call${logs.length !== 1 ? "s" : ""}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:#f9fafb;">
+              <th style="padding:5px 10px;text-align:left;font-weight:600;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">Client</th>
+              <th style="padding:5px 10px;text-align:left;font-weight:600;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">Type</th>
+              <th style="padding:5px 10px;text-align:left;font-weight:600;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">Date</th>
+              <th style="padding:5px 10px;text-align:left;font-weight:600;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">Notes</th>
+            </tr>
+          </thead>
+          <tbody>${detailRows}</tbody>
+        </table>
+      </div>`;
   }).join("");
 
   return `
     <div style="margin-top:28px;border-top:2px solid #e5e7eb;padding-top:24px;">
       <h3 style="font-size:16px;font-weight:700;color:#1a3c5e;margin:0 0 8px 0;">Call Activity</h3>
-      <p style="color:#6b7280;font-size:13px;margin:0 0 14px 0;">
-        ${callLogs.length} total calls &nbsp;|&nbsp; ${counts.contacted} contacted &nbsp;|&nbsp; ${counts.voicemail} voicemails &nbsp;|&nbsp; ${counts.text_message} texts &nbsp;|&nbsp; ${counts.no_answer} no answer &nbsp;|&nbsp; <strong>${contactRate}% contact rate</strong>
+      <p style="color:#6b7280;font-size:13px;margin:0 0 16px 0;">
+        ${callLogs.length} total &nbsp;|&nbsp; ${counts.contacted} contacted &nbsp;|&nbsp; ${counts.voicemail} voicemails &nbsp;|&nbsp; ${counts.text_message} texts &nbsp;|&nbsp; ${counts.no_answer} no answer &nbsp;|&nbsp; <strong>${contactRate}% contact rate</strong>
       </p>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
-        <thead>
-          <tr style="background:#f3f4f6;">
-            <th style="padding:7px 10px;text-align:left;font-weight:600;">Agent</th>
-            <th style="padding:7px 10px;text-align:center;font-weight:600;">Total</th>
-            <th style="padding:7px 10px;text-align:center;font-weight:600;color:#16a34a;">Contacted</th>
-            <th style="padding:7px 10px;text-align:center;font-weight:600;color:#d97706;">Voicemail</th>
-            <th style="padding:7px 10px;text-align:center;font-weight:600;color:#3b82f6;">Text Msg</th>
-            <th style="padding:7px 10px;text-align:center;font-weight:600;color:#6b7280;">No Answer</th>
-            <th style="padding:7px 10px;text-align:center;font-weight:600;">Contact Rate</th>
-          </tr>
-        </thead>
-        <tbody>${agentRows}</tbody>
-      </table>
+      ${agentSections}
     </div>
   `;
 }
