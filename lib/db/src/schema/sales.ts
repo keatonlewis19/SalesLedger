@@ -108,7 +108,7 @@ export const leadsTable = pgTable("leads", {
   phone: varchar("phone", { length: 50 }),
   email: varchar("email", { length: 255 }),
   leadOwnership: varchar("lead_ownership", { length: 50 }),
-  leadSourceId: integer("lead_source_id").references(() => leadSourcesTable.id),
+  leadSourceId: integer("lead_source_id").references(() => leadSourcesTable.id, { onDelete: "set null" }),
   state: varchar("state", { length: 100 }),
   county: varchar("county", { length: 100 }),
   zip: varchar("zip", { length: 20 }),
