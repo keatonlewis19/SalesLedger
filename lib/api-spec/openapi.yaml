@@ -26,6 +26,8 @@ tags:
     description: Lead source management
   - name: metrics
     description: Sales metrics and dashboard analytics
+  - name: call-logs
+    description: Agent call activity tracking
 paths:
   /healthz:
     get:
@@ -969,6 +971,86 @@ paths:
                     items:
                       type: object
 
+  /call-logs:
+    get:
+      operationId: listCallLogs
+      tags: [call-logs]
+      summary: List call logs
+      parameters:
+        - in: query
+          name: agentUserId
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: weekStart
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: List of call logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CallLog"
+    post:
+      operationId: createCallLog
+      tags: [call-logs]
+      summary: Log a call
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientName:
+                  type: string
+                contactType:
+                  type: string
+                  enum: [contacted, voicemail, text_message, no_answer]
+                callDate:
+                  type: string
+                notes:
+                  type: string
+                  nullable: true
+              required:
+                - clientName
+                - contactType
+                - callDate
+      responses:
+        "201":
+          description: Created call log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallLog"
+
+  /call-logs/{id}:
+    delete:
+      operationId: deleteCallLog
+      tags: [call-logs]
+      summary: Delete a call log
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
 components:
   schemas:
     HealthStatus:
@@ -1549,3 +1631,36 @@ components:
         - openLeads
         - avgDaysToClose
         - leadsOlderThan14
+
+    CallLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        clientName:
+          type: string
+        contactType:
+          type: string
+          enum: [contacted, voicemail, text_message, no_answer]
+        callDate:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        weekStart:
+          type: string
+        createdAt:
+          type: string
+        agentName:
+          type: string
+          nullable: true
+      required:
+        - id
+        - userId
+        - clientName
+        - contactType
+        - callDate
+        - weekStart
+        - createdAt

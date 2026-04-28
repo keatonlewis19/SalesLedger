@@ -147,3 +147,16 @@ export const leadSourcePaymentsTable = pgTable("lead_source_payments", {
 });
 
 export type LeadSourcePayment = typeof leadSourcePaymentsTable.$inferSelect;
+
+export const callLogsTable = pgTable("call_logs", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  clientName: text("client_name").notNull(),
+  contactType: varchar("contact_type", { length: 50 }).notNull(), // "contacted" | "voicemail" | "text_message" | "no_answer"
+  callDate: date("call_date").notNull(),
+  notes: text("notes"),
+  weekStart: text("week_start").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type CallLog = typeof callLogsTable.$inferSelect;

@@ -8,6 +8,7 @@ import leadSourcesRouter from "./lead-sources";
 import leadSourcePaymentsRouter from "./lead-source-payments";
 import leadsRouter from "./leads";
 import metricsRouter from "./metrics";
+import callLogsRouter from "./call-logs";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(leadSourcesRouter);
 router.use(leadSourcePaymentsRouter);
 router.use(leadsRouter);
 router.use(metricsRouter);
+router.use(callLogsRouter);
 
 export default router;

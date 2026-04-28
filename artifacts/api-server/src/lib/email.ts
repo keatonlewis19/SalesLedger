@@ -47,6 +47,14 @@ export interface LobSaleRow {
   agentName?: string | null;
 }
 
+export interface CallLogRow {
+  clientName: string;
+  contactType: string;
+  callDate: string;
+  notes: string | null;
+  agentName?: string | null;
+}
+
 export const LOB_LABELS: Record<string, string> = {
   aca: "ACA / Individual Health",
   ancillary: "Ancillary",
@@ -282,12 +290,68 @@ function buildAgentSection(agentLabel: string, sales: SaleRow[], headerColor: st
   `;
 }
 
+function buildCallLogsSection(callLogs: CallLogRow[]): string {
+  if (callLogs.length === 0) return "";
+
+  const counts: Record<string, number> = { contacted: 0, voicemail: 0, text_message: 0, no_answer: 0 };
+  for (const l of callLogs) {
+    if (l.contactType in counts) counts[l.contactType]++;
+  }
+  const contactRate = callLogs.length > 0 ? Math.round((counts.contacted / callLogs.length) * 100) : 0;
+
+  const agentGroups = new Map<string, CallLogRow[]>();
+  for (const l of callLogs) {
+    const key = l.agentName ?? "Unassigned";
+    if (!agentGroups.has(key)) agentGroups.set(key, []);
+    agentGroups.get(key)!.push(l);
+  }
+
+  const agentRows = [...agentGroups.entries()].map(([agent, logs]) => {
+    const ac: Record<string, number> = { contacted: 0, voicemail: 0, text_message: 0, no_answer: 0 };
+    for (const l of logs) { if (l.contactType in ac) ac[l.contactType]++; }
+    const rate = logs.length > 0 ? Math.round((ac.contacted / logs.length) * 100) : 0;
+    return `<tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;">${agent}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;">${logs.length}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;color:#16a34a;">${ac.contacted}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;color:#d97706;">${ac.voicemail}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;color:#3b82f6;">${ac.text_message}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;color:#6b7280;">${ac.no_answer}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;">${rate}%</td>
+    </tr>`;
+  }).join("");
+
+  return `
+    <div style="margin-top:28px;border-top:2px solid #e5e7eb;padding-top:24px;">
+      <h3 style="font-size:16px;font-weight:700;color:#1a3c5e;margin:0 0 8px 0;">Call Activity</h3>
+      <p style="color:#6b7280;font-size:13px;margin:0 0 14px 0;">
+        ${callLogs.length} total calls &nbsp;|&nbsp; ${counts.contacted} contacted &nbsp;|&nbsp; ${counts.voicemail} voicemails &nbsp;|&nbsp; ${counts.text_message} texts &nbsp;|&nbsp; ${counts.no_answer} no answer &nbsp;|&nbsp; <strong>${contactRate}% contact rate</strong>
+      </p>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:#f3f4f6;">
+            <th style="padding:7px 10px;text-align:left;font-weight:600;">Agent</th>
+            <th style="padding:7px 10px;text-align:center;font-weight:600;">Total</th>
+            <th style="padding:7px 10px;text-align:center;font-weight:600;color:#16a34a;">Contacted</th>
+            <th style="padding:7px 10px;text-align:center;font-weight:600;color:#d97706;">Voicemail</th>
+            <th style="padding:7px 10px;text-align:center;font-weight:600;color:#3b82f6;">Text Msg</th>
+            <th style="padding:7px 10px;text-align:center;font-weight:600;color:#6b7280;">No Answer</th>
+            <th style="padding:7px 10px;text-align:center;font-weight:600;">Contact Rate</th>
+          </tr>
+        </thead>
+        <tbody>${agentRows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
 function buildWeeklyReportHtml(
   sales: SaleRow[],
   weekStart: string,
   weekEnd: string,
   branding: BrandingOptions = {},
-  lobSalesMap?: Map<string, LobSaleRow[]>
+  lobSalesMap?: Map<string, LobSaleRow[]>,
+  callLogs?: CallLogRow[]
 ): string {
   const color = branding.brandColor ?? "#1a3c5e";
   const name = branding.brandName ?? "Sales Tracker";
@@ -350,6 +414,7 @@ function buildWeeklyReportHtml(
           <div style="margin-bottom:8px;"><h3 style="font-size:16px;font-weight:700;color:#1a3c5e;margin:0 0 12px 0;">Medicare</h3>
           ${agentGroups.size > 0 ? agentSections : "<p style=\"color:#999;\">No Medicare sales recorded this week.</p>"}</div>
           ${lobSections}
+          ${buildCallLogsSection(callLogs ?? [])}
           <p style="color:#999;font-size:12px;margin-top:24px;">This report was automatically generated and sent by ${name}.</p>
         </div>
       </div>
@@ -364,14 +429,15 @@ export async function sendWeeklyReport(
   weekEnd: string,
   recipients: string[] = DEFAULT_RECIPIENTS,
   branding: BrandingOptions = {},
-  lobSalesMap?: Map<string, LobSaleRow[]>
+  lobSalesMap?: Map<string, LobSaleRow[]>,
+  callLogs?: CallLogRow[]
 ): Promise<void> {
   const name = branding.brandName ?? "Sales Tracker";
   const subject = `${name} — Weekly Sales Report — Week of ${weekStart}`;
-  const html = buildWeeklyReportHtml(sales, weekStart, weekEnd, branding, lobSalesMap);
+  const html = buildWeeklyReportHtml(sales, weekStart, weekEnd, branding, lobSalesMap, callLogs);
   const totalOwed = sales.filter(s => !s.paid).reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0);
   const lobCount = lobSalesMap ? [...lobSalesMap.values()].reduce((a, b) => a + b.length, 0) : 0;
-  const text = `Weekly Sales Report for ${weekStart} – ${weekEnd}\n\nMedicare Sales: ${sales.length}\nOther LOB Sales: ${lobCount}\nTotal Owed: $${totalOwed.toFixed(2)}`;
+  const text = `Weekly Sales Report for ${weekStart} – ${weekEnd}\n\nMedicare Sales: ${sales.length}\nOther LOB Sales: ${lobCount}\nTotal Owed: $${totalOwed.toFixed(2)}\nCalls Logged: ${callLogs?.length ?? 0}`;
   await sendEmail(subject, html, text, recipients, { weekStart, weekEnd, totalSales: sales.length + lobCount });
 }
 

@@ -808,3 +808,55 @@ export const GetMetricsResponse = zod.object({
   leadSourcePipeline: zod.array(zod.object({}).passthrough()).optional(),
   carrierPerformance: zod.array(zod.object({}).passthrough()).optional(),
 });
+
+/**
+ * @summary List call logs
+ */
+export const ListCallLogsQueryParams = zod.object({
+  agentUserId: zod.coerce.string().optional(),
+  weekStart: zod.coerce.string().optional(),
+});
+
+export const ListCallLogsResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  clientName: zod.string(),
+  contactType: zod.enum([
+    "contacted",
+    "voicemail",
+    "text_message",
+    "no_answer",
+  ]),
+  callDate: zod.string(),
+  notes: zod.string().nullish(),
+  weekStart: zod.string(),
+  createdAt: zod.string(),
+  agentName: zod.string().nullish(),
+});
+export const ListCallLogsResponse = zod.array(ListCallLogsResponseItem);
+
+/**
+ * @summary Log a call
+ */
+export const CreateCallLogBody = zod.object({
+  clientName: zod.string(),
+  contactType: zod.enum([
+    "contacted",
+    "voicemail",
+    "text_message",
+    "no_answer",
+  ]),
+  callDate: zod.string(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Delete a call log
+ */
+export const DeleteCallLogParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteCallLogResponse = zod.object({
+  success: zod.boolean().optional(),
+});

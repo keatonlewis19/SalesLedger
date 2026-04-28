@@ -353,6 +353,28 @@ export interface MetricsSummary {
   leadsOlderThan14: number;
 }
 
+export type CallLogContactType =
+  (typeof CallLogContactType)[keyof typeof CallLogContactType];
+
+export const CallLogContactType = {
+  contacted: "contacted",
+  voicemail: "voicemail",
+  text_message: "text_message",
+  no_answer: "no_answer",
+} as const;
+
+export interface CallLog {
+  id: number;
+  userId: string;
+  clientName: string;
+  contactType: CallLogContactType;
+  callDate: string;
+  notes?: string | null;
+  weekStart: string;
+  createdAt: string;
+  agentName?: string | null;
+}
+
 export type ListSalesParams = {
   /**
    * ISO date string for the start of the week filter
@@ -620,4 +642,30 @@ export type GetMetrics200 = {
   leadSourcePerformance?: GetMetrics200LeadSourcePerformanceItem[];
   leadSourcePipeline?: GetMetrics200LeadSourcePipelineItem[];
   carrierPerformance?: GetMetrics200CarrierPerformanceItem[];
+};
+
+export type ListCallLogsParams = {
+  agentUserId?: string;
+  weekStart?: string;
+};
+
+export type CreateCallLogBodyContactType =
+  (typeof CreateCallLogBodyContactType)[keyof typeof CreateCallLogBodyContactType];
+
+export const CreateCallLogBodyContactType = {
+  contacted: "contacted",
+  voicemail: "voicemail",
+  text_message: "text_message",
+  no_answer: "no_answer",
+} as const;
+
+export type CreateCallLogBody = {
+  clientName: string;
+  contactType: CreateCallLogBodyContactType;
+  callDate: string;
+  notes?: string | null;
+};
+
+export type DeleteCallLog200 = {
+  success?: boolean;
 };

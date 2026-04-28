@@ -13,6 +13,7 @@ import LandingPage from "@/pages/landing";
 import LeadsPage from "@/pages/leads";
 import MetricsPage from "@/pages/metrics";
 import AdminSalesPage from "@/pages/admin-sales";
+import CallsPage from "@/pages/calls";
 import { BrandingProvider } from "@/contexts/branding";
 import { ViewModeProvider } from "@/contexts/view-mode";
 
@@ -209,6 +210,7 @@ function ClerkProviderWithRoutes() {
               <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
               <Route path="/team" component={() => <ProtectedRoute component={TeamPage} />} />
               <Route path="/admin-sales" component={() => <ProtectedRoute component={AdminSalesPage} />} />
+              <Route path="/calls" component={() => <ProtectedRoute component={CallsPage} />} />
               <Route component={NotFound} />
             </Switch>
             <Toaster />

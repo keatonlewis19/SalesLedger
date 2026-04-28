@@ -1,7 +1,7 @@
 import cron from "node-cron";
-import { db, salesTable, weeklyReportsTable, agencyUsersTable, leadsTable } from "@workspace/db";
+import { db, salesTable, weeklyReportsTable, agencyUsersTable, leadsTable, callLogsTable } from "@workspace/db";
 import { gte, lte, and, eq, getTableColumns, ne } from "drizzle-orm";
-import { sendWeeklyReport, sendMonthlyReport, sendAnnualReport, type SaleRow, type LobSaleRow, LOB_LABELS } from "./email";
+import { sendWeeklyReport, sendMonthlyReport, sendAnnualReport, type SaleRow, type LobSaleRow, type CallLogRow, LOB_LABELS } from "./email";
 import { logger } from "./logger";
 
 /**
@@ -177,8 +177,30 @@ export async function runWeeklyReport(): Promise<{ reportId: number; totalSales:
     logoUrl,
   };
 
+  const callLogsRaw = await db
+    .select({
+      ...getTableColumns(callLogsTable),
+      agentName: agencyUsersTable.fullName,
+    })
+    .from(callLogsTable)
+    .leftJoin(agencyUsersTable, eq(callLogsTable.userId, agencyUsersTable.clerkUserId))
+    .where(
+      and(
+        gte(callLogsTable.weekStart, weekStart),
+        lte(callLogsTable.weekStart, weekEnd)
+      )
+    );
+
+  const callLogRows: CallLogRow[] = callLogsRaw.map((l) => ({
+    clientName: l.clientName,
+    contactType: l.contactType,
+    callDate: l.callDate,
+    notes: l.notes ?? null,
+    agentName: l.agentName ?? null,
+  }));
+
   const lobSalesMap = await queryNonMedicareLobs(weekStart, weekEnd);
-  await sendWeeklyReport(saleRows, weekStart, weekEnd, recipients, branding, lobSalesMap);
+  await sendWeeklyReport(saleRows, weekStart, weekEnd, recipients, branding, lobSalesMap, callLogRows);
 
   const [report] = await db
     .insert(weeklyReportsTable)

@@ -19,10 +19,13 @@ import type {
 import type {
   AgencyUser,
   AppSettings,
+  CallLog,
+  CreateCallLogBody,
   CreateLeadBody,
   CreateLeadSourceBody,
   CreateLeadSourcePaymentBody,
   CreateSaleBody,
+  DeleteCallLog200,
   DeleteLead200,
   DeleteLeadSource200,
   DeleteLeadSourcePayment200,
@@ -37,6 +40,7 @@ import type {
   Lead,
   LeadSource,
   LeadSourcePayment,
+  ListCallLogsParams,
   ListSalesParams,
   MarkSalePaidBody,
   RemoveUser200,
@@ -2714,3 +2718,267 @@ export function useGetMetrics<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List call logs
+ */
+export const getListCallLogsUrl = (params?: ListCallLogsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/call-logs?${stringifiedParams}`
+    : `/api/call-logs`;
+};
+
+export const listCallLogs = async (
+  params?: ListCallLogsParams,
+  options?: RequestInit,
+): Promise<CallLog[]> => {
+  return customFetch<CallLog[]>(getListCallLogsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListCallLogsQueryKey = (params?: ListCallLogsParams) => {
+  return [`/api/call-logs`, ...(params ? [params] : [])] as const;
+};
+
+export const getListCallLogsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCallLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListCallLogsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCallLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListCallLogsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listCallLogs>>> = ({
+    signal,
+  }) => listCallLogs(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCallLogs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCallLogsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCallLogs>>
+>;
+export type ListCallLogsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List call logs
+ */
+
+export function useListCallLogs<
+  TData = Awaited<ReturnType<typeof listCallLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListCallLogsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCallLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCallLogsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Log a call
+ */
+export const getCreateCallLogUrl = () => {
+  return `/api/call-logs`;
+};
+
+export const createCallLog = async (
+  createCallLogBody: CreateCallLogBody,
+  options?: RequestInit,
+): Promise<CallLog> => {
+  return customFetch<CallLog>(getCreateCallLogUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createCallLogBody),
+  });
+};
+
+export const getCreateCallLogMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCallLog>>,
+    TError,
+    { data: BodyType<CreateCallLogBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createCallLog>>,
+  TError,
+  { data: BodyType<CreateCallLogBody> },
+  TContext
+> => {
+  const mutationKey = ["createCallLog"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createCallLog>>,
+    { data: BodyType<CreateCallLogBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createCallLog(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateCallLogMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createCallLog>>
+>;
+export type CreateCallLogMutationBody = BodyType<CreateCallLogBody>;
+export type CreateCallLogMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Log a call
+ */
+export const useCreateCallLog = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCallLog>>,
+    TError,
+    { data: BodyType<CreateCallLogBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createCallLog>>,
+  TError,
+  { data: BodyType<CreateCallLogBody> },
+  TContext
+> => {
+  return useMutation(getCreateCallLogMutationOptions(options));
+};
+
+/**
+ * @summary Delete a call log
+ */
+export const getDeleteCallLogUrl = (id: number) => {
+  return `/api/call-logs/${id}`;
+};
+
+export const deleteCallLog = async (
+  id: number,
+  options?: RequestInit,
+): Promise<DeleteCallLog200> => {
+  return customFetch<DeleteCallLog200>(getDeleteCallLogUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteCallLogMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCallLog>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteCallLog>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteCallLog"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteCallLog>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteCallLog(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteCallLogMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteCallLog>>
+>;
+
+export type DeleteCallLogMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a call log
+ */
+export const useDeleteCallLog = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCallLog>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteCallLog>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteCallLogMutationOptions(options));
+};
