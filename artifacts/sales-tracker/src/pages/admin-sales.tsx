@@ -32,10 +32,6 @@ export default function AdminSalesPage() {
   const [filterAgent, setFilterAgent] = useState<string>("__all");
   const [toggling, setToggling] = useState<Set<number>>(new Set());
 
-  if (!agencyLoading && !isAdmin) {
-    return <Redirect to="/dashboard" />;
-  }
-
   const agents = useMemo(() => {
     const names = new Set<string>();
     for (const s of sales) {
@@ -57,6 +53,10 @@ export default function AdminSalesPage() {
     () => [...filtered].sort((a, b) => b.soldDate.localeCompare(a.soldDate)),
     [filtered]
   );
+
+  if (!agencyLoading && !isAdmin) {
+    return <Redirect to="/dashboard" />;
+  }
 
   const totalComm = sorted.reduce((a, s) => a + (s.estimatedCommission ?? 0), 0);
   const paidComm = sorted.filter((s) => s.paid).reduce((a, s) => a + (s.estimatedCommission ?? 0), 0);
