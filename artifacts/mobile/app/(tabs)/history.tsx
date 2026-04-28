@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { useViewMode } from "@/contexts/ViewModeContext";
 import { useListSales, useGetMe } from "@workspace/api-client-react";
 
 function formatCurrency(val: number) {
@@ -128,6 +129,9 @@ export default function HistoryScreen() {
   const [filter, setFilter] = useState<FilterType>("all");
 
   const { data: me } = useGetMe();
+  const { isViewingAsAgent } = useViewMode();
+  const isAdmin = me?.role === "admin" && !isViewingAsAgent;
+
   const {
     data: salesData,
     isLoading,
@@ -136,7 +140,7 @@ export default function HistoryScreen() {
   } = useListSales();
 
   const allMySales = salesData
-    ? salesData.filter((s) => (me ? s.agent_id === me.id : true))
+    ? isAdmin ? salesData : salesData.filter((s) => (me ? s.agent_id === me.id : true))
     : [];
 
   const sorted = [...allMySales].sort(

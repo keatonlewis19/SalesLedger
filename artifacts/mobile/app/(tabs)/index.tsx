@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { useViewMode } from "@/contexts/ViewModeContext";
 import { useListSales, useGetMe } from "@workspace/api-client-react";
 
 interface StatCardProps {
@@ -94,6 +95,10 @@ export default function DashboardScreen() {
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
 
   const { data: me, isLoading: meLoading } = useGetMe();
+  const { isViewingAsAgent, toggleViewMode } = useViewMode();
+  const isActualAdmin = me?.role === "admin";
+  const isAdmin = isActualAdmin && !isViewingAsAgent;
+
   const {
     data: salesData,
     isLoading: salesLoading,
@@ -102,7 +107,7 @@ export default function DashboardScreen() {
   } = useListSales();
 
   const sales = salesData ?? [];
-  const mySales = me ? sales.filter((s) => s.agent_id === me.id) : sales;
+  const mySales = isAdmin ? sales : (me ? sales.filter((s) => s.agent_id === me.id) : sales);
 
   const totalSales = mySales.length;
   const paidSales = mySales.filter((s) => s.paid).length;
@@ -254,11 +259,47 @@ export default function DashboardScreen() {
         />
       }
     >
-      <View style={s.header}>
-        <Text style={s.greeting}>
-          {me ? `Hello, ${me.fullName?.split(" ")[0] ?? "Agent"}` : "Dashboard"}
-        </Text>
-        <Text style={s.week}>{getWeekLabel()}</Text>
+      <View style={[s.header, { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.greeting}>
+            {me ? `Hello, ${me.fullName?.split(" ")[0] ?? "Agent"}` : "Dashboard"}
+          </Text>
+          <Text style={s.week}>{getWeekLabel()}</Text>
+        </View>
+        {isActualAdmin && (
+          <TouchableOpacity
+            onPress={toggleViewMode}
+            style={{
+              marginTop: 4,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 20,
+              backgroundColor: isViewingAsAgent ? colors.accent : colors.primary + "20",
+              borderWidth: 1,
+              borderColor: isViewingAsAgent ? colors.border : colors.primary,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 5,
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={isViewingAsAgent ? "Switch to admin view" : "Switch to agent view"}
+          >
+            <Feather
+              name={isViewingAsAgent ? "user" : "shield"}
+              size={11}
+              color={isViewingAsAgent ? colors.mutedForeground : colors.primary}
+            />
+            <Text
+              style={{
+                fontSize: 11,
+                fontFamily: "Inter_500Medium",
+                color: isViewingAsAgent ? colors.mutedForeground : colors.primary,
+              }}
+            >
+              {isViewingAsAgent ? "Agent view" : "Admin view"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {unpaidSales > 0 && (

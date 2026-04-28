@@ -16,6 +16,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 // Point the shared API client at the correct domain for this environment.
@@ -93,11 +94,13 @@ export default function RootLayout() {
         <ClerkProvider publishableKey={publishableKey}>
           <AuthTokenWirer>
             <QueryClientProvider client={queryClient}>
-              <GestureHandlerRootView>
-                <KeyboardProvider>
-                  <RootLayoutNav />
-                </KeyboardProvider>
-              </GestureHandlerRootView>
+              <ViewModeProvider>
+                <GestureHandlerRootView>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </ViewModeProvider>
             </QueryClientProvider>
           </AuthTokenWirer>
         </ClerkProvider>
