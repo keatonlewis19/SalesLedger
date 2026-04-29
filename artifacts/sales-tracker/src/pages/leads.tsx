@@ -165,6 +165,14 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function formatPhoneNumber(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  if (digits.length === 0) return "";
+  if (digits.length <= 3) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 const today = new Date().toISOString().slice(0, 10);
 
 type LeadForm = {
@@ -804,7 +812,7 @@ export default function LeadsPage() {
                         <tr key={lead.id} className="border-b last:border-0 hover:bg-muted/20">
                           <td className="px-4 py-3 font-medium">
                             {lead.firstName} {lead.lastName ?? ""}
-                            {lead.phone && <div className="text-xs text-muted-foreground">{lead.phone}</div>}
+                            {lead.phone && <div className="text-xs text-muted-foreground">{formatPhoneNumber(lead.phone)}</div>}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
                             {lead.leadSource?.name ?? "—"}
@@ -1165,7 +1173,13 @@ export default function LeadsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label htmlFor="phone">Phone</Label>
-                    <Input id="phone" value={form.phone} onChange={f("phone")} placeholder="(555) 000-0000" />
+                    <Input
+                      id="phone"
+                      value={form.phone}
+                      onChange={(e) => setForm((p) => ({ ...p, phone: formatPhoneNumber(e.target.value) }))}
+                      placeholder="(555) 000-0000"
+                      inputMode="numeric"
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="email">Email</Label>
