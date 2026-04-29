@@ -459,7 +459,13 @@ export function SaleForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Sales Source</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select
+                    onValueChange={(val) => {
+                      field.onChange(val);
+                      if (val !== "Self-Generated") form.setValue("leadSource", "");
+                    }}
+                    value={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select source" />
@@ -475,23 +481,25 @@ export function SaleForm({
               )}
             />
 
-            {/* Lead Source */}
-            <FormField
-              control={form.control}
-              name="leadSource"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Lead Source</FormLabel>
-                  <FormControl>
-                    <LeadSourceCombobox
-                      value={field.value ?? ""}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Lead Source — only when Self-Generated */}
+            {watchedSalesSource === "Self-Generated" && (
+              <FormField
+                control={form.control}
+                name="leadSource"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Lead Source</FormLabel>
+                    <FormControl>
+                      <LeadSourceCombobox
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Carrier — non-Medicare only */}
             {showCarrier && (
