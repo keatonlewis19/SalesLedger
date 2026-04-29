@@ -45,6 +45,22 @@ function formatCurrency(val: number | null | undefined) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
 }
 
+const LOB_LABELS: Record<string, string> = {
+  medicare: "Medicare",
+  aca: "ACA",
+  ancillary: "Ancillary",
+  life: "Life Insurance",
+  annuity: "Annuities",
+};
+
+const LOB_COLORS: Record<string, string> = {
+  medicare: "bg-teal-50 text-teal-700 border-teal-200",
+  aca: "bg-blue-50 text-blue-700 border-blue-200",
+  ancillary: "bg-purple-50 text-purple-700 border-purple-200",
+  life: "bg-orange-50 text-orange-700 border-orange-200",
+  annuity: "bg-rose-50 text-rose-700 border-rose-200",
+};
+
 type Sale = {
   id: number;
   userId: string | null;
@@ -53,6 +69,8 @@ type Sale = {
   salesSource: string | null;
   leadSource: string | null;
   salesType: string;
+  lineOfBusiness: string | null;
+  carrier: string | null;
   soldDate: string;
   effectiveDate: string | null;
   commissionType: string;
@@ -81,7 +99,7 @@ function SalesTable({
   onTogglePaid,
   isPaidPending,
 }: SalesTableProps) {
-  const colCount = showAgentColumn ? 12 : 11;
+  const colCount = showAgentColumn ? 14 : 13;
 
   return (
     <div className="overflow-x-auto">
@@ -93,11 +111,13 @@ function SalesTable({
             <TableHead>Sales Source</TableHead>
             <TableHead>Lead Source</TableHead>
             <TableHead>Type</TableHead>
+            <TableHead>Product Type</TableHead>
+            <TableHead>Carrier</TableHead>
             <TableHead>Sold Date</TableHead>
             <TableHead>Eff. Date</TableHead>
             <TableHead>Comm. Type</TableHead>
             <TableHead className="text-right">HRA</TableHead>
-            <TableHead className="text-right">Commission</TableHead>
+            <TableHead className="text-right">Est. Commission</TableHead>
             <TableHead className="text-center">Paid</TableHead>
             <TableHead className="w-[100px] text-right">Actions</TableHead>
           </TableRow>
@@ -153,6 +173,16 @@ function SalesTable({
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
                     {sale.salesType}
                   </span>
+                </TableCell>
+                <TableCell>
+                  {sale.lineOfBusiness ? (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${LOB_COLORS[sale.lineOfBusiness] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                      {LOB_LABELS[sale.lineOfBusiness] ?? sale.lineOfBusiness}
+                    </span>
+                  ) : "—"}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {sale.carrier || "—"}
                 </TableCell>
                 <TableCell>{format(new Date(sale.soldDate), "MMM d")}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">
