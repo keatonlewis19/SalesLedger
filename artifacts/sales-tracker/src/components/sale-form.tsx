@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -28,8 +29,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "./ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "./ui/command";
 import { Textarea } from "./ui/textarea";
-import { useCreateSale, useUpdateSale, useGetSettings, getListSalesQueryKey, getGetCurrentWeekSummaryQueryKey } from "@workspace/api-client-react";
+import { cn } from "@/lib/utils";
+import {
+  useCreateSale,
+  useUpdateSale,
+  useGetSettings,
+  useListLeadSources,
+  useCreateLeadSource,
+  getListSalesQueryKey,
+  getGetCurrentWeekSummaryQueryKey,
+  getListLeadSourcesQueryKey,
+} from "@workspace/api-client-react";
 import type { SaleEntry } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,6 +71,122 @@ const LOB_OPTIONS = [
 ] as const;
 
 type LobValue = "medicare" | "aca" | "ancillary" | "life" | "annuity";
+
+// ---------------------------------------------------------------------------
+// Lead Source combobox — shows DB entries + inline "create new" option
+// ---------------------------------------------------------------------------
+function LeadSourceCombobox({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [creating, setCreating] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: sources = [] } = useListLeadSources();
+  const createLeadSource = useCreateLeadSource();
+
+  const names = sources.map((s) => s.name);
+  const trimmed = search.trim();
+  const exactMatch = names.some((n) => n.toLowerCase() === trimmed.toLowerCase());
+  const showCreate = trimmed.length > 0 && !exactMatch;
+
+  function handleSelect(name: string) {
+    onChange(name);
+    setSearch("");
+    setOpen(false);
+  }
+
+  function handleCreate() {
+    if (!trimmed || creating) return;
+    setCreating(true);
+    createLeadSource.mutate(
+      { data: { name: trimmed, isPaid: false } },
+      {
+        onSuccess: (newSource) => {
+          queryClient.invalidateQueries({ queryKey: getListLeadSourcesQueryKey() });
+          onChange(newSource.name);
+          setSearch("");
+          setOpen(false);
+          toast({ title: `Lead source "${newSource.name}" created` });
+        },
+        onError: () => {
+          toast({ title: "Failed to create lead source", variant: "destructive" });
+        },
+        onSettled: () => setCreating(false),
+      }
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+        >
+          <span className={cn(!value && "text-muted-foreground")}>
+            {value || "Select or create a lead source"}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Search or type a new name…"
+            value={search}
+            onValueChange={setSearch}
+          />
+          <CommandList>
+            <CommandGroup>
+              {names
+                .filter((n) => n.toLowerCase().includes(trimmed.toLowerCase()))
+                .map((name) => (
+                  <CommandItem key={name} value={name} onSelect={() => handleSelect(name)}>
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === name ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {name}
+                  </CommandItem>
+                ))}
+              {names.filter((n) => n.toLowerCase().includes(trimmed.toLowerCase())).length === 0 &&
+                !showCreate && (
+                  <CommandEmpty>No lead sources found.</CommandEmpty>
+                )}
+            </CommandGroup>
+
+            {showCreate && (
+              <>
+                <CommandSeparator />
+                <CommandGroup>
+                  <CommandItem
+                    value={`__create__${trimmed}`}
+                    onSelect={handleCreate}
+                    disabled={creating}
+                    className="text-primary"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {creating ? "Creating…" : `Create "${trimmed}"`}
+                  </CommandItem>
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 const formSchema = z.object({
   lineOfBusiness: z.string().min(1),
@@ -337,7 +478,10 @@ export function SaleForm({
                 <FormItem>
                   <FormLabel>Lead Source</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Referral, Cold Call, Walk-in" {...field} />
+                    <LeadSourceCombobox
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
