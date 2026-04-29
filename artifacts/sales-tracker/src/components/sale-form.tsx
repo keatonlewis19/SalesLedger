@@ -198,7 +198,7 @@ const formSchema = z.object({
   salesType: z.string().min(1, "Sales type is required"),
   soldDate: z.string().min(1, "Sold date is required"),
   effectiveDate: z.string().optional(),
-  commissionType: z.string().min(1, "Commission type is required"),
+  commissionType: z.string().optional(),
   estimatedCommission: z.string().optional(),
   hra: z.string().optional(),
   comments: z.string().optional(),
@@ -356,7 +356,7 @@ export function SaleForm({
       salesType: data.salesType,
       soldDate: data.soldDate,
       effectiveDate: data.effectiveDate || null,
-      commissionType: data.commissionType,
+      commissionType: data.lineOfBusiness === "medicare" ? (data.commissionType || "") : "",
       estimatedCommission: data.estimatedCommission ? parseFloat(data.estimatedCommission) : null,
       hra: data.hra ? parseFloat(data.hra) : null,
       comments: data.comments || null,
@@ -598,30 +598,32 @@ export function SaleForm({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="commissionType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Commission Type</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select commission type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {COMMISSION_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {isMedicare && (
+              <FormField
+                control={form.control}
+                name="commissionType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Commission Type</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select commission type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {COMMISSION_TYPES.map((t) => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className={isMedicare ? "grid grid-cols-2 gap-4" : ""}>
               <FormField
                 control={form.control}
                 name="estimatedCommission"
