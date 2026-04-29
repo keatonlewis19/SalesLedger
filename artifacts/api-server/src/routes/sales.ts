@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, gte, lte, and, getTableColumns } from "drizzle-orm";
-import { db, salesTable, weeklyReportsTable, agencyUsersTable } from "@workspace/db";
+import { db, salesTable, weeklyReportsTable, agencyUsersTable, leadsTable } from "@workspace/db";
 import {
   CreateSaleBody,
   UpdateSaleBody,
@@ -24,6 +24,13 @@ const router: IRouter = Router();
 function parseId(raw: string | string[]): number {
   const str = Array.isArray(raw) ? raw[0] : raw;
   return parseInt(str, 10);
+}
+
+function splitName(fullName: string): { firstName: string; lastName?: string } {
+  const trimmed = fullName.trim();
+  const lastSpace = trimmed.lastIndexOf(" ");
+  if (lastSpace === -1) return { firstName: trimmed };
+  return { firstName: trimmed.slice(0, lastSpace), lastName: trimmed.slice(lastSpace + 1) };
 }
 
 function normalizeSale(s: { createdAt: Date | string; updatedAt: Date | string; owningAgent?: string | null; salesSource?: string | null; effectiveDate?: string | null; leadSource?: string | null; hra?: number | null; estimatedCommission: number | null | undefined; notes: string | null | undefined; userId?: string | null; paid?: boolean; [key: string]: unknown }) {
@@ -117,6 +124,27 @@ router.post("/sales", requireAuth, async (req: AuthRequest, res): Promise<void> 
       weekStart,
     })
     .returning();
+
+  // Mirror as a lead record so it appears in Leads & Sales
+  try {
+    const { firstName, lastName } = splitName(data.clientName);
+    await db.insert(leadsTable).values({
+      userId: req.userId!,
+      firstName,
+      lastName,
+      status: "sold",
+      lineOfBusiness: (data.lineOfBusiness ?? "medicare") as "medicare" | "aca" | "ancillary" | "life" | "annuity",
+      carrier: data.carrier ?? undefined,
+      salesType: data.salesType ?? undefined,
+      revenue: data.estimatedCommission ?? undefined,
+      soldDate: data.soldDate,
+      enteredDate: data.soldDate,
+      notes: data.comments ?? undefined,
+      linkedSaleId: sale.id,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to mirror manual sale as lead");
+  }
 
   res.status(201).json(GetSaleResponse.parse(normalizeSale(sale)));
 });
@@ -273,6 +301,33 @@ router.patch("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<v
     return;
   }
 
+  // Sync changes to the mirrored lead record if one exists
+  try {
+    const [linkedLead] = await db
+      .select()
+      .from(leadsTable)
+      .where(eq(leadsTable.linkedSaleId, sale.id));
+    if (linkedLead) {
+      const leadUpdate: Record<string, unknown> = {};
+      if (updateData.clientName !== undefined) {
+        const { firstName, lastName } = splitName(updateData.clientName);
+        leadUpdate.firstName = firstName;
+        leadUpdate.lastName = lastName ?? null;
+      }
+      if (updateData.carrier !== undefined) leadUpdate.carrier = updateData.carrier;
+      if (updateData.salesType !== undefined) leadUpdate.salesType = updateData.salesType;
+      if (updateData.estimatedCommission !== undefined) leadUpdate.revenue = updateData.estimatedCommission;
+      if (updateData.soldDate !== undefined) { leadUpdate.soldDate = updateData.soldDate; leadUpdate.enteredDate = updateData.soldDate; }
+      if (updateData.lineOfBusiness !== undefined) leadUpdate.lineOfBusiness = updateData.lineOfBusiness;
+      if (updateData.comments !== undefined) leadUpdate.notes = updateData.comments;
+      if (Object.keys(leadUpdate).length > 0) {
+        await db.update(leadsTable).set(leadUpdate as any).where(eq(leadsTable.id, linkedLead.id));
+      }
+    }
+  } catch (err) {
+    req.log.error({ err }, "Failed to sync lead from sale update");
+  }
+
   res.json(UpdateSaleResponse.parse(normalizeSale(sale)));
 });
 
@@ -293,6 +348,13 @@ router.delete("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<
   if (!isAdmin && existing.userId !== req.userId) {
     res.status(403).json({ error: "Forbidden" });
     return;
+  }
+
+  // Delete any mirrored lead linked to this sale
+  try {
+    await db.delete(leadsTable).where(eq(leadsTable.linkedSaleId, params.data.id));
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete mirrored lead for sale");
   }
 
   await db.delete(salesTable).where(eq(salesTable.id, params.data.id));
