@@ -45,6 +45,11 @@ function formatCurrency(val: number | null | undefined) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
 }
 
+function parseLocalDate(s: string): Date {
+  const [y, m, d] = s.split("T")[0].split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
 const LOB_LABELS: Record<string, string> = {
   medicare: "Medicare",
   aca: "ACA",
@@ -184,10 +189,10 @@ function SalesTable({
                 <TableCell className="text-muted-foreground text-sm">
                   {sale.carrier || "—"}
                 </TableCell>
-                <TableCell>{format(new Date(sale.soldDate), "MMM d")}</TableCell>
+                <TableCell>{format(parseLocalDate(sale.soldDate), "MMM d")}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {sale.effectiveDate
-                    ? format(new Date(sale.effectiveDate), "MMM d")
+                    ? format(parseLocalDate(sale.effectiveDate), "MMM d")
                     : "—"}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">

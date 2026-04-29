@@ -102,6 +102,7 @@ type LobSaleForm = {
   revenue: string;
   soldDate: string;
   ancillaryType: string;
+  salesType: string;
   notes: string;
 };
 
@@ -112,6 +113,7 @@ const emptyLobSaleForm = (): LobSaleForm => ({
   revenue: "",
   soldDate: today,
   ancillaryType: "",
+  salesType: "New Client",
   notes: "",
 });
 
@@ -430,6 +432,7 @@ export default function LeadsPage() {
       revenue: lead.revenue != null ? String(lead.revenue) : "",
       soldDate: lead.soldDate ?? today,
       ancillaryType: lead.ancillaryType ?? "",
+      salesType: lead.salesType ?? "New Client",
       notes: lead.notes ?? "",
     });
     setLobSaleOpen(true);
@@ -450,6 +453,7 @@ export default function LeadsPage() {
       status: "sold" as const,
       lineOfBusiness: activeLob,
       ancillaryType: lobSaleForm.ancillaryType || null,
+      salesType: lobSaleForm.salesType || "New Client",
       notes: lobSaleForm.notes || null,
     };
     if (lobSaleEditId != null) {
@@ -1280,13 +1284,29 @@ export default function LeadsPage() {
                 />
               </div>
             </div>
-            <div className="space-y-1">
-              <Label>Sale Date</Label>
-              <Input
-                type="date"
-                value={lobSaleForm.soldDate}
-                onChange={(e) => setLobSaleForm((p) => ({ ...p, soldDate: e.target.value }))}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Sales Type</Label>
+                <Select
+                  value={lobSaleForm.salesType || "New Client"}
+                  onValueChange={(v) => setLobSaleForm((p) => ({ ...p, salesType: v }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="New Client">New Client</SelectItem>
+                    <SelectItem value="Plan Change">Plan Change</SelectItem>
+                    <SelectItem value="AOR">AOR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Sale Date</Label>
+                <Input
+                  type="date"
+                  value={lobSaleForm.soldDate}
+                  onChange={(e) => setLobSaleForm((p) => ({ ...p, soldDate: e.target.value }))}
+                />
+              </div>
             </div>
             <div className="space-y-1">
               <Label>Notes</Label>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListSales,
@@ -19,6 +20,11 @@ import { cn } from "@/lib/utils";
 
 const fmt = (v: number | null | undefined) =>
   v == null ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
+
+function parseLocalDate(s: string): Date {
+  const [y, m, d] = s.split("T")[0].split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
 
 type FilterPaid = "all" | "paid" | "unpaid";
 
@@ -251,7 +257,7 @@ export default function AdminSalesPage() {
                           <td className="px-4 py-3 text-muted-foreground">{carrier || "—"}</td>
                           <td className="px-4 py-3 text-muted-foreground">{metalTier || "—"}</td>
                           <td className="px-4 py-3 text-muted-foreground">{sale.salesSource ?? "—"}</td>
-                          <td className="px-4 py-3 text-muted-foreground tabular-nums">{sale.soldDate}</td>
+                          <td className="px-4 py-3 text-muted-foreground tabular-nums">{format(parseLocalDate(sale.soldDate), "MMM d, yyyy")}</td>
                           <td className="px-4 py-3 text-muted-foreground">{sale.commissionType}</td>
                           <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                             {sale.hra != null ? fmt(sale.hra) : "—"}
