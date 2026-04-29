@@ -113,6 +113,7 @@ router.post("/sales", requireAuth, async (req: AuthRequest, res): Promise<void> 
       lineOfBusiness: data.lineOfBusiness ?? "medicare",
       carrier: data.carrier ?? undefined,
       metalTier: data.metalTier ?? undefined,
+      householdSize: data.householdSize ?? undefined,
       weekStart,
     })
     .returning();
@@ -254,6 +255,7 @@ router.patch("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<v
   if (updateData.lineOfBusiness !== undefined) updateFields.lineOfBusiness = updateData.lineOfBusiness;
   if (updateData.carrier !== undefined) updateFields.carrier = updateData.carrier;
   if (updateData.metalTier !== undefined) updateFields.metalTier = updateData.metalTier;
+  if (updateData.householdSize !== undefined) updateFields.householdSize = updateData.householdSize;
 
   if (updateData.soldDate !== undefined) {
     updateFields.soldDate = updateData.soldDate;

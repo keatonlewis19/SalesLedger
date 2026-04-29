@@ -31,6 +31,7 @@ export const salesTable = pgTable("sales", {
   lineOfBusiness: varchar("line_of_business", { length: 50 }).notNull().default("medicare"),
   carrier: varchar("carrier", { length: 255 }),
   metalTier: varchar("metal_tier", { length: 50 }),
+  householdSize: integer("household_size"),
   paid: boolean("paid").notNull().default(false),
   weekStart: text("week_start").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

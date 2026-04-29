@@ -1273,6 +1273,8 @@ components:
           type: ["string", "null"]
         metalTier:
           type: ["string", "null"]
+        householdSize:
+          type: ["integer", "null"]
         paid:
           type: boolean
         weekStart:
@@ -1331,6 +1333,8 @@ components:
           type: ["string", "null"]
         metalTier:
           type: ["string", "null"]
+        householdSize:
+          type: ["integer", "null"]
       required:
         - clientName
         - salesType
@@ -1368,6 +1372,8 @@ components:
           type: ["string", "null"]
         metalTier:
           type: ["string", "null"]
+        householdSize:
+          type: ["integer", "null"]
 
     WeekSummary:
       type: object

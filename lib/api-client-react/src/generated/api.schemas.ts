@@ -149,6 +149,8 @@ export interface SaleEntry {
   carrier?: string | null;
   /** @nullable */
   metalTier?: string | null;
+  /** @nullable */
+  householdSize?: number | null;
   paid: boolean;
   weekStart: string;
   createdAt: string;
@@ -189,6 +191,8 @@ export interface CreateSaleBody {
   carrier?: string | null;
   /** @nullable */
   metalTier?: string | null;
+  /** @nullable */
+  householdSize?: number | null;
 }
 
 export type UpdateSaleBodyLineOfBusiness =
@@ -225,6 +229,8 @@ export interface UpdateSaleBody {
   carrier?: string | null;
   /** @nullable */
   metalTier?: string | null;
+  /** @nullable */
+  householdSize?: number | null;
 }
 
 export type WeekSummaryByOwningAgentItem = {

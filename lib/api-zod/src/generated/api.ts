@@ -43,6 +43,7 @@ export const ListSalesResponseItem = zod.object({
   lineOfBusiness: zod.string().nullish(),
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
+  householdSize: zod.number().nullish(),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
@@ -69,6 +70,7 @@ export const CreateSaleBody = zod.object({
     .nullish(),
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
+  householdSize: zod.number().nullish(),
 });
 
 /**
@@ -100,6 +102,7 @@ export const MarkSalePaidResponse = zod.object({
   lineOfBusiness: zod.string().nullish(),
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
+  householdSize: zod.number().nullish(),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
@@ -223,6 +226,7 @@ export const GetSaleResponse = zod.object({
   lineOfBusiness: zod.string().nullish(),
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
+  householdSize: zod.number().nullish(),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
@@ -252,6 +256,7 @@ export const UpdateSaleBody = zod.object({
     .nullish(),
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
+  householdSize: zod.number().nullish(),
 });
 
 export const UpdateSaleResponse = zod.object({
@@ -272,6 +277,7 @@ export const UpdateSaleResponse = zod.object({
   lineOfBusiness: zod.string().nullish(),
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
+  householdSize: zod.number().nullish(),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),

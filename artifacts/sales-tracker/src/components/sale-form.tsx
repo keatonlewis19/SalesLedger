@@ -195,6 +195,7 @@ const formSchema = z.object({
   leadSource: z.string().optional(),
   carrier: z.string().optional(),
   metalTier: z.string().optional(),
+  householdSize: z.string().optional(),
   salesType: z.string().min(1, "Sales type is required"),
   soldDate: z.string().min(1, "Sold date is required"),
   effectiveDate: z.string().optional(),
@@ -241,6 +242,7 @@ export function SaleForm({
       leadSource: "",
       carrier: "",
       metalTier: "",
+      householdSize: "",
       salesType: "",
       soldDate: format(new Date(), "yyyy-MM-dd"),
       effectiveDate: "",
@@ -260,6 +262,7 @@ export function SaleForm({
         leadSource: sale.leadSource || "",
         carrier: (sale as any).carrier || "",
         metalTier: (sale as any).metalTier || "",
+        householdSize: (sale as any).householdSize?.toString() || "",
         salesType: sale.salesType,
         soldDate: sale.soldDate.split("T")[0],
         effectiveDate: sale.effectiveDate?.split("T")[0] || "",
@@ -276,6 +279,7 @@ export function SaleForm({
         leadSource: "",
         carrier: "",
         metalTier: "",
+        householdSize: "",
         salesType: "",
         soldDate: format(new Date(), "yyyy-MM-dd"),
         effectiveDate: "",
@@ -363,6 +367,7 @@ export function SaleForm({
       lineOfBusiness: data.lineOfBusiness || "medicare",
       carrier: data.carrier || null,
       metalTier: data.metalTier || null,
+      householdSize: data.householdSize ? parseInt(data.householdSize, 10) : null,
     };
 
     if (sale) {
@@ -538,6 +543,30 @@ export function SaleForm({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Household Size — ACA only */}
+            {watchedLob === "aca" && (
+              <FormField
+                control={form.control}
+                name="householdSize"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Household Size</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={20}
+                        step={1}
+                        placeholder="Number of people in household"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
