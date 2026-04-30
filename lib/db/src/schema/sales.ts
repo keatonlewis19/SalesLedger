@@ -34,6 +34,7 @@ export const salesTable = pgTable("sales", {
   householdSize: integer("household_size"),
   paid: boolean("paid").notNull().default(false),
   weekStart: text("week_start").notNull(),
+  leadId: integer("lead_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

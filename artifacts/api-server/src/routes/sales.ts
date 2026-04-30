@@ -103,6 +103,27 @@ router.post("/sales", requireAuth, async (req: AuthRequest, res): Promise<void> 
   const data = parsed.data;
   const weekStart = getWeekStartForDate(data.soldDate);
 
+  // Leads are the source of truth — create the lead record first, then attach the sale
+  const { firstName, lastName } = splitName(data.clientName);
+  const [lead] = await db
+    .insert(leadsTable)
+    .values({
+      userId: req.userId!,
+      firstName,
+      lastName,
+      status: "sold",
+      lineOfBusiness: (data.lineOfBusiness ?? "medicare") as "medicare" | "aca" | "ancillary" | "life" | "annuity",
+      carrier: data.carrier ?? undefined,
+      salesType: data.salesType ?? undefined,
+      commissionType: data.commissionType ?? undefined,
+      revenue: data.estimatedCommission ?? undefined,
+      soldDate: data.soldDate,
+      enteredDate: data.soldDate,
+      notes: data.comments ?? undefined,
+      leadOwnership: "sale_entry",
+    })
+    .returning();
+
   const [sale] = await db
     .insert(salesTable)
     .values({
@@ -122,29 +143,12 @@ router.post("/sales", requireAuth, async (req: AuthRequest, res): Promise<void> 
       metalTier: data.metalTier ?? undefined,
       householdSize: data.householdSize ?? undefined,
       weekStart,
+      leadId: lead.id,
     })
     .returning();
 
-  // Mirror as a lead record so it appears in Leads & Sales
-  try {
-    const { firstName, lastName } = splitName(data.clientName);
-    await db.insert(leadsTable).values({
-      userId: req.userId!,
-      firstName,
-      lastName,
-      status: "sold",
-      lineOfBusiness: (data.lineOfBusiness ?? "medicare") as "medicare" | "aca" | "ancillary" | "life" | "annuity",
-      carrier: data.carrier ?? undefined,
-      salesType: data.salesType ?? undefined,
-      revenue: data.estimatedCommission ?? undefined,
-      soldDate: data.soldDate,
-      enteredDate: data.soldDate,
-      notes: data.comments ?? undefined,
-      linkedSaleId: sale.id,
-    });
-  } catch (err) {
-    req.log.error({ err }, "Failed to mirror manual sale as lead");
-  }
+  // Point the lead back to its sale
+  await db.update(leadsTable).set({ linkedSaleId: sale.id }).where(eq(leadsTable.id, lead.id));
 
   res.status(201).json(GetSaleResponse.parse(normalizeSale(sale)));
 });
@@ -301,13 +305,9 @@ router.patch("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<v
     return;
   }
 
-  // Sync changes to the mirrored lead record if one exists
-  try {
-    const [linkedLead] = await db
-      .select()
-      .from(leadsTable)
-      .where(eq(leadsTable.linkedSaleId, sale.id));
-    if (linkedLead) {
+  // Sync changes to the parent lead record (Option B: leads are source of truth)
+  if (sale.leadId) {
+    try {
       const leadUpdate: Record<string, unknown> = {};
       if (updateData.clientName !== undefined) {
         const { firstName, lastName } = splitName(updateData.clientName);
@@ -316,16 +316,17 @@ router.patch("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<v
       }
       if (updateData.carrier !== undefined) leadUpdate.carrier = updateData.carrier;
       if (updateData.salesType !== undefined) leadUpdate.salesType = updateData.salesType;
+      if (updateData.commissionType !== undefined) leadUpdate.commissionType = updateData.commissionType;
       if (updateData.estimatedCommission !== undefined) leadUpdate.revenue = updateData.estimatedCommission;
       if (updateData.soldDate !== undefined) { leadUpdate.soldDate = updateData.soldDate; leadUpdate.enteredDate = updateData.soldDate; }
       if (updateData.lineOfBusiness !== undefined) leadUpdate.lineOfBusiness = updateData.lineOfBusiness;
       if (updateData.comments !== undefined) leadUpdate.notes = updateData.comments;
       if (Object.keys(leadUpdate).length > 0) {
-        await db.update(leadsTable).set(leadUpdate as any).where(eq(leadsTable.id, linkedLead.id));
+        await db.update(leadsTable).set(leadUpdate as any).where(eq(leadsTable.id, sale.leadId));
       }
+    } catch (err) {
+      req.log.error({ err }, "Failed to sync lead from sale update");
     }
-  } catch (err) {
-    req.log.error({ err }, "Failed to sync lead from sale update");
   }
 
   res.json(UpdateSaleResponse.parse(normalizeSale(sale)));
@@ -350,11 +351,24 @@ router.delete("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<
     return;
   }
 
-  // Delete any mirrored lead linked to this sale
-  try {
-    await db.delete(leadsTable).where(eq(leadsTable.linkedSaleId, params.data.id));
-  } catch (err) {
-    req.log.error({ err }, "Failed to delete mirrored lead for sale");
+  // If the sale has a parent lead, handle it based on origin:
+  // - 'sale_entry' leads were auto-created alongside this sale → delete them
+  // - real pipeline leads (Agency BOB / Self-Generated) → just unlink them
+  if (existing.leadId) {
+    try {
+      const [parentLead] = await db.select().from(leadsTable).where(eq(leadsTable.id, existing.leadId));
+      if (parentLead) {
+        if (parentLead.leadOwnership === "sale_entry") {
+          await db.delete(leadsTable).where(eq(leadsTable.id, parentLead.id));
+        } else {
+          await db.update(leadsTable)
+            .set({ linkedSaleId: null, soldDate: null })
+            .where(eq(leadsTable.id, parentLead.id));
+        }
+      }
+    } catch (err) {
+      req.log.error({ err }, "Failed to clean up parent lead on sale delete");
+    }
   }
 
   await db.delete(salesTable).where(eq(salesTable.id, params.data.id));

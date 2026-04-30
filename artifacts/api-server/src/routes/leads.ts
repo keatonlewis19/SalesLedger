@@ -316,8 +316,11 @@ router.patch("/leads/:id", requireAuth, async (req: AuthRequest, res): Promise<v
           soldDate: effectiveSoldDate,
           commissionType: updated.commissionType ?? "Standard",
           leadSource: leadSourceName ?? null,
-          annualPremium: updated.revenue ?? null,
+          estimatedCommission: updated.revenue ?? null,
+          lineOfBusiness: updated.lineOfBusiness ?? "medicare",
+          carrier: updated.carrier ?? null,
           weekStart,
+          leadId: existing.id,
         })
         .returning();
 
@@ -326,7 +329,7 @@ router.patch("/leads/:id", requireAuth, async (req: AuthRequest, res): Promise<v
         .set({ linkedSaleId: sale.id })
         .where(eq(leadsTable.id, id));
     } catch (err) {
-      console.error("Failed to auto-create sale from lead:", err);
+      req.log.error({ err }, "Failed to auto-create sale from lead");
     }
   }
 
@@ -336,7 +339,7 @@ router.patch("/leads/:id", requireAuth, async (req: AuthRequest, res): Promise<v
       await db.delete(salesTable).where(eq(salesTable.id, existing.linkedSaleId));
       await db.update(leadsTable).set({ linkedSaleId: null, soldDate: null }).where(eq(leadsTable.id, id));
     } catch (err) {
-      console.error("Failed to remove linked sale:", err);
+      req.log.error({ err }, "Failed to remove linked sale on status revert");
     }
   }
 
