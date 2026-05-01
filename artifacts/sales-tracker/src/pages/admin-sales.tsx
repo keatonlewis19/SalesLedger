@@ -163,41 +163,41 @@ function SalesTable({ sales, isAdmin, showAgentColumn, onDelete, onTogglePaid, i
               key={sale.id}
               className={`group ${sale.paid ? "bg-emerald-50/40 dark:bg-emerald-950/20" : "bg-amber-50/60 dark:bg-amber-950/20"}`}
             >
-              <TableCell className="font-medium">{sale.clientName}</TableCell>
+              <TableCell className="font-medium text-xs">{sale.clientName}</TableCell>
               {showAgentColumn && (
-                <TableCell className="text-sm">
+                <TableCell className="text-xs">
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+                    <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold shrink-0">
                       {(sale.agentName ?? "?").charAt(0).toUpperCase()}
                     </span>
                     <span className="text-foreground font-medium">{sale.agentName ?? "—"}</span>
                   </span>
                 </TableCell>
               )}
-              <TableCell className="text-muted-foreground text-sm">{sale.salesSource || "—"}</TableCell>
-              <TableCell className="text-muted-foreground text-sm">{sale.leadSource || "—"}</TableCell>
+              <TableCell className="text-muted-foreground text-xs">{sale.salesSource || "—"}</TableCell>
+              <TableCell className="text-muted-foreground text-xs">{sale.leadSource || "—"}</TableCell>
               <TableCell>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-medium text-center bg-secondary text-secondary-foreground">
                   {sale.salesType}
                 </span>
               </TableCell>
               <TableCell>
                 {sale.lineOfBusiness ? (
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${LOB_COLORS[sale.lineOfBusiness] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                  <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-medium text-center border ${LOB_COLORS[sale.lineOfBusiness] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}>
                     {LOB_LABELS[sale.lineOfBusiness] ?? sale.lineOfBusiness}
                   </span>
                 ) : "—"}
               </TableCell>
-              <TableCell className="text-muted-foreground text-sm">{sale.carrier || "—"}</TableCell>
-              <TableCell>{format(parseLocalDate(sale.soldDate), "MMM d")}</TableCell>
-              <TableCell className="text-muted-foreground text-sm">
+              <TableCell className="text-muted-foreground text-xs">{sale.carrier || "—"}</TableCell>
+              <TableCell className="text-xs">{format(parseLocalDate(sale.soldDate), "MMM d")}</TableCell>
+              <TableCell className="text-muted-foreground text-xs">
                 {sale.effectiveDate ? format(parseLocalDate(sale.effectiveDate), "MMM d") : "—"}
               </TableCell>
-              <TableCell className="text-muted-foreground text-sm">{sale.commissionType || "—"}</TableCell>
-              <TableCell className="text-right font-mono font-medium">
+              <TableCell className="text-muted-foreground text-xs">{sale.commissionType || "—"}</TableCell>
+              <TableCell className="text-right font-mono font-medium text-xs">
                 {sale.hra != null ? fmt(sale.hra) : "None"}
               </TableCell>
-              <TableCell className="text-right font-mono font-medium">{fmt(sale.estimatedCommission)}</TableCell>
+              <TableCell className="text-right font-mono font-medium text-xs">{fmt(sale.estimatedCommission)}</TableCell>
               <TableCell className="text-center">
                 {isAdmin ? (
                   <Checkbox
