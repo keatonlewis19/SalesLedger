@@ -200,7 +200,19 @@ export default function AddSaleScreen() {
     form.soldDate.length >= 8;
 
   async function handleSubmit() {
-    if (!isValid || submitting) return;
+    if (submitting) return;
+    if (!isValid) {
+      const missing: string[] = [];
+      if (!form.clientName.trim()) missing.push("Client Name");
+      if (!form.salesType) missing.push("Plan / Product");
+      if (form.soldDate.length < 8) missing.push("Sold Date");
+      Alert.alert(
+        "Required Fields Missing",
+        `Please fill in: ${missing.join(", ")}`,
+        [{ text: "OK" }]
+      );
+      return;
+    }
     try {
       setSubmitting(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -227,7 +239,13 @@ export default function AddSaleScreen() {
       setForm(emptyForm());
       setTimeout(() => setSuccess(false), 3000);
     } catch (e: any) {
-      Alert.alert("Error", e?.message ?? "Failed to add sale. Please try again.");
+      const errMsg =
+        e?.data?.error ||
+        e?.data?.message ||
+        e?.message ||
+        "Failed to add sale. Please try again.";
+      const statusCode = e?.status ? ` (${e.status})` : "";
+      Alert.alert("Sale Not Saved", `${errMsg}${statusCode}`, [{ text: "OK" }]);
     } finally {
       setSubmitting(false);
     }
@@ -392,6 +410,11 @@ export default function AddSaleScreen() {
             activeColor={lobOption.color}
             colors={colors}
           />
+          {!form.salesType && (
+            <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 6 }}>
+              Tap a plan type above to select it
+            </Text>
+          )}
         </View>
 
         {/* Carrier */}
@@ -612,7 +635,7 @@ export default function AddSaleScreen() {
             opacity: isValid && !submitting ? 1 : 0.6,
           }}
           onPress={handleSubmit}
-          disabled={!isValid || submitting}
+          disabled={submitting}
           activeOpacity={0.85}
         >
           {submitting ? (
