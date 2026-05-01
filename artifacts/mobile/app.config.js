@@ -58,6 +58,9 @@ module.exports = {
     extra: {
       clerkPublishableKey,
       apiDomain,
+      eas: {
+        projectId: "ae7709fa-fd91-434f-8730-e271defe25ee",
+      },
     },
   },
 };
