@@ -79,18 +79,6 @@ type = "image"
 title = "SalesLedger logo final"
 
 [[outputs]]
-id = "-ZaXGcAtLK-wGrJKOUCx1"
-uri = "file://attached_assets/generated_images/salesledger_logo_bars_dark.png"
-type = "image"
-title = "SalesLedger — Teal background + bars + cyan arrow"
-
-[[outputs]]
-id = "Ttd_ASN_gFeqEVTau8WHR"
-uri = "file://attached_assets/generated_images/salesledger_logo_bars_light.png"
-type = "image"
-title = "SalesLedger — White background + bars + cyan arrow"
-
-[[outputs]]
 id = "DwJAF7u-Gptm1po81WsTG"
 uri = "file://attached_assets/generated_images/salesledger_logo_v2_dark.png"
 type = "image"
