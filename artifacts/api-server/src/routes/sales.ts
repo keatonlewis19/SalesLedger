@@ -15,6 +15,8 @@ import {
   ListReportsResponse,
   SendReportResponse,
   MarkSalePaidBody,
+  GetReportParams,
+  GetReportResponse,
 } from "@workspace/api-zod";
 import { getCurrentWeekBounds, getWeekStartForDate, runWeeklyReport } from "../lib/scheduler";
 import { requireAuth, requireAdmin, AuthRequest } from "../middlewares/auth";
@@ -388,6 +390,83 @@ router.get("/reports", requireAuth, async (_req, res): Promise<void> => {
         sentAt: r.sentAt.toISOString(),
       }))
     )
+  );
+});
+
+router.get("/reports/:id", requireAuth, async (req: AuthRequest, res): Promise<void> => {
+  const parsed = GetReportParams.safeParse(req.params);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid report id" });
+    return;
+  }
+
+  const [report] = await db
+    .select()
+    .from(weeklyReportsTable)
+    .where(eq(weeklyReportsTable.id, parsed.data.id));
+
+  if (!report) {
+    res.status(404).json({ error: "Report not found" });
+    return;
+  }
+
+  const sales = await db
+    .select({
+      ...getTableColumns(salesTable),
+      agentName: agencyUsersTable.fullName,
+    })
+    .from(salesTable)
+    .leftJoin(agencyUsersTable, eq(salesTable.userId, agencyUsersTable.clerkUserId))
+    .where(
+      and(
+        gte(salesTable.soldDate, report.weekStart),
+        lte(salesTable.soldDate, report.weekEnd),
+      ),
+    )
+    .orderBy(salesTable.soldDate);
+
+  const normalizedSales = sales.map(normalizeSale);
+
+  // Agent breakdown
+  const agentMap = new Map<string, { count: number; commission: number; hra: number }>();
+  for (const s of normalizedSales) {
+    const name = (s.agentName as string | null) ?? "Unknown";
+    const prev = agentMap.get(name) ?? { count: 0, commission: 0, hra: 0 };
+    agentMap.set(name, {
+      count: prev.count + 1,
+      commission: prev.commission + (s.estimatedCommission ?? 0),
+      hra: prev.hra + (s.hra ?? 0),
+    });
+  }
+  const agentBreakdown = Array.from(agentMap.entries()).map(([agentName, v]) => ({
+    agentName,
+    ...v,
+  }));
+
+  // LOB breakdown
+  const lobMap = new Map<string, { count: number; commission: number; hra: number }>();
+  for (const s of normalizedSales) {
+    const lob = (s.lineOfBusiness as string | null) ?? "other";
+    const prev = lobMap.get(lob) ?? { count: 0, commission: 0, hra: 0 };
+    lobMap.set(lob, {
+      count: prev.count + 1,
+      commission: prev.commission + (s.estimatedCommission ?? 0),
+      hra: prev.hra + (s.hra ?? 0),
+    });
+  }
+  const lobBreakdown = Array.from(lobMap.entries()).map(([lob, v]) => ({
+    lob,
+    ...v,
+  }));
+
+  res.json(
+    GetReportResponse.parse({
+      ...report,
+      sentAt: report.sentAt.toISOString(),
+      sales: normalizedSales,
+      agentBreakdown,
+      lobBreakdown,
+    }),
   );
 });
 

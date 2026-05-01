@@ -367,6 +367,31 @@ paths:
                 items:
                   $ref: "#/components/schemas/WeeklyReport"
 
+  /reports/{id}:
+    get:
+      operationId: getReport
+      tags: [reports]
+      summary: Get a single weekly report with full sales detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Report detail with sales breakdown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportDetail"
+        "404":
+          description: Report not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /settings:
     get:
       operationId: getSettings
@@ -1443,6 +1468,81 @@ components:
         - totalSales
         - totalEstimatedCommission
         - recipients
+
+    ReportDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        weekStart:
+          type: string
+        weekEnd:
+          type: string
+        sentAt:
+          type: string
+        totalSales:
+          type: integer
+        totalEstimatedCommission:
+          type: number
+        recipients:
+          type: string
+        sales:
+          type: array
+          items:
+            $ref: "#/components/schemas/SaleEntry"
+        agentBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportAgentBreakdown"
+        lobBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportLobBreakdown"
+      required:
+        - id
+        - weekStart
+        - weekEnd
+        - sentAt
+        - totalSales
+        - totalEstimatedCommission
+        - recipients
+        - sales
+        - agentBreakdown
+        - lobBreakdown
+
+    ReportAgentBreakdown:
+      type: object
+      properties:
+        agentName:
+          type: string
+        count:
+          type: integer
+        commission:
+          type: number
+        hra:
+          type: number
+      required:
+        - agentName
+        - count
+        - commission
+        - hra
+
+    ReportLobBreakdown:
+      type: object
+      properties:
+        lob:
+          type: string
+        count:
+          type: integer
+        commission:
+          type: number
+        hra:
+          type: number
+      required:
+        - lob
+        - count
+        - commission
+        - hra
 
     SendReportResponse:
       type: object

@@ -45,6 +45,7 @@ import type {
   MarkSalePaidBody,
   RemoveUser200,
   RemoveUser400,
+  ReportDetail,
   SaleEntry,
   SendReportResponse,
   UpdateLeadBody,
@@ -1282,6 +1283,91 @@ export function useListReports<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getListReportsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a single weekly report with full sales detail
+ */
+export const getGetReportUrl = (id: number) => {
+  return `/api/reports/${id}`;
+};
+
+export const getReport = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ReportDetail> => {
+  return customFetch<ReportDetail>(getGetReportUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetReportQueryKey = (id: number) => {
+  return [`/api/reports/${id}`] as const;
+};
+
+export const getGetReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getReport>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetReportQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getReport>>> = ({
+    signal,
+  }) => getReport(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getReport>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getReport>>
+>;
+export type GetReportQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get a single weekly report with full sales detail
+ */
+
+export function useGetReport<
+  TData = Awaited<ReturnType<typeof getReport>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetReportQueryOptions(id, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

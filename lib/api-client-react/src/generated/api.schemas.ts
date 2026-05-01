@@ -262,6 +262,33 @@ export interface WeeklyReport {
   recipients: string;
 }
 
+export interface ReportAgentBreakdown {
+  agentName: string;
+  count: number;
+  commission: number;
+  hra: number;
+}
+
+export interface ReportLobBreakdown {
+  lob: string;
+  count: number;
+  commission: number;
+  hra: number;
+}
+
+export interface ReportDetail {
+  id: number;
+  weekStart: string;
+  weekEnd: string;
+  sentAt: string;
+  totalSales: number;
+  totalEstimatedCommission: number;
+  recipients: string;
+  sales: SaleEntry[];
+  agentBreakdown: ReportAgentBreakdown[];
+  lobBreakdown: ReportLobBreakdown[];
+}
+
 export interface SendReportResponse {
   message: string;
   reportId: number;

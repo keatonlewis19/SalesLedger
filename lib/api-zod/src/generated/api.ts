@@ -328,6 +328,65 @@ export const ListReportsResponseItem = zod.object({
 export const ListReportsResponse = zod.array(ListReportsResponseItem);
 
 /**
+ * @summary Get a single weekly report with full sales detail
+ */
+export const GetReportParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetReportResponse = zod.object({
+  id: zod.number(),
+  weekStart: zod.string(),
+  weekEnd: zod.string(),
+  sentAt: zod.string(),
+  totalSales: zod.number(),
+  totalEstimatedCommission: zod.number(),
+  recipients: zod.string(),
+  sales: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.string().nullable(),
+      agentName: zod.string().nullish(),
+      clientName: zod.string(),
+      owningAgent: zod.string().nullable(),
+      salesSource: zod.string().nullable(),
+      salesType: zod.string(),
+      soldDate: zod.string(),
+      effectiveDate: zod.string().nullable(),
+      commissionType: zod.string(),
+      leadSource: zod.string().nullable(),
+      hra: zod.number().nullable(),
+      estimatedCommission: zod.number().nullable(),
+      comments: zod.string().nullable(),
+      lineOfBusiness: zod.string().nullish(),
+      carrier: zod.string().nullish(),
+      metalTier: zod.string().nullish(),
+      householdSize: zod.number().nullish(),
+      paid: zod.boolean(),
+      weekStart: zod.string(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  agentBreakdown: zod.array(
+    zod.object({
+      agentName: zod.string(),
+      count: zod.number(),
+      commission: zod.number(),
+      hra: zod.number(),
+    }),
+  ),
+  lobBreakdown: zod.array(
+    zod.object({
+      lob: zod.string(),
+      count: zod.number(),
+      commission: zod.number(),
+      hra: zod.number(),
+    }),
+  ),
+});
+
+/**
  * @summary Get current app settings
  */
 export const GetSettingsResponse = zod.object({
