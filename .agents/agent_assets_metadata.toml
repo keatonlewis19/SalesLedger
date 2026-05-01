@@ -60,6 +60,18 @@ uri = "file://attached_assets/generated_images/salesledger_logo_bars_light.png"
 type = "image"
 title = "SalesLedger logo bars light bg"
 
+[[generated]]
+id = "fYAjGoX4YJ6fL9Dk0N3xM"
+uri = "file://attached_assets/generated_images/salesledger_logo_v2_dark.png"
+type = "image"
+title = "SalesLedger logo v2 dark bg"
+
+[[generated]]
+id = "fXVO3lt7RZ9rpWj9UhqCY"
+uri = "file://attached_assets/generated_images/salesledger_logo_v2_light.png"
+type = "image"
+title = "SalesLedger logo v2 light bg"
+
 [[outputs]]
 id = "B-opTMccA7TboG-N1J3x7"
 uri = "file://attached_assets/generated_images/salesledger_logo_scheme1.png"
@@ -113,3 +125,15 @@ id = "Ttd_ASN_gFeqEVTau8WHR"
 uri = "file://attached_assets/generated_images/salesledger_logo_bars_light.png"
 type = "image"
 title = "SalesLedger — White background + bars + cyan arrow"
+
+[[outputs]]
+id = "DwJAF7u-Gptm1po81WsTG"
+uri = "file://attached_assets/generated_images/salesledger_logo_v2_dark.png"
+type = "image"
+title = "SalesLedger — Teal bg + light clipboard + cyan arrow"
+
+[[outputs]]
+id = "pkGCRZDKfsx8yD1pIxCp0"
+uri = "file://attached_assets/generated_images/salesledger_logo_v2_light.png"
+type = "image"
+title = "SalesLedger — White bg + teal clipboard + cyan arrow"
