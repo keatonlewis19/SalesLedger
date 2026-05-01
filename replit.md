@@ -19,6 +19,19 @@ pnpm workspace monorepo using TypeScript. Multi-tenant agency management platfor
 - **Email**: Nodemailer (SMTP) — weekly/monthly/annual report emails; recipients configurable via Settings
 - **Scheduling**: node-cron — configurable day/time; defaults to Thursday 5pm
 
+## Brand Colors
+
+| Token | Hex | Usage |
+|---|---|---|
+| Primary | `#0D8A8A` | Buttons, links, active states, sidebar highlights |
+| Secondary | `#2FA4A9` | Secondary buttons, badges, accents |
+| White | `#f8fafc` | Page backgrounds, cards |
+
+Logo files in `attached_assets/`:
+- `SalesLedger_logo_favicon_1777659579781.png` — teal background (app icon, favicon)
+- `SalesLedger_logo_1777659579782.png` — transparent/colored (light backgrounds)
+- `SalesLedger_logo_white_1777659579782.png` — white (dark backgrounds)
+
 ## Cross-Platform Rule
 
 **All feature changes, UI updates, and bug fixes must be propagated to all three platforms unless explicitly noted otherwise:**

@@ -94,8 +94,8 @@
   --primary: 180 80% 30%; /* deep teal */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 30% 92%;
-  --secondary-foreground: 220 50% 15%;
+  --secondary: 182 57% 42%; /* #2FA4A9 brand secondary */
+  --secondary-foreground: 0 0% 100%;
 
   --muted: 220 20% 94%;
   --muted-foreground: 220 20% 45%;
@@ -173,8 +173,8 @@
   --primary: 180 80% 40%;
   --primary-foreground: 220 50% 10%;
 
-  --secondary: 220 30% 20%;
-  --secondary-foreground: 210 20% 98%;
+  --secondary: 182 57% 32%; /* #2FA4A9 darkened for dark mode */
+  --secondary-foreground: 0 0% 100%;
 
   --muted: 220 30% 20%;
   --muted-foreground: 220 20% 70%;
