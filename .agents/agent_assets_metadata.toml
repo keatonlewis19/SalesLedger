@@ -1,34 +1,11 @@
 uploads = []
+outputs = []
 
 [[generated]]
 id = "uzip77LLzgg5jWicT9kvM"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
 title = "generated_image"
-
-[[generated]]
-id = "pXVU7fOTiI02bVaxwAQKp"
-uri = "file://attached_assets/generated_images/salesledger_logo_scheme1.png"
-type = "image"
-title = "SalesLedger logo color scheme 1"
-
-[[generated]]
-id = "us9NMg33ns7qez_nJYX6e"
-uri = "file://attached_assets/generated_images/salesledger_logo_scheme2.png"
-type = "image"
-title = "SalesLedger logo color scheme 2"
-
-[[generated]]
-id = "VAwErrYLzzB_hDfXCO_lp"
-uri = "file://attached_assets/generated_images/salesledger_logo_scheme3.png"
-type = "image"
-title = "SalesLedger logo color scheme 3"
-
-[[generated]]
-id = "J3DrRIgPhUGsIgkfqMZk9"
-uri = "file://attached_assets/generated_images/salesledger_logo_teal_v1.png"
-type = "image"
-title = "SalesLedger logo teal v1"
 
 [[generated]]
 id = "0vzzg6s9tNb2E34msQqGq"
@@ -77,21 +54,3 @@ id = "727KwssAjeWzYuqgb19eW"
 uri = "file://attached_assets/generated_images/salesledger_logo_final.png"
 type = "image"
 title = "SalesLedger logo final"
-
-[[outputs]]
-id = "DwJAF7u-Gptm1po81WsTG"
-uri = "file://attached_assets/generated_images/salesledger_logo_v2_dark.png"
-type = "image"
-title = "SalesLedger — Teal bg + light clipboard + cyan arrow"
-
-[[outputs]]
-id = "pkGCRZDKfsx8yD1pIxCp0"
-uri = "file://attached_assets/generated_images/salesledger_logo_v2_light.png"
-type = "image"
-title = "SalesLedger — White bg + teal clipboard + cyan arrow"
-
-[[outputs]]
-id = "fot8wKJTAOcOEEnwTcRRz"
-uri = "file://attached_assets/generated_images/salesledger_logo_final.png"
-type = "image"
-title = "SalesLedger — Final"
