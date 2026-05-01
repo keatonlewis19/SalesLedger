@@ -1,8 +1,43 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "uzip77LLzgg5jWicT9kvM"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "pXVU7fOTiI02bVaxwAQKp"
+uri = "file://attached_assets/generated_images/salesledger_logo_scheme1.png"
+type = "image"
+title = "SalesLedger logo color scheme 1"
+
+[[generated]]
+id = "us9NMg33ns7qez_nJYX6e"
+uri = "file://attached_assets/generated_images/salesledger_logo_scheme2.png"
+type = "image"
+title = "SalesLedger logo color scheme 2"
+
+[[generated]]
+id = "VAwErrYLzzB_hDfXCO_lp"
+uri = "file://attached_assets/generated_images/salesledger_logo_scheme3.png"
+type = "image"
+title = "SalesLedger logo color scheme 3"
+
+[[outputs]]
+id = "B-opTMccA7TboG-N1J3x7"
+uri = "file://attached_assets/generated_images/salesledger_logo_scheme1.png"
+type = "image"
+title = "SalesLedger — Color Scheme 1 (Green)"
+
+[[outputs]]
+id = "7NDM93M85eeWdOLtFIc5Z"
+uri = "file://attached_assets/generated_images/salesledger_logo_scheme2.png"
+type = "image"
+title = "SalesLedger — Color Scheme 2 (Blue + Crimson)"
+
+[[outputs]]
+id = "0FjLpBxJAs1QCTjD6rZec"
+uri = "file://attached_assets/generated_images/salesledger_logo_scheme3.png"
+type = "image"
+title = "SalesLedger — Color Scheme 3 (Blue + Green)"
