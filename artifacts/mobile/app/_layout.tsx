@@ -11,18 +11,25 @@ import Constants from "expo-constants";
 import { Redirect, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, NativeModules, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
-let KeyboardProvider: React.ComponentType<{ children: React.ReactNode }> = ({ children }) => <>{children}</>;
-try {
-  KeyboardProvider = require("react-native-keyboard-controller").KeyboardProvider;
-} catch {
-  // Native module not available in Expo Go — falls back to no-op wrapper
+// KeyboardController requires a custom native build — not available in Expo Go.
+// Check the native module registry before loading to avoid a crash.
+const _NoopKeyboardProvider: React.ComponentType<{ children: React.ReactNode }> =
+  ({ children }) => <>{children}</>;
+let KeyboardProvider: React.ComponentType<{ children: React.ReactNode }> =
+  _NoopKeyboardProvider;
+if ("KeyboardController" in NativeModules) {
+  try {
+    KeyboardProvider = require("react-native-keyboard-controller").KeyboardProvider;
+  } catch {
+    // ignore — stay with noop
+  }
 }
 
 // Point the shared API client at the correct domain for this environment.
