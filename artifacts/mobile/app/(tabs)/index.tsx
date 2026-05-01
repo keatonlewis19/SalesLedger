@@ -16,6 +16,22 @@ import { useColors } from "@/hooks/useColors";
 import { useViewMode } from "@/contexts/ViewModeContext";
 import { useListSales, useGetMe } from "@workspace/api-client-react";
 
+const LOB_COLORS: Record<string, string> = {
+  medicare: "#0d9488",
+  aca: "#2563eb",
+  ancillary: "#d97706",
+  life: "#7c3aed",
+  annuity: "#db2777",
+};
+
+const LOB_LABELS: Record<string, string> = {
+  medicare: "Medicare",
+  aca: "ACA",
+  ancillary: "Ancillary",
+  life: "Life",
+  annuity: "Annuity",
+};
+
 interface StatCardProps {
   label: string;
   value: string;
@@ -107,13 +123,17 @@ export default function DashboardScreen() {
   } = useListSales();
 
   const sales = salesData ?? [];
-  const mySales = isAdmin ? sales : (me ? sales.filter((s) => s.agent_id === me.id) : sales);
+  const mySales = isAdmin
+    ? sales
+    : sales.filter((s) => s.userId === me?.clerkUserId);
 
   const totalSales = mySales.length;
   const paidSales = mySales.filter((s) => s.paid).length;
   const unpaidSales = totalSales - paidSales;
-  const totalCommission = mySales.reduce((sum, s) => sum + (s.commission ?? 0), 0);
-  const pendingCommission = mySales.filter((s) => !s.paid).reduce((sum, s) => sum + (s.commission ?? 0), 0);
+  const totalCommission = mySales.reduce((sum, s) => sum + (s.estimatedCommission ?? 0) + (s.hra ?? 0), 0);
+  const pendingCommission = mySales
+    .filter((s) => !s.paid)
+    .reduce((sum, s) => sum + (s.estimatedCommission ?? 0) + (s.hra ?? 0), 0);
 
   const isLoading = meLoading || salesLoading;
 
@@ -208,29 +228,49 @@ export default function DashboardScreen() {
       gap: 12,
       marginBottom: 8,
     },
-    recentDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-    },
-    recentInfo: {
+    recentLeft: {
       flex: 1,
-      gap: 2,
+      gap: 4,
+    },
+    recentTopRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
     },
     recentClient: {
       fontSize: 14,
       fontFamily: "Inter_600SemiBold",
       color: colors.foreground,
+      flex: 1,
     },
     recentMeta: {
       fontSize: 12,
       fontFamily: "Inter_400Regular",
       color: colors.mutedForeground,
     },
+    recentRight: {
+      alignItems: "flex-end",
+      gap: 4,
+    },
     recentCommission: {
       fontSize: 14,
       fontFamily: "Inter_700Bold",
       color: colors.foreground,
+    },
+    lobBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    lobBadgeText: {
+      fontSize: 10,
+      fontFamily: "Inter_600SemiBold",
+      color: "#fff",
+    },
+    paidDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
     },
   });
 
@@ -243,8 +283,8 @@ export default function DashboardScreen() {
   }
 
   const recentSales = [...mySales]
-    .sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime())
-    .slice(0, 5);
+    .sort((a, b) => new Date(b.soldDate).getTime() - new Date(a.soldDate).getTime())
+    .slice(0, 8);
 
   return (
     <ScrollView
@@ -282,7 +322,6 @@ export default function DashboardScreen() {
               gap: 5,
             }}
             accessibilityRole="button"
-            accessibilityLabel={isViewingAsAgent ? "Switch to admin view" : "Switch to agent view"}
           >
             <Feather
               name={isViewingAsAgent ? "user" : "shield"}
@@ -322,7 +361,7 @@ export default function DashboardScreen() {
             colors={colors}
           />
           <StatCard
-            label="Commission"
+            label="Est. Commission"
             value={formatCurrency(totalCommission)}
             sub={`${formatCurrency(pendingCommission)} pending`}
             icon="dollar-sign"
@@ -337,31 +376,41 @@ export default function DashboardScreen() {
         {recentSales.length === 0 ? (
           <View style={s.emptyCard}>
             <Feather name="inbox" size={32} color={colors.mutedForeground} />
-            <Text style={s.emptyText}>No sales yet</Text>
-            <Text style={s.emptySubText}>Tap the + tab to log your first sale</Text>
+            <Text style={s.emptyText}>No sales this week</Text>
+            <Text style={s.emptySubText}>Tap Add Sale to log your first sale</Text>
           </View>
         ) : (
-          recentSales.map((sale) => (
-            <View key={sale.id} style={s.recentItem}>
-              <View
-                style={[
-                  s.recentDot,
-                  { backgroundColor: sale.paid ? colors.success : colors.warning },
-                ]}
-              />
-              <View style={s.recentInfo}>
-                <Text style={s.recentClient}>{sale.client_name}</Text>
-                <Text style={s.recentMeta}>
-                  {sale.carrier} · {sale.plan_type} ·{" "}
-                  {new Date(sale.sale_date).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </Text>
+          recentSales.map((sale) => {
+            const lob = sale.lineOfBusiness ?? "medicare";
+            const lobColor = LOB_COLORS[lob] ?? colors.primary;
+            const lobLabel = LOB_LABELS[lob] ?? lob;
+            const metaParts = [sale.carrier, sale.salesType].filter(Boolean);
+            const dateStr = sale.soldDate
+              ? new Date(sale.soldDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+              : "";
+            return (
+              <View key={sale.id} style={s.recentItem}>
+                <View style={s.recentLeft}>
+                  <View style={s.recentTopRow}>
+                    <View style={[s.paidDot, { backgroundColor: sale.paid ? colors.success : colors.warning }]} />
+                    <Text style={s.recentClient} numberOfLines={1}>{sale.clientName}</Text>
+                  </View>
+                  <Text style={s.recentMeta} numberOfLines={1}>
+                    {metaParts.length > 0 ? metaParts.join(" · ") : lobLabel}
+                    {dateStr ? ` · ${dateStr}` : ""}
+                  </Text>
+                </View>
+                <View style={s.recentRight}>
+                  <Text style={s.recentCommission}>
+                    {formatCurrency((sale.estimatedCommission ?? 0) + (sale.hra ?? 0))}
+                  </Text>
+                  <View style={[s.lobBadge, { backgroundColor: lobColor }]}>
+                    <Text style={s.lobBadgeText}>{lobLabel}</Text>
+                  </View>
+                </View>
               </View>
-              <Text style={s.recentCommission}>{formatCurrency(sale.commission ?? 0)}</Text>
-            </View>
-          ))
+            );
+          })
         )}
       </View>
     </ScrollView>

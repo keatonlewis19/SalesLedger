@@ -15,6 +15,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useViewMode } from "@/contexts/ViewModeContext";
 import { useListSales, useGetMe } from "@workspace/api-client-react";
+import type { SaleEntry } from "@workspace/api-client-react";
+
+const LOB_COLORS: Record<string, string> = {
+  medicare: "#0d9488",
+  aca: "#2563eb",
+  ancillary: "#d97706",
+  life: "#7c3aed",
+  annuity: "#db2777",
+};
+
+const LOB_LABELS: Record<string, string> = {
+  medicare: "Medicare",
+  aca: "ACA",
+  ancillary: "Ancillary",
+  life: "Life",
+  annuity: "Annuity",
+};
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat("en-US", {
@@ -25,19 +42,26 @@ function formatCurrency(val: number) {
 }
 
 interface SaleItemProps {
-  sale: {
-    id: number;
-    client_name: string;
-    carrier: string;
-    plan_type: string;
-    commission: number | null;
-    sale_date: string;
-    paid: boolean;
-  };
+  sale: SaleEntry;
   colors: ReturnType<typeof useColors>;
 }
 
 function SaleItem({ sale, colors }: SaleItemProps) {
+  const lob = sale.lineOfBusiness ?? "medicare";
+  const lobColor = LOB_COLORS[lob] ?? colors.primary;
+  const lobLabel = LOB_LABELS[lob] ?? lob;
+
+  const dateStr = sale.soldDate
+    ? new Date(sale.soldDate + "T12:00:00").toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
+
+  const metaParts = [sale.carrier, sale.salesType].filter(Boolean);
+  const commission = (sale.estimatedCommission ?? 0) + (sale.hra ?? 0);
+
   const s = StyleSheet.create({
     row: {
       backgroundColor: colors.card,
@@ -45,73 +69,98 @@ function SaleItem({ sale, colors }: SaleItemProps) {
       borderWidth: 1,
       borderColor: sale.paid ? colors.border : "#fde68a",
       padding: 14,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
       marginBottom: 8,
     },
-    indicator: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: sale.paid ? colors.success : colors.warning,
-      marginTop: 2,
+    topRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 6,
     },
-    info: {
+    leftTop: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
       flex: 1,
-      gap: 3,
+    },
+    indicator: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: sale.paid ? colors.success : colors.warning,
     },
     client: {
       fontSize: 15,
       fontFamily: "Inter_600SemiBold",
       color: colors.foreground,
-    },
-    meta: {
-      fontSize: 12,
-      fontFamily: "Inter_400Regular",
-      color: colors.mutedForeground,
-    },
-    right: {
-      alignItems: "flex-end",
-      gap: 4,
+      flex: 1,
     },
     commission: {
       fontSize: 15,
       fontFamily: "Inter_700Bold",
       color: colors.foreground,
     },
-    badge: {
+    bottomRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    meta: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: colors.mutedForeground,
+      flex: 1,
+    },
+    rightMeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    lobBadge: {
       paddingHorizontal: 8,
-      paddingVertical: 3,
+      paddingVertical: 2,
+      borderRadius: 6,
+      backgroundColor: lobColor,
+    },
+    lobBadgeText: {
+      fontSize: 10,
+      fontFamily: "Inter_600SemiBold",
+      color: "#fff",
+    },
+    paidBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
       borderRadius: 6,
       backgroundColor: sale.paid ? colors.accent : "#fef9ec",
     },
-    badgeText: {
-      fontSize: 11,
+    paidBadgeText: {
+      fontSize: 10,
       fontFamily: "Inter_600SemiBold",
       color: sale.paid ? colors.primary : "#92400e",
     },
   });
 
-  const dateStr = new Date(sale.sale_date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-
   return (
     <View style={s.row}>
-      <View style={s.indicator} />
-      <View style={s.info}>
-        <Text style={s.client}>{sale.client_name}</Text>
-        <Text style={s.meta}>
-          {sale.carrier} · {sale.plan_type} · {dateStr}
-        </Text>
+      <View style={s.topRow}>
+        <View style={s.leftTop}>
+          <View style={s.indicator} />
+          <Text style={s.client} numberOfLines={1}>{sale.clientName}</Text>
+        </View>
+        <Text style={s.commission}>{formatCurrency(commission)}</Text>
       </View>
-      <View style={s.right}>
-        <Text style={s.commission}>{formatCurrency(sale.commission ?? 0)}</Text>
-        <View style={s.badge}>
-          <Text style={s.badgeText}>{sale.paid ? "Paid" : "Unpaid"}</Text>
+      <View style={s.bottomRow}>
+        <Text style={s.meta} numberOfLines={1}>
+          {metaParts.length > 0 ? metaParts.join(" · ") : lobLabel}
+          {dateStr ? ` · ${dateStr}` : ""}
+        </Text>
+        <View style={s.rightMeta}>
+          <View style={s.lobBadge}>
+            <Text style={s.lobBadgeText}>{lobLabel}</Text>
+          </View>
+          <View style={s.paidBadge}>
+            <Text style={s.paidBadgeText}>{sale.paid ? "Paid" : "Unpaid"}</Text>
+          </View>
         </View>
       </View>
     </View>
@@ -140,11 +189,13 @@ export default function HistoryScreen() {
   } = useListSales();
 
   const allMySales = salesData
-    ? isAdmin ? salesData : salesData.filter((s) => (me ? s.agent_id === me.id : true))
+    ? isAdmin
+      ? salesData
+      : salesData.filter((s) => s.userId === me?.clerkUserId)
     : [];
 
   const sorted = [...allMySales].sort(
-    (a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime()
+    (a, b) => new Date(b.soldDate).getTime() - new Date(a.soldDate).getTime()
   );
 
   const filtered =
@@ -154,7 +205,10 @@ export default function HistoryScreen() {
       ? sorted.filter((s) => !s.paid)
       : sorted;
 
-  const totalCommission = filtered.reduce((sum, s) => sum + (s.commission ?? 0), 0);
+  const totalCommission = filtered.reduce(
+    (sum, s) => sum + (s.estimatedCommission ?? 0) + (s.hra ?? 0),
+    0
+  );
 
   const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
@@ -287,7 +341,6 @@ export default function HistoryScreen() {
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => <SaleItem sale={item} colors={colors} />}
         contentContainerStyle={s.listContent}
-        scrollEnabled={filtered.length > 0}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
