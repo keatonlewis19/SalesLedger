@@ -9,6 +9,7 @@ jobs:
   build:
     name: Build iOS (Production)
     type: build
+    working_directory: artifacts/mobile
     params:
       platform: ios
       profile: production
@@ -18,6 +19,7 @@ jobs:
     type: submit
     needs:
       - build
+    working_directory: artifacts/mobile
     params:
       platform: ios
       profile: production
