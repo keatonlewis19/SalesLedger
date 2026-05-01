@@ -33,8 +33,11 @@ module.exports = {
     },
     ios: {
       supportsTablet: false,
+      bundleIdentifier: "com.crmgroupinsurance.salesledger",
     },
-    android: {},
+    android: {
+      package: "com.crmgroupinsurance.salesledger",
+    },
     web: {
       favicon: "./assets/images/icon.png",
     },
