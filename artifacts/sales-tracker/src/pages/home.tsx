@@ -7,7 +7,6 @@ import {
   useGetCurrentWeekSummary,
   useDeleteSale,
   useMarkSalePaid,
-  useListAgencyUsers,
   getListSalesQueryKey,
   getGetCurrentWeekSummaryQueryKey,
 } from "@workspace/api-client-react";
@@ -50,9 +49,17 @@ function parseLocalDate(s: string): Date {
   return new Date(y, m - 1, d);
 }
 
+const LOB_ORDER = [
+  { value: "medicare", label: "Medicare" },
+  { value: "aca", label: "ACA / Individual Health" },
+  { value: "ancillary", label: "Ancillary" },
+  { value: "life", label: "Life Insurance" },
+  { value: "annuity", label: "Annuities" },
+] as const;
+
 const LOB_LABELS: Record<string, string> = {
   medicare: "Medicare",
-  aca: "ACA",
+  aca: "ACA / Individual Health",
   ancillary: "Ancillary",
   life: "Life Insurance",
   annuity: "Annuities",
@@ -65,6 +72,26 @@ const LOB_COLORS: Record<string, string> = {
   life: "bg-orange-50 text-orange-700 border-orange-200",
   annuity: "bg-rose-50 text-rose-700 border-rose-200",
 };
+
+const LOB_HEADER_COLORS: Record<string, string> = {
+  medicare: "bg-teal-50/60 border-teal-100",
+  aca: "bg-blue-50/60 border-blue-100",
+  ancillary: "bg-purple-50/60 border-purple-100",
+  life: "bg-orange-50/60 border-orange-100",
+  annuity: "bg-rose-50/60 border-rose-100",
+};
+
+function groupByLob(sales: Sale[]) {
+  const knownValues = new Set(LOB_ORDER.map((l) => l.value as string));
+  const result: { lob: string; label: string; sales: Sale[] }[] = [];
+  for (const { value, label } of LOB_ORDER) {
+    const lobSales = sales.filter((s) => (s.lineOfBusiness ?? "medicare") === value);
+    if (lobSales.length > 0) result.push({ lob: value, label, sales: lobSales });
+  }
+  const other = sales.filter((s) => !knownValues.has(s.lineOfBusiness ?? "medicare"));
+  if (other.length > 0) result.push({ lob: "other", label: "Other", sales: other });
+  return result;
+}
 
 type Sale = {
   id: number;
@@ -254,10 +281,100 @@ function SalesTable({
   );
 }
 
+interface LobSectionsProps {
+  sales: Sale[];
+  isLoading: boolean;
+  isAdmin: boolean;
+  showAgentColumn: boolean;
+  onDelete: (id: number) => void;
+  onTogglePaid: (id: number, current: boolean) => void;
+  isPaidPending: boolean;
+}
+
+function LobSections({ sales, isLoading, isAdmin, showAgentColumn, onDelete, onTogglePaid, isPaidPending }: LobSectionsProps) {
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[0, 1].map((i) => (
+          <div key={i} className="bg-card border rounded-xl overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b bg-muted/20">
+              <Skeleton className="h-5 w-36" />
+            </div>
+            <div className="p-4 space-y-2">
+              {[0, 1, 2].map((j) => <Skeleton key={j} className="h-10 w-full" />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const groups = groupByLob(sales);
+
+  if (groups.length === 0) {
+    return (
+      <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
+        <div className="h-48 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+          <TrendingUp className="w-8 h-8 text-muted" />
+          <p className="text-sm">No sales logged this week.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {groups.map(({ lob, label, sales: lobSales }) => {
+        const totalComm = lobSales.reduce((a, s) => a + (s.estimatedCommission ?? 0), 0);
+        const paidCount = lobSales.filter((s) => s.paid).length;
+        const unpaidCount = lobSales.length - paidCount;
+        const headerCls = LOB_HEADER_COLORS[lob] ?? "bg-muted/20 border-border";
+        return (
+          <div key={lob} className="bg-card border rounded-xl overflow-hidden shadow-sm">
+            <div className={`px-5 py-3.5 border-b flex items-center justify-between gap-3 ${headerCls}`}>
+              <div className="flex items-center gap-2.5">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${LOB_COLORS[lob] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                  {label}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {lobSales.length} sale{lobSales.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                {paidCount > 0 && (
+                  <span className="flex items-center gap-1 text-emerald-600 font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {paidCount} paid
+                  </span>
+                )}
+                {unpaidCount > 0 && (
+                  <span className="flex items-center gap-1 text-amber-600 font-medium">
+                    <Clock className="w-3.5 h-3.5" />
+                    {unpaidCount} unpaid
+                  </span>
+                )}
+                <span className="font-semibold text-foreground tabular-nums">{formatCurrency(totalComm)}</span>
+              </div>
+            </div>
+            <SalesTable
+              sales={lobSales}
+              isLoading={false}
+              isAdmin={isAdmin}
+              showAgentColumn={showAgentColumn}
+              onDelete={onDelete}
+              onTogglePaid={onTogglePaid}
+              isPaidPending={isPaidPending}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Home() {
   const { data: sales, isLoading: isSalesLoading } = useListSales();
   const { data: summary, isLoading: isSummaryLoading } = useGetCurrentWeekSummary();
-  const { data: agencyUsers } = useListAgencyUsers();
   const deleteSale = useDeleteSale();
   const markSalePaid = useMarkSalePaid();
   const queryClient = useQueryClient();
@@ -334,14 +451,6 @@ export default function Home() {
     }
     return [...map.entries()].map(([key, val]) => ({ key, ...val }));
   }, [filteredSales]);
-
-  const tableProps = {
-    isLoading: isSalesLoading,
-    isAdmin,
-    onDelete: setSaleToDelete,
-    onTogglePaid: handleTogglePaid,
-    isPaidPending: markSalePaid.isPending,
-  };
 
   return (
     <Layout>
@@ -454,10 +563,10 @@ export default function Home() {
           )}
         </div>
 
-        <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
-          {isAdmin ? (
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="px-4 pt-4 border-b">
+        {isAdmin ? (
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
+              <div className="px-4 pt-4 pb-0 border-b">
                 <TabsList className="mb-0">
                   <TabsTrigger value="all" className="relative gap-1.5">
                     All Agents
@@ -480,66 +589,65 @@ export default function Home() {
                   ))}
                 </TabsList>
               </div>
+            </div>
 
-              <TabsContent value="all" className="m-0">
-                <SalesTable
-                  {...tableProps}
-                  sales={filteredSales}
-                  showAgentColumn={true}
+            <TabsContent value="all" className="m-0 mt-4">
+              <LobSections
+                sales={filteredSales}
+                isLoading={isSalesLoading}
+                isAdmin={isAdmin}
+                showAgentColumn={true}
+                onDelete={setSaleToDelete}
+                onTogglePaid={handleTogglePaid}
+                isPaidPending={markSalePaid.isPending}
+              />
+            </TabsContent>
+
+            {agentGroups.map((group) => (
+              <TabsContent key={group.key} value={group.key} className="m-0 mt-4">
+                <div className="bg-card border rounded-xl px-5 py-3.5 mb-4 flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+                      {group.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{group.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {group.sales.length} sale{group.sales.length !== 1 ? "s" : ""} ·{" "}
+                        {formatCurrency(group.sales.reduce((a, s) => a + (s.estimatedCommission ?? 0), 0))} total
+                      </p>
+                    </div>
+                  </div>
+                  {group.unpaid > 0 && filterPaid !== "paid" && (
+                    <span className="flex items-center gap-1.5 text-amber-700 text-sm font-medium bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      {formatCurrency(group.sales.filter((s) => !s.paid).reduce((a, s) => a + (s.estimatedCommission ?? 0), 0))} unpaid
+                    </span>
+                  )}
+                </div>
+                <LobSections
+                  sales={group.sales}
+                  isLoading={isSalesLoading}
+                  isAdmin={isAdmin}
+                  showAgentColumn={false}
+                  onDelete={setSaleToDelete}
+                  onTogglePaid={handleTogglePaid}
+                  isPaidPending={markSalePaid.isPending}
                 />
               </TabsContent>
-
-              {agentGroups.map((group) => (
-                <TabsContent key={group.key} value={group.key} className="m-0">
-                  <div className="px-4 py-3 border-b bg-muted/10 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
-                        {group.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm">{group.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {group.sales.length} sale{group.sales.length !== 1 ? "s" : ""} ·{" "}
-                          {formatCurrency(
-                            group.sales.reduce((a, s) => a + (s.estimatedCommission ?? 0), 0)
-                          )}{" "}
-                          total commission
-                        </p>
-                      </div>
-                    </div>
-                    {group.unpaid > 0 && filterPaid !== "paid" && (
-                      <span className="flex items-center gap-1.5 text-amber-700 text-sm font-medium bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                        {formatCurrency(
-                          group.sales
-                            .filter((s) => !s.paid)
-                            .reduce((a, s) => a + (s.estimatedCommission ?? 0), 0)
-                        )}{" "}
-                        unpaid
-                      </span>
-                    )}
-                  </div>
-                  <SalesTable
-                    {...tableProps}
-                    sales={group.sales}
-                    showAgentColumn={false}
-                  />
-                </TabsContent>
-              ))}
-            </Tabs>
-          ) : (
-            <>
-              <div className="px-6 py-4 border-b bg-muted/20">
-                <h2 className="font-semibold text-lg">Sales Log</h2>
-              </div>
-              <SalesTable
-                {...tableProps}
-                sales={filteredSales}
-                showAgentColumn={false}
-              />
-            </>
-          )}
-        </div>
+            ))}
+          </Tabs>
+        ) : (
+          <LobSections
+            sales={filteredSales}
+            isLoading={isSalesLoading}
+            isAdmin={isAdmin}
+            showAgentColumn={false}
+            onDelete={setSaleToDelete}
+            onTogglePaid={handleTogglePaid}
+            isPaidPending={markSalePaid.isPending}
+          />
+        )}
       </div>
 
       <AlertDialog open={!!saleToDelete} onOpenChange={(o) => !o && setSaleToDelete(null)}>
