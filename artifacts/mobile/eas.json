@@ -24,8 +24,8 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "",
-        "ascAppId": "",
+        "appleId": "keaton@lewisfam.email",
+        "ascAppId": "6765716698",
         "appleTeamId": "M26L6NN3V7"
       }
     }
