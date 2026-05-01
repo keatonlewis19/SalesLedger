@@ -79,12 +79,6 @@ type = "image"
 title = "SalesLedger logo final"
 
 [[outputs]]
-id = "vu2qPHsks_FFP3BJBAYB6"
-uri = "file://attached_assets/generated_images/salesledger_logo_electric_light.png"
-type = "image"
-title = "SalesLedger — White background + Electric blue arrow"
-
-[[outputs]]
 id = "-ZaXGcAtLK-wGrJKOUCx1"
 uri = "file://attached_assets/generated_images/salesledger_logo_bars_dark.png"
 type = "image"
