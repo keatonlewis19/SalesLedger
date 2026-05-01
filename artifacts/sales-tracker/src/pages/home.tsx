@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Plus, Edit2, Trash2, TrendingUp, Users, CheckCircle2, AlertTriangle, DollarSign } from "lucide-react";
+import { Plus, Edit2, Trash2, TrendingUp, Users, CheckCircle2, AlertTriangle, DollarSign, Clock } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListSales,
@@ -266,6 +266,7 @@ export default function Home() {
 
   const [saleToDelete, setSaleToDelete] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("all");
+  const [filterPaid, setFilterPaid] = useState<"all" | "paid" | "unpaid">("all");
 
   const handleDelete = () => {
     if (!saleToDelete) return;
@@ -310,10 +311,20 @@ export default function Home() {
     (acc, s) => acc + (s.estimatedCommission ?? 0),
     0
   );
+  const paidCommission = useMemo(
+    () => typedSales.filter((s) => s.paid).reduce((acc, s) => acc + (s.estimatedCommission ?? 0), 0),
+    [typedSales]
+  );
+
+  const filteredSales = useMemo(() => {
+    if (filterPaid === "all") return typedSales;
+    if (filterPaid === "paid") return typedSales.filter((s) => s.paid);
+    return typedSales.filter((s) => !s.paid);
+  }, [typedSales, filterPaid]);
 
   const agentGroups = useMemo(() => {
     const map = new Map<string, { name: string; sales: Sale[]; unpaid: number }>();
-    for (const sale of typedSales) {
+    for (const sale of filteredSales) {
       const key = sale.userId ?? "unassigned";
       const name = sale.agentName ?? "Unassigned";
       if (!map.has(key)) map.set(key, { name, sales: [], unpaid: 0 });
@@ -322,7 +333,7 @@ export default function Home() {
       if (!sale.paid) group.unpaid++;
     }
     return [...map.entries()].map(([key, val]) => ({ key, ...val }));
-  }, [typedSales]);
+  }, [filteredSales]);
 
   const tableProps = {
     isLoading: isSalesLoading,
@@ -351,12 +362,13 @@ export default function Home() {
         </div>
 
         {isSummaryLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Skeleton className="h-28 w-full rounded-xl" />
             <Skeleton className="h-28 w-full rounded-xl" />
             <Skeleton className="h-28 w-full rounded-xl" />
           </div>
         ) : summary ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="bg-primary/5 border-primary/10">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -370,15 +382,28 @@ export default function Home() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-secondary/30 border-secondary">
+            <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                  <TrendingUp className="w-6 h-6 text-secondary-foreground" />
+                <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Est. Commission</p>
-                  <p className="text-3xl font-bold font-mono text-foreground">
-                    {formatCurrency(summary.totalEstimatedCommission)}
+                  <p className="text-sm font-medium text-muted-foreground">Paid Out</p>
+                  <p className="text-3xl font-bold font-mono text-emerald-700 dark:text-emerald-400">
+                    {formatCurrency(paidCommission)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center shrink-0">
+                  <Clock className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Still Owed</p>
+                  <p className="text-3xl font-bold font-mono text-amber-700 dark:text-amber-400">
+                    {formatCurrency(unpaidCommission)}
                   </p>
                 </div>
               </CardContent>
@@ -404,13 +429,30 @@ export default function Home() {
           </div>
         )}
 
-        {isAdmin && (
-          <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            Rows highlighted in <span className="text-emerald-700 font-medium">green</span> are paid · rows in{" "}
-            <span className="text-amber-700 font-medium">amber</span> are unpaid · check the box to mark as paid
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-1.5 bg-muted/60 rounded-lg p-1">
+            {(["all", "unpaid", "paid"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilterPaid(f)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  filterPaid === f
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f === "all" ? "All" : f === "unpaid" ? "Unpaid" : "Paid"}
+              </button>
+            ))}
           </div>
-        )}
+          {isAdmin && (
+            <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-emerald-700 font-medium">Green</span> = paid ·{" "}
+              <span className="text-amber-700 font-medium">amber</span> = unpaid · check box to mark paid
+            </div>
+          )}
+        </div>
 
         <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
           {isAdmin ? (
@@ -419,7 +461,7 @@ export default function Home() {
                 <TabsList className="mb-0">
                   <TabsTrigger value="all" className="relative gap-1.5">
                     All Agents
-                    {unpaidCount > 0 && (
+                    {unpaidCount > 0 && filterPaid !== "paid" && (
                       <Badge variant="destructive" className="h-4 px-1.5 text-[10px] min-w-4">
                         {unpaidCount}
                       </Badge>
@@ -429,7 +471,7 @@ export default function Home() {
                     <TabsTrigger key={group.key} value={group.key} className="gap-1.5">
                       {group.name}
                       <span className="text-muted-foreground text-xs">({group.sales.length})</span>
-                      {group.unpaid > 0 && (
+                      {group.unpaid > 0 && filterPaid !== "paid" && (
                         <Badge variant="outline" className="h-4 px-1.5 text-[10px] min-w-4 border-amber-400 text-amber-700 bg-amber-50">
                           {group.unpaid}
                         </Badge>
@@ -442,7 +484,7 @@ export default function Home() {
               <TabsContent value="all" className="m-0">
                 <SalesTable
                   {...tableProps}
-                  sales={typedSales}
+                  sales={filteredSales}
                   showAgentColumn={true}
                 />
               </TabsContent>
@@ -465,7 +507,7 @@ export default function Home() {
                         </p>
                       </div>
                     </div>
-                    {group.unpaid > 0 && (
+                    {group.unpaid > 0 && filterPaid !== "paid" && (
                       <span className="flex items-center gap-1.5 text-amber-700 text-sm font-medium bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
                         <AlertTriangle className="w-3.5 h-3.5" />
                         {formatCurrency(
@@ -492,7 +534,7 @@ export default function Home() {
               </div>
               <SalesTable
                 {...tableProps}
-                sales={typedSales}
+                sales={filteredSales}
                 showAgentColumn={false}
               />
             </>
