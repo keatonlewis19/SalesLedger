@@ -13,12 +13,17 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
+
+let KeyboardProvider: React.ComponentType<{ children: React.ReactNode }> = ({ children }) => <>{children}</>;
+try {
+  KeyboardProvider = require("react-native-keyboard-controller").KeyboardProvider;
+} catch {
+  // Native module not available in Expo Go — falls back to no-op wrapper
+}
 
 // Point the shared API client at the correct domain for this environment.
 // apiDomain is baked in at build time via app.config.js → extra.apiDomain,

@@ -1,10 +1,17 @@
-import {
-  KeyboardAwareScrollView,
-  KeyboardAwareScrollViewProps,
-} from "react-native-keyboard-controller";
+import React from "react";
 import { Platform, ScrollView, ScrollViewProps } from "react-native";
 
-type Props = KeyboardAwareScrollViewProps & ScrollViewProps;
+let KeyboardAwareScrollView: React.ComponentType<any> = ScrollView;
+try {
+  KeyboardAwareScrollView =
+    require("react-native-keyboard-controller").KeyboardAwareScrollView;
+} catch {
+  // Native module not available (e.g. Expo Go) — fall back to ScrollView
+}
+
+type Props = ScrollViewProps & {
+  keyboardShouldPersistTaps?: "always" | "never" | "handled";
+};
 
 export function KeyboardAwareScrollViewCompat({
   children,
