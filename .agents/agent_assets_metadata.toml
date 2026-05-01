@@ -36,6 +36,18 @@ uri = "file://attached_assets/generated_images/salesledger_logo_teal_v2.png"
 type = "image"
 title = "SalesLedger logo teal v2"
 
+[[generated]]
+id = "AQq6zPubvwZ5J6CuTMiwJ"
+uri = "file://attached_assets/generated_images/salesledger_logo_electric_dark.png"
+type = "image"
+title = "SalesLedger logo electric blue arrow dark bg"
+
+[[generated]]
+id = "i0QFd4RYUaa6Wk80QtHeM"
+uri = "file://attached_assets/generated_images/salesledger_logo_electric_light.png"
+type = "image"
+title = "SalesLedger logo electric blue arrow light bg"
+
 [[outputs]]
 id = "B-opTMccA7TboG-N1J3x7"
 uri = "file://attached_assets/generated_images/salesledger_logo_scheme1.png"
@@ -65,3 +77,15 @@ id = "gK-6T6g0U_6FxjnqOhTlA"
 uri = "file://attached_assets/generated_images/salesledger_logo_teal_v2.png"
 type = "image"
 title = "SalesLedger — Dark Navy + Teal (light background)"
+
+[[outputs]]
+id = "2gZ9OeU38twbmvW-KplpS"
+uri = "file://attached_assets/generated_images/salesledger_logo_electric_dark.png"
+type = "image"
+title = "SalesLedger — Teal background + Electric blue arrow"
+
+[[outputs]]
+id = "vu2qPHsks_FFP3BJBAYB6"
+uri = "file://attached_assets/generated_images/salesledger_logo_electric_light.png"
+type = "image"
+title = "SalesLedger — White background + Electric blue arrow"
