@@ -19,9 +19,19 @@ pnpm workspace monorepo using TypeScript. Multi-tenant agency management platfor
 - **Email**: Nodemailer (SMTP) — weekly/monthly/annual report emails; recipients configurable via Settings
 - **Scheduling**: node-cron — configurable day/time; defaults to Thursday 5pm
 
+## Cross-Platform Rule
+
+**All feature changes, UI updates, and bug fixes must be propagated to all three platforms unless explicitly noted otherwise:**
+- **Web** — `artifacts/sales-tracker` (React + Vite)
+- **Mobile / iPhone** — `artifacts/mobile` (Expo / React Native)
+- **iPad** — same `artifacts/mobile` codebase; uses `useWindowDimensions` + `isTablet` (width ≥ 768) pattern for adaptive layouts
+
+When implementing any change, always ask: does this need to appear on web? mobile? and be responsive for iPad?
+
 ## Artifacts
 
 - **sales-tracker** (`/`) — React + Vite frontend (Clerk auth, role-based UI). Pages: Dashboard, History, Leads, Metrics (charts + sortable tables), Team (admin), Settings (carrier colors, branding, FMV, commission table)
+- **mobile** — Expo React Native app (iPhone + iPad). Tabs: Dashboard, Sales History, Add Sale, Pipeline/Leads. iPad layout uses dynamic `hPad` centering at max 720px content width.
 - **api-server** (`/api`) — Express 5 backend (Clerk middleware, admin/agent routes)
 
 ## Lead Pipeline & Metrics System
