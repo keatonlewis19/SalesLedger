@@ -56,7 +56,7 @@ export default function SignInScreen() {
             resizeMode="contain"
           />
         </View>
-        <Text style={s.title}>CRM Group</Text>
+        <Text style={s.title}>SalesLedger</Text>
         <Text style={s.subtitle}>Insurance Sales Portal</Text>
       </View>
 
