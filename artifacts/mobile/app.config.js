@@ -32,7 +32,7 @@ module.exports = {
       backgroundColor: "#ffffff",
     },
     ios: {
-      supportsTablet: false,
+      supportsTablet: true,
       bundleIdentifier: "com.crmgroupinsurance.salesledger",
     },
     android: {
