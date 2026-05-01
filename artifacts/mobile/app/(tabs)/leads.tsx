@@ -14,6 +14,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
@@ -125,6 +126,9 @@ function emptyForm(): AddLeadForm {
 export default function LeadsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const hPad = isTablet ? Math.max(24, (width - 720) / 2) : 16;
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const queryClient = useQueryClient();
@@ -247,7 +251,7 @@ export default function LeadsScreen() {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      paddingHorizontal: 20,
+      paddingHorizontal: hPad,
       paddingTop: 20,
       paddingBottom: 10,
     },
@@ -276,7 +280,7 @@ export default function LeadsScreen() {
       fontFamily: "Inter_500Medium",
     },
     card: {
-      marginHorizontal: 16,
+      marginHorizontal: hPad,
       marginBottom: 10,
       backgroundColor: colors.card,
       borderRadius: 12,
@@ -352,10 +356,18 @@ export default function LeadsScreen() {
       backgroundColor: colors.background,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
+      borderBottomLeftRadius: isTablet ? 20 : 0,
+      borderBottomRightRadius: isTablet ? 20 : 0,
       paddingHorizontal: 20,
       paddingTop: 16,
       paddingBottom: insets.bottom + 24,
       maxHeight: "92%",
+      ...(isTablet && {
+        maxWidth: 600,
+        width: "90%",
+        alignSelf: "center" as const,
+        marginBottom: isTablet ? 40 : 0,
+      }),
     },
     sheetHandle: {
       width: 36,
@@ -418,9 +430,17 @@ export default function LeadsScreen() {
       backgroundColor: colors.background,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
+      borderBottomLeftRadius: isTablet ? 20 : 0,
+      borderBottomRightRadius: isTablet ? 20 : 0,
       padding: 20,
       paddingBottom: insets.bottom + 24,
       gap: 10,
+      ...(isTablet && {
+        maxWidth: 480,
+        width: "90%",
+        alignSelf: "center" as const,
+        marginBottom: 40,
+      }),
     },
     statusSheetTitle: {
       fontSize: 16,
@@ -503,7 +523,7 @@ export default function LeadsScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingBottom: 8 }}
+        contentContainerStyle={{ paddingHorizontal: hPad, gap: 8, paddingBottom: 8 }}
       >
         {LOB_OPTIONS.map((o) => {
           const active = filterLob === o.value;
@@ -545,7 +565,7 @@ export default function LeadsScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingBottom: 12 }}
+        contentContainerStyle={{ paddingHorizontal: hPad, gap: 8, paddingBottom: 12 }}
       >
         {[{ value: "all", label: "All statuses" }, ...STATUSES].map((st) => {
           const active = filterStatus === st.value;

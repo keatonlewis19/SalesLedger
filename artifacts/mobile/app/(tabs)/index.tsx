@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -107,6 +108,9 @@ function getWeekLabel() {
 export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const hPad = isTablet ? Math.max(24, (width - 720) / 2) : 16;
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
 
@@ -145,7 +149,7 @@ export default function DashboardScreen() {
     scrollContent: {
       paddingTop: insets.top + webTopInset + 8,
       paddingBottom: insets.bottom + webBottomInset + 100,
-      paddingHorizontal: 16,
+      paddingHorizontal: hPad,
       gap: 20,
     },
     header: {

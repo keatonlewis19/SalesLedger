@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -172,6 +173,9 @@ type FilterType = "all" | "paid" | "unpaid";
 export default function HistoryScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const hPad = isTablet ? Math.max(24, (width - 720) / 2) : 16;
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
 
@@ -214,7 +218,7 @@ export default function HistoryScreen() {
     container: { flex: 1, backgroundColor: colors.background },
     header: {
       paddingTop: insets.top + webTopInset + 8,
-      paddingHorizontal: 16,
+      paddingHorizontal: hPad,
       paddingBottom: 12,
       backgroundColor: colors.background,
       gap: 12,
@@ -260,7 +264,7 @@ export default function HistoryScreen() {
       color: colors.foreground,
     },
     listContent: {
-      paddingHorizontal: 16,
+      paddingHorizontal: hPad,
       paddingTop: 8,
       paddingBottom: insets.bottom + webBottomInset + 100,
     },

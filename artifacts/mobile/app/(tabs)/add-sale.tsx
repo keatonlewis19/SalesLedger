@@ -12,6 +12,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
@@ -166,6 +167,9 @@ function emptyForm(): FormState {
 export default function AddSaleScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const hPad = isTablet ? Math.max(24, (width - 720) / 2) : 20;
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const queryClient = useQueryClient();
 
@@ -290,7 +294,7 @@ export default function AddSaleScreen() {
       <View
         style={{
           paddingTop: insets.top + webTopInset + 8,
-          paddingHorizontal: 20,
+          paddingHorizontal: hPad,
           paddingBottom: 12,
           backgroundColor: colors.background,
         }}
@@ -315,7 +319,7 @@ export default function AddSaleScreen() {
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{
-          paddingHorizontal: 20,
+          paddingHorizontal: hPad,
           paddingTop: 4,
           paddingBottom: insets.bottom + 100,
         }}
