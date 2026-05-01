@@ -34,6 +34,9 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.crmgroupinsurance.salesledger",
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+      },
     },
     android: {
       package: "com.crmgroupinsurance.salesledger",
