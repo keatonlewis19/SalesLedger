@@ -1300,6 +1300,9 @@ components:
           type: ["string", "null"]
         householdSize:
           type: ["integer", "null"]
+        productType:
+          type: ["string", "null"]
+          description: "Medicare sub-type: mapd, pdp, medsupp"
         paid:
           type: boolean
         weekStart:
@@ -1360,6 +1363,9 @@ components:
           type: ["string", "null"]
         householdSize:
           type: ["integer", "null"]
+        productType:
+          type: ["string", "null"]
+          description: "Medicare sub-type: mapd, pdp, medsupp"
       required:
         - clientName
         - salesType
@@ -1399,6 +1405,9 @@ components:
           type: ["string", "null"]
         householdSize:
           type: ["integer", "null"]
+        productType:
+          type: ["string", "null"]
+          description: "Medicare sub-type: mapd, pdp, medsupp"
 
     WeekSummary:
       type: object

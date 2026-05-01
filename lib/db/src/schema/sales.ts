@@ -32,6 +32,7 @@ export const salesTable = pgTable("sales", {
   carrier: varchar("carrier", { length: 255 }),
   metalTier: varchar("metal_tier", { length: 50 }),
   householdSize: integer("household_size"),
+  productType: varchar("product_type", { length: 50 }),
   paid: boolean("paid").notNull().default(false),
   weekStart: text("week_start").notNull(),
   leadId: integer("lead_id"),

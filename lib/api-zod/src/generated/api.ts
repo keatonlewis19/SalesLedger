@@ -44,6 +44,10 @@ export const ListSalesResponseItem = zod.object({
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
   householdSize: zod.number().nullish(),
+  productType: zod
+    .string()
+    .nullish()
+    .describe("Medicare sub-type: mapd, pdp, medsupp"),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
@@ -71,6 +75,10 @@ export const CreateSaleBody = zod.object({
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
   householdSize: zod.number().nullish(),
+  productType: zod
+    .string()
+    .nullish()
+    .describe("Medicare sub-type: mapd, pdp, medsupp"),
 });
 
 /**
@@ -103,6 +111,10 @@ export const MarkSalePaidResponse = zod.object({
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
   householdSize: zod.number().nullish(),
+  productType: zod
+    .string()
+    .nullish()
+    .describe("Medicare sub-type: mapd, pdp, medsupp"),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
@@ -227,6 +239,10 @@ export const GetSaleResponse = zod.object({
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
   householdSize: zod.number().nullish(),
+  productType: zod
+    .string()
+    .nullish()
+    .describe("Medicare sub-type: mapd, pdp, medsupp"),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
@@ -257,6 +273,10 @@ export const UpdateSaleBody = zod.object({
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
   householdSize: zod.number().nullish(),
+  productType: zod
+    .string()
+    .nullish()
+    .describe("Medicare sub-type: mapd, pdp, medsupp"),
 });
 
 export const UpdateSaleResponse = zod.object({
@@ -278,6 +298,10 @@ export const UpdateSaleResponse = zod.object({
   carrier: zod.string().nullish(),
   metalTier: zod.string().nullish(),
   householdSize: zod.number().nullish(),
+  productType: zod
+    .string()
+    .nullish()
+    .describe("Medicare sub-type: mapd, pdp, medsupp"),
   paid: zod.boolean(),
   weekStart: zod.string(),
   createdAt: zod.string(),
@@ -362,6 +386,10 @@ export const GetReportResponse = zod.object({
       carrier: zod.string().nullish(),
       metalTier: zod.string().nullish(),
       householdSize: zod.number().nullish(),
+      productType: zod
+        .string()
+        .nullish()
+        .describe("Medicare sub-type: mapd, pdp, medsupp"),
       paid: zod.boolean(),
       weekStart: zod.string(),
       createdAt: zod.string(),

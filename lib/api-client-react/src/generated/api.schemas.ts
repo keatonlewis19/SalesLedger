@@ -151,6 +151,11 @@ export interface SaleEntry {
   metalTier?: string | null;
   /** @nullable */
   householdSize?: number | null;
+  /**
+   * Medicare sub-type: mapd, pdp, medsupp
+   * @nullable
+   */
+  productType?: string | null;
   paid: boolean;
   weekStart: string;
   createdAt: string;
@@ -193,6 +198,11 @@ export interface CreateSaleBody {
   metalTier?: string | null;
   /** @nullable */
   householdSize?: number | null;
+  /**
+   * Medicare sub-type: mapd, pdp, medsupp
+   * @nullable
+   */
+  productType?: string | null;
 }
 
 export type UpdateSaleBodyLineOfBusiness =
@@ -231,6 +241,11 @@ export interface UpdateSaleBody {
   metalTier?: string | null;
   /** @nullable */
   householdSize?: number | null;
+  /**
+   * Medicare sub-type: mapd, pdp, medsupp
+   * @nullable
+   */
+  productType?: string | null;
 }
 
 export type WeekSummaryByOwningAgentItem = {

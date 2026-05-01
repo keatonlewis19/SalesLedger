@@ -45,6 +45,7 @@ const SALES_TYPES: Record<LobValue, string[]> = {
   annuity: ["Fixed Annuity", "FIA", "MYGA", "Variable Annuity", "Income Annuity"],
 };
 
+const MEDICARE_PRODUCT_TYPES = ["MAPD", "PDP", "Med Supp"] as const;
 const COMMISSION_TYPES_MEDICARE = ["Initial", "Renewal", "Prorated Renewal", "Monthly Renewal"];
 const COMMISSION_TYPES_OTHER = ["Initial", "Renewal"];
 const SALES_SOURCES = ["Company Provided", "Self-Generated"] as const;
@@ -142,6 +143,7 @@ interface FormState {
   metalTier: string;
   householdSize: string;
   comments: string;
+  productType: string;
 }
 
 function emptyForm(): FormState {
@@ -159,6 +161,7 @@ function emptyForm(): FormState {
     metalTier: "",
     householdSize: "",
     comments: "",
+    productType: "",
   };
 }
 
@@ -195,6 +198,7 @@ export default function AddSaleScreen() {
   const lob = form.lineOfBusiness;
   const lobOption = LOB_OPTIONS.find((o) => o.value === lob)!;
   const isMedicare = lob === "medicare";
+  const isMedsupp = isMedicare && form.productType === "Med Supp";
   const isAca = lob === "aca";
   const commissionTypes = isMedicare ? COMMISSION_TYPES_MEDICARE : COMMISSION_TYPES_OTHER;
 
@@ -220,6 +224,11 @@ export default function AddSaleScreen() {
     try {
       setSubmitting(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const productTypeMap: Record<string, string> = {
+        "MAPD": "mapd",
+        "PDP": "pdp",
+        "Med Supp": "medsupp",
+      };
       await createSale.mutateAsync({
         data: {
           clientName: form.clientName.trim(),
@@ -227,7 +236,7 @@ export default function AddSaleScreen() {
           carrier: form.carrier.trim() || null,
           salesType: form.salesType,
           salesSource: form.salesSource || null,
-          commissionType: isMedicare ? (form.commissionType || "") : "",
+          commissionType: isMedicare && !isMedsupp ? (form.commissionType || "") : "",
           estimatedCommission: form.estimatedCommission ? parseFloat(form.estimatedCommission) : null,
           hra: isMedicare && form.hra ? parseFloat(form.hra) : null,
           soldDate: form.soldDate,
@@ -235,6 +244,7 @@ export default function AddSaleScreen() {
           metalTier: isAca ? (form.metalTier || null) : null,
           householdSize: isAca && form.householdSize ? parseInt(form.householdSize, 10) : null,
           comments: form.comments.trim() || null,
+          productType: isMedicare && form.productType ? (productTypeMap[form.productType] ?? null) : null,
         },
       });
       await queryClient.invalidateQueries({ queryKey: getListSalesQueryKey() });
@@ -362,6 +372,7 @@ export default function AddSaleScreen() {
                     commissionType: "",
                     metalTier: "",
                     householdSize: "",
+                    productType: "",
                   }))
                 }
                 activeOpacity={0.75}
@@ -387,6 +398,27 @@ export default function AddSaleScreen() {
             );
           })}
         </View>
+
+        {/* Medicare Product Type */}
+        {isMedicare && (
+          <View style={{ marginTop: 16 }}>
+            <FieldLabel label="Medicare Product Type" />
+            <ChipRow
+              options={MEDICARE_PRODUCT_TYPES}
+              selected={form.productType}
+              onSelect={(val) =>
+                setForm((p) => ({
+                  ...p,
+                  productType: val,
+                  commissionType: val === "Med Supp" ? "" : p.commissionType,
+                  estimatedCommission: "",
+                }))
+              }
+              activeColor={lobOption.color}
+              colors={colors}
+            />
+          </View>
+        )}
 
         <View style={dividerStyle} />
         <Text style={sectionLabelStyle}>Client Info</Text>
@@ -485,8 +517,8 @@ export default function AddSaleScreen() {
           />
         </View>
 
-        {/* Commission Type — Medicare only */}
-        {isMedicare && (
+        {/* Commission Type — Medicare only (not Med Supp) */}
+        {isMedicare && !isMedsupp && (
           <View style={{ marginBottom: 16 }}>
             <FieldLabel label="Commission Type" />
             <ChipRow

@@ -144,6 +144,7 @@ router.post("/sales", requireAuth, async (req: AuthRequest, res): Promise<void> 
       carrier: data.carrier ?? undefined,
       metalTier: data.metalTier ?? undefined,
       householdSize: data.householdSize ?? undefined,
+      productType: data.productType ?? undefined,
       weekStart,
       leadId: lead.id,
     })
@@ -290,6 +291,7 @@ router.patch("/sales/:id", requireAuth, async (req: AuthRequest, res): Promise<v
   if (updateData.carrier !== undefined) updateFields.carrier = updateData.carrier;
   if (updateData.metalTier !== undefined) updateFields.metalTier = updateData.metalTier;
   if (updateData.householdSize !== undefined) updateFields.householdSize = updateData.householdSize;
+  if (updateData.productType !== undefined) updateFields.productType = updateData.productType;
 
   if (updateData.soldDate !== undefined) {
     updateFields.soldDate = updateData.soldDate;

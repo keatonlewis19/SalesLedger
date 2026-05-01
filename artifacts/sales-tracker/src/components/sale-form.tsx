@@ -60,6 +60,12 @@ import { useToast } from "@/hooks/use-toast";
 
 const COMMISSION_TYPES = ["Initial", "Renewal", "Prorated Renewal", "Monthly Renewal"] as const;
 
+const MEDICARE_PRODUCT_TYPES = [
+  { value: "mapd", label: "MAPD" },
+  { value: "pdp", label: "PDP" },
+  { value: "medsupp", label: "Med Supp" },
+] as const;
+
 const METAL_TIERS = ["Catastrophic", "Bronze", "Silver", "Gold", "Platinum", "Non-Qualified"] as const;
 
 const LOB_OPTIONS = [
@@ -203,6 +209,7 @@ const formSchema = z.object({
   estimatedCommission: z.string().optional(),
   hra: z.string().optional(),
   comments: z.string().optional(),
+  productType: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -250,6 +257,7 @@ export function SaleForm({
       estimatedCommission: "",
       hra: "",
       comments: "",
+      productType: "",
     },
   });
 
@@ -270,6 +278,7 @@ export function SaleForm({
         estimatedCommission: sale.estimatedCommission?.toString() || "",
         hra: sale.hra?.toString() || "",
         comments: sale.comments || "",
+        productType: (sale as any).productType || "",
       });
     } else if (open && !sale) {
       form.reset({
@@ -287,6 +296,7 @@ export function SaleForm({
         estimatedCommission: "",
         hra: "",
         comments: "",
+        productType: "",
       });
     }
   }, [open, sale, form]);
@@ -296,16 +306,19 @@ export function SaleForm({
   const watchedSalesType = form.watch("salesType");
   const watchedEffectiveDate = form.watch("effectiveDate");
   const watchedLob = (form.watch("lineOfBusiness") as LobValue) || "medicare";
+  const watchedProductType = form.watch("productType") || "";
 
   const isMedicare = watchedLob === "medicare";
+  const isMedsupp = isMedicare && watchedProductType === "medsupp";
   const showCarrier = !isMedicare;
   const showMetalTier = watchedLob === "aca";
 
   useEffect(() => {
     if (!settings || !watchedCommissionType) return;
 
-    // Only auto-calculate for Medicare
+    // Only auto-calculate for Medicare (not Med Supp — those are entered manually)
     if (watchedLob !== "medicare") return;
+    if (watchedProductType === "medsupp") return;
 
     // 1. Commission table override (exact match on all 3 dims)
     const table = settings.commissionTable as Array<{ salesSource: string; salesType: string; commissionType: string; estimatedCommission: number | null }> | null | undefined;
@@ -350,7 +363,7 @@ export function SaleForm({
     if (commission != null) {
       form.setValue("estimatedCommission", commission.toFixed(2));
     }
-  }, [watchedCommissionType, watchedSalesSource, watchedSalesType, watchedEffectiveDate, watchedLob, settings, form]);
+  }, [watchedCommissionType, watchedSalesSource, watchedSalesType, watchedEffectiveDate, watchedLob, watchedProductType, settings, form]);
 
   const onSubmit = (data: FormValues) => {
     const formattedData = {
@@ -368,6 +381,7 @@ export function SaleForm({
       carrier: data.carrier || null,
       metalTier: data.metalTier || null,
       householdSize: data.householdSize ? parseInt(data.householdSize, 10) : null,
+      productType: data.lineOfBusiness === "medicare" ? (data.productType || null) : null,
     };
 
     if (sale) {
@@ -436,6 +450,39 @@ export function SaleForm({
                 </FormItem>
               )}
             />
+
+            {/* Medicare Product Type */}
+            {isMedicare && (
+              <FormField
+                control={form.control}
+                name="productType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Medicare Product Type</FormLabel>
+                    <Select
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        if (val !== "medsupp") return;
+                        form.setValue("estimatedCommission", "");
+                      }}
+                      value={field.value ?? ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select product type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {MEDICARE_PRODUCT_TYPES.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Client */}
             <FormField
@@ -671,9 +718,9 @@ export function SaleForm({
                       <Input
                         type="number"
                         step="0.01"
-                        placeholder={isMedicare ? "Auto-calculated" : "0.00"}
-                        readOnly={isMedicare}
-                        className={isMedicare ? "bg-muted cursor-not-allowed text-muted-foreground" : ""}
+                        placeholder={isMedsupp ? "Enter commission" : isMedicare ? "Auto-calculated" : "0.00"}
+                        readOnly={isMedicare && !isMedsupp}
+                        className={isMedicare && !isMedsupp ? "bg-muted cursor-not-allowed text-muted-foreground" : ""}
                         {...field}
                       />
                     </FormControl>
