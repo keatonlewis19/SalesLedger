@@ -8,7 +8,8 @@
     "build": "node scripts/build.js",
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "eas": "eas"
+    "eas": "eas",
+    "eas-build-pre-install": "npm install -g pnpm@10.26.1 && cd ../.. && pnpm install --no-frozen-lockfile"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
