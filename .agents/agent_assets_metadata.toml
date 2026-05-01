@@ -24,6 +24,18 @@ uri = "file://attached_assets/generated_images/salesledger_logo_scheme3.png"
 type = "image"
 title = "SalesLedger logo color scheme 3"
 
+[[generated]]
+id = "J3DrRIgPhUGsIgkfqMZk9"
+uri = "file://attached_assets/generated_images/salesledger_logo_teal_v1.png"
+type = "image"
+title = "SalesLedger logo teal v1"
+
+[[generated]]
+id = "0vzzg6s9tNb2E34msQqGq"
+uri = "file://attached_assets/generated_images/salesledger_logo_teal_v2.png"
+type = "image"
+title = "SalesLedger logo teal v2"
+
 [[outputs]]
 id = "B-opTMccA7TboG-N1J3x7"
 uri = "file://attached_assets/generated_images/salesledger_logo_scheme1.png"
@@ -41,3 +53,15 @@ id = "0FjLpBxJAs1QCTjD6rZec"
 uri = "file://attached_assets/generated_images/salesledger_logo_scheme3.png"
 type = "image"
 title = "SalesLedger — Color Scheme 3 (Blue + Green)"
+
+[[outputs]]
+id = "EdC57hSX7mHZyZV4ng5Yn"
+uri = "file://attached_assets/generated_images/salesledger_logo_teal_v1.png"
+type = "image"
+title = "SalesLedger — Dark Navy + Teal (dark background)"
+
+[[outputs]]
+id = "gK-6T6g0U_6FxjnqOhTlA"
+uri = "file://attached_assets/generated_images/salesledger_logo_teal_v2.png"
+type = "image"
+title = "SalesLedger — Dark Navy + Teal (light background)"
