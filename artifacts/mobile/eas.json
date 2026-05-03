@@ -8,17 +8,22 @@
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
-        "simulator": true
+        "simulator": true,
+        "image": "macos-m2-sequoia-xcode-16.4-1"
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
-        "simulator": false
+        "simulator": false,
+        "image": "macos-m2-sequoia-xcode-16.4-1"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "ios": {
+        "image": "macos-m2-sequoia-xcode-16.4-1"
+      }
     }
   },
   "submit": {
